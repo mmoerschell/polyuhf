@@ -1,0 +1,12 @@
+Operations:
+    - (Field) add
+    - (Field) multiply
+    - (Field) square
+    - Implicit modular reduction
+    - Horner-style evaluation
+    - Dot-product? (e.g. MMH)
+    - Index integer arithmetic
+    - Odd checks
+    - Kronecker substitution?
+    - Tree-composition?
+
