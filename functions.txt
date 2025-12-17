@@ -1,0 +1,17 @@
+
+# All 0-indexed
+
+function mmh(R, M, B):
+    [i,0::B - 2]{M[i] * R[i]} + M[B - 1]
+
+function sqh(R, M, B):
+    [i,0::B - 2]{square(M[i] + R[i])} + M[B - 1]
+
+function nmh(R, M, B):
+    [i,0:2:B - 1]{(M[i] + R[i]) * (M[i+1] + R[i+1])} + odd(B) * M[B - 1]
+
+function hkm(R, M, B):
+    recursive?!
+
+function mhp(R, M, B):
+    recursive sum?
