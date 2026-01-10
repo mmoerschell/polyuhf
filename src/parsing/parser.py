@@ -8,6 +8,7 @@ def parse_program(text: str):
     token_stream = CommonTokenStream(lexer)
     parser = PolyUHFParser(token_stream)
     tree = parser.program()  # first rule to apply
+    print(tree.toStringTree(recog=parser))
 
     # TODO: AST
     # ast = ASTBuilderVisitor().visit(tree)
@@ -18,4 +19,4 @@ def parse_program(text: str):
 if __name__ == "__main__":
     with open("nmh_simple.txt", "r", encoding="utf-8") as f:
         text = f.read()
-    print(parse_program(text))
+    parse_program(text)
