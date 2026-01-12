@@ -14,6 +14,11 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by PolyUHFParser#function.
+    def visitFunction(self, ctx:PolyUHFParser.FunctionContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by PolyUHFParser#expr.
     def visitExpr(self, ctx:PolyUHFParser.ExprContext):
         return self.visitChildren(ctx)
@@ -44,8 +49,8 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#VariableExpr.
-    def visitVariableExpr(self, ctx:PolyUHFParser.VariableExprContext):
+    # Visit a parse tree produced by PolyUHFParser#IdentifierExpression.
+    def visitIdentifierExpression(self, ctx:PolyUHFParser.IdentifierExpressionContext):
         return self.visitChildren(ctx)
 
 

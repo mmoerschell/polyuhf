@@ -1,7 +1,11 @@
 grammar PolyUHF;
 
 program
-    : expr EOF
+    : function+ EOF
+    ;
+
+function
+    : 'function' IDENTIFIER '(' IDENTIFIER ( ',' IDENTIFIER )* ')' ':' expr
     ;
 
 expr 
@@ -20,20 +24,20 @@ primary
     : '(' expr ')'                 # Parentheses
     | reduction                    # ReductionExpr
     | array                        # ArrayExpr
-    | VARIABLE                     # VariableExpr
+    | IDENTIFIER                   # IdentifierExpression
     | INT                          # IntExpr
     ;
 
 reduction
     : op=('*' | '+')
-      '[' VARIABLE ',' expr ':' expr ':' expr ']'
+      '[' IDENTIFIER ',' expr ':' expr ':' expr ']'
       '{' expr '}'
     ;
 
 array
-    : VARIABLE '[' expr ']'
+    : IDENTIFIER '[' expr ']'
     ;
 
-VARIABLE : [a-zA-Z]+ ;
+IDENTIFIER : [a-zA-Z]+ ;
 INT : [0-9]+ ;
 WS  : [ \t\r\n]+ -> skip ;
