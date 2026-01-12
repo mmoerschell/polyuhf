@@ -1,8 +1,10 @@
-from antlr4 import InputStream, CommonTokenStream
+from antlr4 import CommonTokenStream, InputStream
+
 from .PolyUHFLexer import PolyUHFLexer
 from .PolyUHFParser import PolyUHFParser
 
-def parse_program(text: str):
+
+def parse_string(text: str):
     input_stream = InputStream(text)
     lexer = PolyUHFLexer(input_stream)
     token_stream = CommonTokenStream(lexer)
@@ -14,3 +16,8 @@ def parse_program(text: str):
     # ast = ASTBuilderVisitor().visit(tree)
 
     return tree
+
+
+def parse_file(path: str):
+    with open(path, mode="r", encoding="utf-8") as f:
+        return parse_string(f.read())

@@ -1,0 +1,15 @@
+[tool.ruff]
+# Check all style-related rules
+lint.select = ["E", "W", "F", "C", "N", "I", "B"]
+
+exclude = [
+    "parsing/PolyUHFLexer.py",
+    "parsing/PolyUHFParser.py",
+    "parsing/PolyUHFVisitor.py",
+]
+
+# Line length
+line-length = 88
+
+# Enable auto-fixing where possible
+lint.fixable = ["E", "W", "F", "I", "B"]  # Ruff will only auto-fix these
