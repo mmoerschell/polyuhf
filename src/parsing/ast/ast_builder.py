@@ -1,5 +1,4 @@
-from pprint import pprint
-from parsing.ast.nodes import Add, Int, Mul, Var, Function
+from parsing.ast.nodes import Add, ArrayAccess, Function, Int, Mul, Var
 from parsing.PolyUHFParser import PolyUHFParser
 from parsing.PolyUHFVisitor import PolyUHFVisitor
 
@@ -51,8 +50,9 @@ class ASTBuilder(PolyUHFVisitor):
 
     # Visit a parse tree produced by PolyUHFParser#ArrayExpr.
     def visitArrayExpr(self, ctx: PolyUHFParser.ArrayExprContext):  # noqa: N802
-        # TODO!
-        return self.visitChildren(ctx)
+        identifier = ctx.IDENTIFIER().getText()
+        expr = self.visit(ctx.expr())
+        return ArrayAccess(identifier, expr)
 
     # Visit a parse tree produced by PolyUHFParser#IdentifierExpression.
     def visitIdentifierExpression(self, ctx: PolyUHFParser.IdentifierExpressionContext):  # noqa: N802
