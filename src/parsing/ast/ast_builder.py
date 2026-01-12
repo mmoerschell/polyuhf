@@ -1,4 +1,4 @@
-from parsing.ast.nodes import Add, ArrayAccess, Function, Int, Mul, Var
+from parsing.ast.nodes import Add, ArrayAccess, Function, Int, Mul, Reduction, Var
 from parsing.PolyUHFParser import PolyUHFParser
 from parsing.PolyUHFVisitor import PolyUHFVisitor
 
@@ -46,7 +46,11 @@ class ASTBuilder(PolyUHFVisitor):
 
     # Visit a parse tree produced by PolyUHFParser#ReductionExpr.
     def visitReductionExpr(self, ctx: PolyUHFParser.ReductionExprContext):  # noqa: N802
-        return self.visitChildren(ctx)
+        op = ctx.op.text  # type: ignore
+        var = ctx.IDENTIFIER().getText()
+        expressions = [self.visit(expr) for expr in ctx.expr()]
+        start, stop, step, body = expressions
+        return Reduction(op, var, start, stop, step, body)
 
     # Visit a parse tree produced by PolyUHFParser#ArrayExpr.
     def visitArrayExpr(self, ctx: PolyUHFParser.ArrayExprContext):  # noqa: N802
@@ -61,8 +65,3 @@ class ASTBuilder(PolyUHFVisitor):
     # Visit a parse tree produced by PolyUHFParser#IntExpr.
     def visitIntExpr(self, ctx: PolyUHFParser.IntExprContext):  # noqa: N802
         return Int(int(ctx.INT().getText()))
-
-    # Visit a parse tree produced by PolyUHFParser#reduction.
-    def visitReduction(self, ctx: PolyUHFParser.ReductionContext):  # noqa: N802
-        # TODO!
-        return self.visitChildren(ctx)

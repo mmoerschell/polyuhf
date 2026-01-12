@@ -37,7 +37,7 @@ class Reduction(Expr):
     op: str
     var: str
     start: Expr
-    end: Expr
+    stop: Expr
     step: Expr
     body: Expr
 

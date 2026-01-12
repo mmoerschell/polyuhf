@@ -21,17 +21,11 @@ mulExpr
     ;
 
 primary
-    : '(' expr ')'                 # Parentheses
-    | reduction                    # ReductionExpr
-    | IDENTIFIER                   # IdentifierExpression
-    | IDENTIFIER '[' expr ']'      # ArrayExpr
-    | INT                          # IntExpr
-    ;
-
-reduction
-    : op=('*' | '+')
-      '[' IDENTIFIER ',' expr ':' expr ':' expr ']'
-      '{' expr '}'
+    : '(' expr ')'                                                              # Parentheses
+    | INT                                                                       # IntExpr
+    | IDENTIFIER                                                                # IdentifierExpression
+    | IDENTIFIER '[' expr ']'                                                   # ArrayExpr
+    | op=('*' | '+') '[' IDENTIFIER ',' expr ':' expr ':' expr ']' '{' expr '}' # ReductionExpr
     ;
 
 IDENTIFIER : [a-zA-Z]+ ;
