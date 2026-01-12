@@ -5,7 +5,7 @@ program
     ;
 
 function
-    : 'function' IDENTIFIER '(' IDENTIFIER ( ',' IDENTIFIER )* ')' ':' expr
+    : 'function' IDENTIFIER '(' (IDENTIFIER ( ',' IDENTIFIER )*)? ')' ':' expr
     ;
 
 expr 

@@ -10,32 +10,33 @@ else:
 
 def serializedATN():
     return [
-        4,1,14,86,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,14,88,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,1,0,4,0,18,8,0,11,0,12,0,19,1,0,1,0,1,1,1,1,1,1,1,1,1,
-        1,1,1,5,1,30,8,1,10,1,12,1,33,9,1,1,1,1,1,1,1,1,1,1,2,1,2,1,3,1,
-        3,1,3,5,3,44,8,3,10,3,12,3,47,9,3,1,4,1,4,1,4,5,4,52,8,4,10,4,12,
-        4,55,9,4,1,5,1,5,1,5,1,5,1,5,1,5,1,5,1,5,3,5,65,8,5,1,6,1,6,1,6,
-        1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,7,1,7,1,7,1,7,1,7,
-        1,7,0,0,8,0,2,4,6,8,10,12,14,0,1,1,0,6,7,85,0,17,1,0,0,0,2,23,1,
-        0,0,0,4,38,1,0,0,0,6,40,1,0,0,0,8,48,1,0,0,0,10,64,1,0,0,0,12,66,
-        1,0,0,0,14,80,1,0,0,0,16,18,3,2,1,0,17,16,1,0,0,0,18,19,1,0,0,0,
-        19,17,1,0,0,0,19,20,1,0,0,0,20,21,1,0,0,0,21,22,5,0,0,1,22,1,1,0,
-        0,0,23,24,5,1,0,0,24,25,5,12,0,0,25,26,5,2,0,0,26,31,5,12,0,0,27,
-        28,5,3,0,0,28,30,5,12,0,0,29,27,1,0,0,0,30,33,1,0,0,0,31,29,1,0,
-        0,0,31,32,1,0,0,0,32,34,1,0,0,0,33,31,1,0,0,0,34,35,5,4,0,0,35,36,
-        5,5,0,0,36,37,3,4,2,0,37,3,1,0,0,0,38,39,3,6,3,0,39,5,1,0,0,0,40,
-        45,3,8,4,0,41,42,5,6,0,0,42,44,3,8,4,0,43,41,1,0,0,0,44,47,1,0,0,
-        0,45,43,1,0,0,0,45,46,1,0,0,0,46,7,1,0,0,0,47,45,1,0,0,0,48,53,3,
-        10,5,0,49,50,5,7,0,0,50,52,3,10,5,0,51,49,1,0,0,0,52,55,1,0,0,0,
-        53,51,1,0,0,0,53,54,1,0,0,0,54,9,1,0,0,0,55,53,1,0,0,0,56,57,5,2,
-        0,0,57,58,3,4,2,0,58,59,5,4,0,0,59,65,1,0,0,0,60,65,3,12,6,0,61,
-        65,3,14,7,0,62,65,5,12,0,0,63,65,5,13,0,0,64,56,1,0,0,0,64,60,1,
-        0,0,0,64,61,1,0,0,0,64,62,1,0,0,0,64,63,1,0,0,0,65,11,1,0,0,0,66,
-        67,7,0,0,0,67,68,5,8,0,0,68,69,5,12,0,0,69,70,5,3,0,0,70,71,3,4,
-        2,0,71,72,5,5,0,0,72,73,3,4,2,0,73,74,5,5,0,0,74,75,3,4,2,0,75,76,
-        5,9,0,0,76,77,5,10,0,0,77,78,3,4,2,0,78,79,5,11,0,0,79,13,1,0,0,
-        0,80,81,5,12,0,0,81,82,5,8,0,0,82,83,3,4,2,0,83,84,5,9,0,0,84,15,
-        1,0,0,0,5,19,31,45,53,64
+        1,1,1,5,1,30,8,1,10,1,12,1,33,9,1,3,1,35,8,1,1,1,1,1,1,1,1,1,1,2,
+        1,2,1,3,1,3,1,3,5,3,46,8,3,10,3,12,3,49,9,3,1,4,1,4,1,4,5,4,54,8,
+        4,10,4,12,4,57,9,4,1,5,1,5,1,5,1,5,1,5,1,5,1,5,1,5,3,5,67,8,5,1,
+        6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,6,1,7,1,7,1,
+        7,1,7,1,7,1,7,0,0,8,0,2,4,6,8,10,12,14,0,1,1,0,6,7,88,0,17,1,0,0,
+        0,2,23,1,0,0,0,4,40,1,0,0,0,6,42,1,0,0,0,8,50,1,0,0,0,10,66,1,0,
+        0,0,12,68,1,0,0,0,14,82,1,0,0,0,16,18,3,2,1,0,17,16,1,0,0,0,18,19,
+        1,0,0,0,19,17,1,0,0,0,19,20,1,0,0,0,20,21,1,0,0,0,21,22,5,0,0,1,
+        22,1,1,0,0,0,23,24,5,1,0,0,24,25,5,12,0,0,25,34,5,2,0,0,26,31,5,
+        12,0,0,27,28,5,3,0,0,28,30,5,12,0,0,29,27,1,0,0,0,30,33,1,0,0,0,
+        31,29,1,0,0,0,31,32,1,0,0,0,32,35,1,0,0,0,33,31,1,0,0,0,34,26,1,
+        0,0,0,34,35,1,0,0,0,35,36,1,0,0,0,36,37,5,4,0,0,37,38,5,5,0,0,38,
+        39,3,4,2,0,39,3,1,0,0,0,40,41,3,6,3,0,41,5,1,0,0,0,42,47,3,8,4,0,
+        43,44,5,6,0,0,44,46,3,8,4,0,45,43,1,0,0,0,46,49,1,0,0,0,47,45,1,
+        0,0,0,47,48,1,0,0,0,48,7,1,0,0,0,49,47,1,0,0,0,50,55,3,10,5,0,51,
+        52,5,7,0,0,52,54,3,10,5,0,53,51,1,0,0,0,54,57,1,0,0,0,55,53,1,0,
+        0,0,55,56,1,0,0,0,56,9,1,0,0,0,57,55,1,0,0,0,58,59,5,2,0,0,59,60,
+        3,4,2,0,60,61,5,4,0,0,61,67,1,0,0,0,62,67,3,12,6,0,63,67,3,14,7,
+        0,64,67,5,12,0,0,65,67,5,13,0,0,66,58,1,0,0,0,66,62,1,0,0,0,66,63,
+        1,0,0,0,66,64,1,0,0,0,66,65,1,0,0,0,67,11,1,0,0,0,68,69,7,0,0,0,
+        69,70,5,8,0,0,70,71,5,12,0,0,71,72,5,3,0,0,72,73,3,4,2,0,73,74,5,
+        5,0,0,74,75,3,4,2,0,75,76,5,5,0,0,76,77,3,4,2,0,77,78,5,9,0,0,78,
+        79,5,10,0,0,79,80,3,4,2,0,80,81,5,11,0,0,81,13,1,0,0,0,82,83,5,12,
+        0,0,83,84,5,8,0,0,84,85,3,4,2,0,85,86,5,9,0,0,86,15,1,0,0,0,6,19,
+        31,34,47,55,66
     ]
 
 class PolyUHFParser ( Parser ):
@@ -194,25 +195,31 @@ class PolyUHFParser ( Parser ):
             self.match(PolyUHFParser.IDENTIFIER)
             self.state = 25
             self.match(PolyUHFParser.T__1)
-            self.state = 26
-            self.match(PolyUHFParser.IDENTIFIER)
-            self.state = 31
+            self.state = 34
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            while _la==3:
-                self.state = 27
-                self.match(PolyUHFParser.T__2)
-                self.state = 28
+            if _la==12:
+                self.state = 26
                 self.match(PolyUHFParser.IDENTIFIER)
-                self.state = 33
+                self.state = 31
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
+                while _la==3:
+                    self.state = 27
+                    self.match(PolyUHFParser.T__2)
+                    self.state = 28
+                    self.match(PolyUHFParser.IDENTIFIER)
+                    self.state = 33
+                    self._errHandler.sync(self)
+                    _la = self._input.LA(1)
 
-            self.state = 34
-            self.match(PolyUHFParser.T__3)
-            self.state = 35
-            self.match(PolyUHFParser.T__4)
+
+
             self.state = 36
+            self.match(PolyUHFParser.T__3)
+            self.state = 37
+            self.match(PolyUHFParser.T__4)
+            self.state = 38
             self.expr()
         except RecognitionException as re:
             localctx.exception = re
@@ -252,7 +259,7 @@ class PolyUHFParser ( Parser ):
         self.enterRule(localctx, 4, self.RULE_expr)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 38
+            self.state = 40
             self.addExpr()
         except RecognitionException as re:
             localctx.exception = re
@@ -309,17 +316,17 @@ class PolyUHFParser ( Parser ):
         try:
             localctx = PolyUHFParser.AddContext(self, localctx)
             self.enterOuterAlt(localctx, 1)
-            self.state = 40
+            self.state = 42
             self.mulExpr()
-            self.state = 45
+            self.state = 47
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==6:
-                self.state = 41
+                self.state = 43
                 self.match(PolyUHFParser.T__5)
-                self.state = 42
+                self.state = 44
                 self.mulExpr()
-                self.state = 47
+                self.state = 49
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
@@ -378,17 +385,17 @@ class PolyUHFParser ( Parser ):
         try:
             localctx = PolyUHFParser.MulContext(self, localctx)
             self.enterOuterAlt(localctx, 1)
-            self.state = 48
+            self.state = 50
             self.primary()
-            self.state = 53
+            self.state = 55
             self._errHandler.sync(self)
             _la = self._input.LA(1)
             while _la==7:
-                self.state = 49
+                self.state = 51
                 self.match(PolyUHFParser.T__6)
-                self.state = 50
+                self.state = 52
                 self.primary()
-                self.state = 55
+                self.state = 57
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
 
@@ -507,45 +514,45 @@ class PolyUHFParser ( Parser ):
         localctx = PolyUHFParser.PrimaryContext(self, self._ctx, self.state)
         self.enterRule(localctx, 10, self.RULE_primary)
         try:
-            self.state = 64
+            self.state = 66
             self._errHandler.sync(self)
-            la_ = self._interp.adaptivePredict(self._input,4,self._ctx)
+            la_ = self._interp.adaptivePredict(self._input,5,self._ctx)
             if la_ == 1:
                 localctx = PolyUHFParser.ParenthesesContext(self, localctx)
                 self.enterOuterAlt(localctx, 1)
-                self.state = 56
-                self.match(PolyUHFParser.T__1)
-                self.state = 57
-                self.expr()
                 self.state = 58
+                self.match(PolyUHFParser.T__1)
+                self.state = 59
+                self.expr()
+                self.state = 60
                 self.match(PolyUHFParser.T__3)
                 pass
 
             elif la_ == 2:
                 localctx = PolyUHFParser.ReductionExprContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
-                self.state = 60
+                self.state = 62
                 self.reduction()
                 pass
 
             elif la_ == 3:
                 localctx = PolyUHFParser.ArrayExprContext(self, localctx)
                 self.enterOuterAlt(localctx, 3)
-                self.state = 61
+                self.state = 63
                 self.array()
                 pass
 
             elif la_ == 4:
                 localctx = PolyUHFParser.IdentifierExpressionContext(self, localctx)
                 self.enterOuterAlt(localctx, 4)
-                self.state = 62
+                self.state = 64
                 self.match(PolyUHFParser.IDENTIFIER)
                 pass
 
             elif la_ == 5:
                 localctx = PolyUHFParser.IntExprContext(self, localctx)
                 self.enterOuterAlt(localctx, 5)
-                self.state = 63
+                self.state = 65
                 self.match(PolyUHFParser.INT)
                 pass
 
@@ -596,7 +603,7 @@ class PolyUHFParser ( Parser ):
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 66
+            self.state = 68
             localctx.op = self._input.LT(1)
             _la = self._input.LA(1)
             if not(_la==6 or _la==7):
@@ -604,16 +611,12 @@ class PolyUHFParser ( Parser ):
             else:
                 self._errHandler.reportMatch(self)
                 self.consume()
-            self.state = 67
-            self.match(PolyUHFParser.T__7)
-            self.state = 68
-            self.match(PolyUHFParser.IDENTIFIER)
             self.state = 69
-            self.match(PolyUHFParser.T__2)
+            self.match(PolyUHFParser.T__7)
             self.state = 70
-            self.expr()
+            self.match(PolyUHFParser.IDENTIFIER)
             self.state = 71
-            self.match(PolyUHFParser.T__4)
+            self.match(PolyUHFParser.T__2)
             self.state = 72
             self.expr()
             self.state = 73
@@ -621,12 +624,16 @@ class PolyUHFParser ( Parser ):
             self.state = 74
             self.expr()
             self.state = 75
-            self.match(PolyUHFParser.T__8)
+            self.match(PolyUHFParser.T__4)
             self.state = 76
-            self.match(PolyUHFParser.T__9)
-            self.state = 77
             self.expr()
+            self.state = 77
+            self.match(PolyUHFParser.T__8)
             self.state = 78
+            self.match(PolyUHFParser.T__9)
+            self.state = 79
+            self.expr()
+            self.state = 80
             self.match(PolyUHFParser.T__10)
         except RecognitionException as re:
             localctx.exception = re
@@ -669,13 +676,13 @@ class PolyUHFParser ( Parser ):
         self.enterRule(localctx, 14, self.RULE_array)
         try:
             self.enterOuterAlt(localctx, 1)
-            self.state = 80
-            self.match(PolyUHFParser.IDENTIFIER)
-            self.state = 81
-            self.match(PolyUHFParser.T__7)
             self.state = 82
-            self.expr()
+            self.match(PolyUHFParser.IDENTIFIER)
             self.state = 83
+            self.match(PolyUHFParser.T__7)
+            self.state = 84
+            self.expr()
+            self.state = 85
             self.match(PolyUHFParser.T__8)
         except RecognitionException as re:
             localctx.exception = re
