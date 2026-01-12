@@ -14,9 +14,3 @@ def parse_program(text: str):
     # ast = ASTBuilderVisitor().visit(tree)
 
     return tree
-
-
-if __name__ == "__main__":
-    with open("nmh_simple.txt", "r", encoding="utf-8") as f:
-        text = f.read()
-    parse_program(text)
