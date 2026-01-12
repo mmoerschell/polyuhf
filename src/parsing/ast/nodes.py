@@ -9,6 +9,38 @@ class ASTNode:
 class Expr(ASTNode):
     pass
 
+@dataclass
+class Int(Expr):
+    value: int
+
+@dataclass
+class Var(Expr):
+    name: str
+
+@dataclass
+class Add(Expr):
+    left: Expr
+    right: Expr
+
+@dataclass
+class Mul(Expr):
+    left: Expr
+    right: Expr
+
+@dataclass
+class ArrayAccess(Expr):
+    array: str
+    index: Expr
+
+@dataclass
+class Reduction(Expr):
+    op: str
+    var: str
+    start: Expr
+    end: Expr
+    step: Expr
+    body: Expr
+
 # ---------- Program structure ----------
 
 @dataclass
