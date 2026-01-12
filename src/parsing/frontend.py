@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from antlr4 import CommonTokenStream, InputStream
 
 from parsing.ast.ast_builder import ASTBuilder
@@ -18,7 +16,7 @@ def parse_string(text: str):
 
     builder = ASTBuilder()
     ast = builder.visit(syntax_tree)
-    pprint(ast)
+    # pprint(ast)
 
     return ast
 
