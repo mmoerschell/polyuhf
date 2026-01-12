@@ -1,6 +1,6 @@
 from antlr4 import InputStream, CommonTokenStream
-from PolyUHFLexer import PolyUHFLexer
-from PolyUHFParser import PolyUHFParser
+from .PolyUHFLexer import PolyUHFLexer
+from .PolyUHFParser import PolyUHFParser
 
 def parse_program(text: str):
     input_stream = InputStream(text)
