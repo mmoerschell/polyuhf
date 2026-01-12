@@ -23,8 +23,8 @@ mulExpr
 primary
     : '(' expr ')'                 # Parentheses
     | reduction                    # ReductionExpr
-    | array                        # ArrayExpr
     | IDENTIFIER                   # IdentifierExpression
+    | IDENTIFIER '[' expr ']'      # ArrayExpr
     | INT                          # IntExpr
     ;
 
@@ -32,10 +32,6 @@ reduction
     : op=('*' | '+')
       '[' IDENTIFIER ',' expr ':' expr ':' expr ']'
       '{' expr '}'
-    ;
-
-array
-    : IDENTIFIER '[' expr ']'
     ;
 
 IDENTIFIER : [a-zA-Z]+ ;

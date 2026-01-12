@@ -51,6 +51,7 @@ class ASTBuilder(PolyUHFVisitor):
 
     # Visit a parse tree produced by PolyUHFParser#ArrayExpr.
     def visitArrayExpr(self, ctx: PolyUHFParser.ArrayExprContext):  # noqa: N802
+        # TODO!
         return self.visitChildren(ctx)
 
     # Visit a parse tree produced by PolyUHFParser#IdentifierExpression.
@@ -63,10 +64,5 @@ class ASTBuilder(PolyUHFVisitor):
 
     # Visit a parse tree produced by PolyUHFParser#reduction.
     def visitReduction(self, ctx: PolyUHFParser.ReductionContext):  # noqa: N802
-        # TODO!
-        return self.visitChildren(ctx)
-
-    # Visit a parse tree produced by PolyUHFParser#array.
-    def visitArray(self, ctx: PolyUHFParser.ArrayContext):  # noqa: N802
         # TODO!
         return self.visitChildren(ctx)
