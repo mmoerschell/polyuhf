@@ -24,13 +24,18 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#Add.
-    def visitAdd(self, ctx:PolyUHFParser.AddContext):
+    # Visit a parse tree produced by PolyUHFParser#AddSub.
+    def visitAddSub(self, ctx:PolyUHFParser.AddSubContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#Mul.
-    def visitMul(self, ctx:PolyUHFParser.MulContext):
+    # Visit a parse tree produced by PolyUHFParser#MulDiv.
+    def visitMulDiv(self, ctx:PolyUHFParser.MulDivContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#UnaryMinus.
+    def visitUnaryMinus(self, ctx:PolyUHFParser.UnaryMinusContext):
         return self.visitChildren(ctx)
 
 

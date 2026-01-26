@@ -5,29 +5,31 @@ program
     ;
 
 function
-    : 'function' IDENTIFIER '(' (IDENTIFIER ( ',' IDENTIFIER )*)? ')' ':' expr
+    : FUNCTION IDENTIFIER '(' (IDENTIFIER ( ',' IDENTIFIER )*)? ')' ':' expr
     ;
 
-expr 
-    : addExpr
+expr
+    : addSubExpr
     ;
 
-addExpr
-    : mulExpr ( '+' mulExpr )*     # Add
+addSubExpr
+    : mulDivExpr ( ( '+' | '-' ) mulDivExpr )*  # AddSub
     ;
 
-mulExpr
-    : primary ( '*' primary )*     # Mul
+mulDivExpr
+    : primary ( ( '*' | '/' ) primary )*        # MulDiv
     ;
 
 primary
-    : '(' expr ')'                                                              # Parentheses
+    : '-' primary                                                               # UnaryMinus
+    | '(' expr ')'                                                              # Parentheses
     | INT                                                                       # IntExpr
     | IDENTIFIER                                                                # IdentifierExpression
     | IDENTIFIER '[' expr ']'                                                   # ArrayExpr
     | op=('*' | '+') '[' IDENTIFIER ',' expr ':' expr ':' expr ']' '{' expr '}' # ReductionExpr
     ;
 
-IDENTIFIER : [a-zA-Z]+ ;
-INT : [0-9]+ ;
-WS  : [ \t\r\n]+ -> skip ;
+FUNCTION   : 'function' ;
+IDENTIFIER : [a-zA-Z] [a-zA-Z0-9_]* ;
+INT        : [0-9]+ ;
+WS         : [ \t\r\n]+ -> skip ;
