@@ -68,7 +68,7 @@ class ASTBuilder(PolyUHFVisitor):
 
     # Visit a parse tree produced by PolyUHFParser#Exponent.
     def visitExponent(self, ctx: PolyUHFParser.ExponentContext):  # noqa: N802
-        # Recalll rule: base (^ exponent)?
+        # Recall rule: base (^ exponent)?
         base = self.visit(ctx.primary())
         if ctx.expr():
             exponent = self.visit(ctx.expr())
