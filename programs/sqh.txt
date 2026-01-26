@@ -3,5 +3,5 @@
  * M: message
  * n (B in the paper): message size
  */
-function nmh(R, M, n):
+function sqh(R, M, n):
     +[i,0:n-1:1]{(M[i] + R[i])^2} + M[n-1]
