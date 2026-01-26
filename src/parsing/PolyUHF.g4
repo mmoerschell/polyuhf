@@ -1,5 +1,7 @@
 grammar PolyUHF;
 
+// Parser rules
+
 program
     : function+ EOF
     ;
@@ -29,7 +31,14 @@ primary
     | op=('*' | '+') '[' IDENTIFIER ',' expr ':' expr ':' expr ']' '{' expr '}' # ReductionExpr
     ;
 
+// Lexer rules
+
 FUNCTION   : 'function' ;
 IDENTIFIER : [a-zA-Z] [a-zA-Z0-9_]* ;
 INT        : [0-9]+ ;
 WS         : [ \t\r\n]+ -> skip ;
+
+// Comment rules
+
+LINE_COMMENT  : '//' ~[\r\n]* -> skip ;
+BLOCK_COMMENT : '/*' .*? '*/' -> skip ;

@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,16,84,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,1,0,4,
+        4,1,18,84,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,1,0,4,
         0,14,8,0,11,0,12,0,15,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,5,1,26,8,1,
         10,1,12,1,29,9,1,3,1,31,8,1,1,1,1,1,1,1,1,1,1,2,1,2,1,3,1,3,1,3,
         5,3,42,8,3,10,3,12,3,45,9,3,1,4,1,4,1,4,5,4,50,8,4,10,4,12,4,53,
@@ -55,7 +55,8 @@ class PolyUHFParser ( Parser ):
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                      "<INVALID>", "FUNCTION", "IDENTIFIER", "INT", "WS" ]
+                      "<INVALID>", "FUNCTION", "IDENTIFIER", "INT", "WS", 
+                      "LINE_COMMENT", "BLOCK_COMMENT" ]
 
     RULE_program = 0
     RULE_function = 1
@@ -84,6 +85,8 @@ class PolyUHFParser ( Parser ):
     IDENTIFIER=14
     INT=15
     WS=16
+    LINE_COMMENT=17
+    BLOCK_COMMENT=18
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
