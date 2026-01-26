@@ -15,11 +15,15 @@ expr
     ;
 
 addSubExpr
-    : mulDivExpr ( ( '+' | '-' ) mulDivExpr )*  # AddSub
+    : mulDivExpr ( ( '+' | '-' ) mulDivExpr )*      # AddSub
     ;
 
 mulDivExpr
-    : primary ( ( '*' | '/' ) primary )*        # MulDiv
+    : exponentExpr ( ( '*' | '/' ) exponentExpr )*  # MulDiv
+    ;
+
+exponentExpr
+    : primary ('^' expr)?                           # Exponent
     ;
 
 primary

@@ -1,2 +1,7 @@
-function nmh(M, R, n):
+/**
+ * R: key
+ * M: message
+ * n (B in the paper): message size
+ */
+function nmh(R, M, n):
     +[i,0:n:2]{(M[i] + R[i]) * (M[i+1] + R[i+1])}

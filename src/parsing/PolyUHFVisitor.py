@@ -34,6 +34,11 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by PolyUHFParser#Exponent.
+    def visitExponent(self, ctx:PolyUHFParser.ExponentContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by PolyUHFParser#UnaryMinus.
     def visitUnaryMinus(self, ctx:PolyUHFParser.UnaryMinusContext):
         return self.visitChildren(ctx)
