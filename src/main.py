@@ -10,5 +10,6 @@ if __name__ == "__main__":
     cli.add_argument("input", type=str, help="input file")
     args = cli.parse_args()
 
-    program = parse_file(args.input)
-    pprint(program)
+    irprogam = parse_file(args.input)
+    pprint(irprogam)
+

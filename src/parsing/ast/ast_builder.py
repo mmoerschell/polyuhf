@@ -6,6 +6,7 @@ from parsing.ast.nodes import (
     Int,
     Mul,
     Power,
+    Program,
     Reduction,
     Sub,
     Var,
@@ -17,7 +18,7 @@ from parsing.PolyUHFVisitor import PolyUHFVisitor
 class ASTBuilder(PolyUHFVisitor):
     # Visit a parse tree produced by PolyUHFParser#program.
     def visitProgram(self, ctx: PolyUHFParser.ProgramContext):  # noqa: N802
-        return [self.visit(f) for f in ctx.function()]
+        return Program([self.visit(f) for f in ctx.function()])
 
     # Visit a parse tree produced by PolyUHFParser#function.
     def visitFunction(self, ctx: PolyUHFParser.FunctionContext):  # noqa: N802

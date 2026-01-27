@@ -1,2 +1,7 @@
 function debug(a, b, c):
-    1 + 2 + 3 * b[4 + c + a]
+    1 + 2 + 3 * b
+
+
+/*function foo(A, B, C, d):
+    A[0] + B[1] + C[2] + A[d-1]
+*/

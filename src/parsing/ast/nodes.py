@@ -49,7 +49,7 @@ class Div(Expr):
 @dataclass
 class Power(Expr):
     base: Expr
-    power: Expr  # could restrict this to Int
+    exponent: Expr  # could restrict this to Int
 
 
 @dataclass
