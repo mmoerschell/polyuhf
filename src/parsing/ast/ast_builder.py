@@ -60,10 +60,7 @@ class ASTBuilder(PolyUHFVisitor):
         ty = self.visit(ctx.type_annotation())
         return [(name, ty) for name in names]
 
-    # Visit a parse tree produced by PolyUHFParser#expr.
-    def visitExpr(self, ctx: PolyUHFParser.ExprContext):  # noqa: N802
-        # TODO remove?
-        return self.visitChildren(ctx)
+    # visitExpr omitted, base class handles default behavior
 
     # Visit a parse tree produced by PolyUHFParser#AddSub.
     def visitAddSub(self, ctx: PolyUHFParser.AddSubContext):  # noqa: N802
