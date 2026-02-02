@@ -73,6 +73,8 @@ class IRCall(IRNode):
     args: list[IRNode]  # evaluated arguments
     type: Type  # return type
 
+
 @dataclass(frozen=True)
-class IRProgram(IRNode):
+class IRProgram:
+    # NOT an IRNode, doesn't have a type
     functions: list[IRFunction]
