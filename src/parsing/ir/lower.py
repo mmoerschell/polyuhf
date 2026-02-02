@@ -1,5 +1,5 @@
 import copy
-from typing import Dict
+from typing import Dict, List
 
 from parsing.ast.nodes import (
     Add,
@@ -113,7 +113,7 @@ def lower_binop(op: str, lhs: Expr, rhs: Expr, env: Env) -> IRBinOp:
             raise NotImplementedError("Field division? What do we do?")
         return IRBinOp(op, left, right, left.type)
 
-    raise LoweringError("Type mismatch")
+    raise LoweringError(f"type mismatch on {op} operation")
 
 
 def lower_reduction(ast: Reduction, env: Env) -> IRReduction:
@@ -149,7 +149,7 @@ def lower_reduction(ast: Reduction, env: Env) -> IRReduction:
 def lower_call(ast: Call, env: Env) -> IRCall:
     # Function must exist
     if ast.func not in env.signatures:
-        raise LoweringError(f"Call to undefined function '{ast.func}'")
+        raise LoweringError(f"call to undefined function '{ast.func}'")
     signature = env.signatures[ast.func]
 
     # Lower arguments
@@ -158,7 +158,7 @@ def lower_call(ast: Call, env: Env) -> IRCall:
     # Check number of arguments
     if len(args) != len(signature.params):
         raise LoweringError(
-            f"Function '{ast.func}' expects {len(signature.params)} args, "
+            f"function '{ast.func}' expects {len(signature.params)} args, "
             f"got {len(args)}"
         )
 
@@ -178,7 +178,7 @@ def lower_function(ast: Function, env: Env) -> IRFunction:
     params: list[IRVar] = []
     for name, ty in ast.params:
         if name in env.vars:
-            raise LoweringError(f"Duplicate parameter '{name}' in function {ast.name}")
+            raise LoweringError(f"duplicate parameter '{name}' in function {ast.name}")
         var = IRVar(name, ty)
         env.vars[name] = var
         params.append(var)
@@ -187,7 +187,7 @@ def lower_function(ast: Function, env: Env) -> IRFunction:
     # Typechecking
     if body.type != ast.return_type:
         raise LoweringError(
-            f"Function '{ast.name}' declared return type '{ast.return_type}' but body "
+            f"function '{ast.name}' declared return type '{ast.return_type}' but body "
             f"has type '{body.type}'"
         )
     return IRFunction(ast.name, params, body, ast.return_type)
@@ -198,16 +198,20 @@ def lower_program(ast: Program) -> IRProgram:
     signatures: Dict[str, FunctionSignature] = {}
     for fn in ast.functions:
         if fn.name in signatures:
-            raise LoweringError(f"Duplicate function {fn.name}")
+            raise LoweringError(f"duplicate function {fn.name}")
         param_types = [p[1] for p in fn.params]
         signatures[fn.name] = FunctionSignature(
             name=fn.name, params=param_types, return_type=fn.return_type
         )
 
     # Lower functions, each with a fresh environment!
-    functions = [
-        lower_function(f, Env(vars={}, signatures=copy.deepcopy(signatures)))
-        for f in ast.functions
-    ]
+    functions: List[IRFunction] = []
+    for f in ast.functions:
+        try:
+            functions.append(
+                lower_function(f, Env(vars={}, signatures=copy.deepcopy(signatures)))
+            )
+        except LoweringError as e:
+            raise LoweringError(f"in '{f.name}': {e}") from e
 
     return IRProgram(functions)

@@ -1,3 +1,6 @@
+# pyright: standard
+import sys
+
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from colorama import Fore, Style
@@ -29,32 +32,27 @@ def parse_string(text: str) -> IRProgram:
     parser.removeErrorListeners()
     parser.addErrorListener(BailErrorListener())
 
-    # 1. Parse tree
     try:
+        # 1. Parse tree
         parse_tree = parser.program()  # first rule to apply
         # print(parse_tree.toStringTree(recog=parser))
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Parsing complete")
-    except SyntaxError as e:
-        print(f"[{Fore.RED}-{Style.RESET_ALL}] Parsing error: {e}")
-        exit(1)
 
-    # 2. Abstract Syntax tree
-    try:
+        # 2. Abstract Syntax tree
         builder = ASTBuilder()
         ast = builder.visit(parse_tree)
         # pprint(ast)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] AST complete")
-    except RuntimeError as e:
-        print(f"[{Fore.RED}-{Style.RESET_ALL}] AST build error: {e}")
-        exit(1)
 
-    # 3. IR
-    try:
+        # 3. IR
         ir = lower_program(ast)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] IR complete")
         return ir
-    except LoweringError as e:
-        print(f"[{Fore.RED}-{Style.RESET_ALL}] IR lowering error: {e}")
+    except (SyntaxError, RuntimeError, LoweringError) as e:
+        print(
+            f"[{Fore.RED}-{Style.RESET_ALL}] Compilation error: {e}",
+            file=sys.stderr,
+        )
         exit(1)
 
 
