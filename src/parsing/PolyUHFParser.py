@@ -35,7 +35,7 @@ def serializedATN():
         0,0,0,62,65,1,0,0,0,63,61,1,0,0,0,63,64,1,0,0,0,64,11,1,0,0,0,65,
         63,1,0,0,0,66,71,3,14,7,0,67,68,7,2,0,0,68,70,3,14,7,0,69,67,1,0,
         0,0,70,73,1,0,0,0,71,69,1,0,0,0,71,72,1,0,0,0,72,13,1,0,0,0,73,71,
-        1,0,0,0,74,77,3,16,8,0,75,76,5,10,0,0,76,78,3,8,4,0,77,75,1,0,0,
+        1,0,0,0,74,77,3,16,8,0,75,76,5,10,0,0,76,78,3,14,7,0,77,75,1,0,0,
         0,77,78,1,0,0,0,78,15,1,0,0,0,79,80,5,7,0,0,80,120,3,16,8,0,81,82,
         5,1,0,0,82,83,3,8,4,0,83,84,5,3,0,0,84,120,1,0,0,0,85,120,5,18,0,
         0,86,87,5,17,0,0,87,96,5,1,0,0,88,93,3,8,4,0,89,90,5,2,0,0,90,92,
@@ -466,21 +466,20 @@ class PolyUHFParser ( Parser ):
             self.mulDivExpr()
             self.state = 63
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,4,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
-                    self.state = 59
-                    _la = self._input.LA(1)
-                    if not(_la==6 or _la==7):
-                        self._errHandler.recoverInline(self)
-                    else:
-                        self._errHandler.reportMatch(self)
-                        self.consume()
-                    self.state = 60
-                    self.mulDivExpr() 
+            _la = self._input.LA(1)
+            while _la==6 or _la==7:
+                self.state = 59
+                _la = self._input.LA(1)
+                if not(_la==6 or _la==7):
+                    self._errHandler.recoverInline(self)
+                else:
+                    self._errHandler.reportMatch(self)
+                    self.consume()
+                self.state = 60
+                self.mulDivExpr()
                 self.state = 65
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,4,self._ctx)
+                _la = self._input.LA(1)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -541,21 +540,20 @@ class PolyUHFParser ( Parser ):
             self.exponentExpr()
             self.state = 71
             self._errHandler.sync(self)
-            _alt = self._interp.adaptivePredict(self._input,5,self._ctx)
-            while _alt!=2 and _alt!=ATN.INVALID_ALT_NUMBER:
-                if _alt==1:
-                    self.state = 67
-                    _la = self._input.LA(1)
-                    if not(_la==8 or _la==9):
-                        self._errHandler.recoverInline(self)
-                    else:
-                        self._errHandler.reportMatch(self)
-                        self.consume()
-                    self.state = 68
-                    self.exponentExpr() 
+            _la = self._input.LA(1)
+            while _la==8 or _la==9:
+                self.state = 67
+                _la = self._input.LA(1)
+                if not(_la==8 or _la==9):
+                    self._errHandler.recoverInline(self)
+                else:
+                    self._errHandler.reportMatch(self)
+                    self.consume()
+                self.state = 68
+                self.exponentExpr()
                 self.state = 73
                 self._errHandler.sync(self)
-                _alt = self._interp.adaptivePredict(self._input,5,self._ctx)
+                _la = self._input.LA(1)
 
         except RecognitionException as re:
             localctx.exception = re
@@ -592,8 +590,8 @@ class PolyUHFParser ( Parser ):
         def primary(self):
             return self.getTypedRuleContext(PolyUHFParser.PrimaryContext,0)
 
-        def expr(self):
-            return self.getTypedRuleContext(PolyUHFParser.ExprContext,0)
+        def exponentExpr(self):
+            return self.getTypedRuleContext(PolyUHFParser.ExponentExprContext,0)
 
 
         def accept(self, visitor:ParseTreeVisitor):
@@ -621,7 +619,7 @@ class PolyUHFParser ( Parser ):
                 self.state = 75
                 self.match(PolyUHFParser.T__9)
                 self.state = 76
-                self.expr()
+                self.exponentExpr()
 
 
         except RecognitionException as re:

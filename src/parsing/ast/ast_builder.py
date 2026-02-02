@@ -70,6 +70,7 @@ class ASTBuilder(PolyUHFVisitor):
             return nodes[0]
         node = nodes[0]
         for i, n in enumerate(nodes[1:]):
+            # TODO WARNING refactor grammar -> this breaks silently
             op = ctx.getChild(2 * i + 1).getText()  # operator token: '+' or '-'
             if op == "+":
                 node = Add(node, n)
@@ -87,6 +88,7 @@ class ASTBuilder(PolyUHFVisitor):
             return nodes[0]
         node = nodes[0]
         for i, n in enumerate(nodes[1:]):
+            # TODO WARNING refactor grammar -> this breaks silently
             op = ctx.getChild(2 * i + 1).getText()  # '*' or '/'
             if op == "*":
                 node = Mul(node, n)
@@ -100,8 +102,8 @@ class ASTBuilder(PolyUHFVisitor):
     def visitExponent(self, ctx: PolyUHFParser.ExponentContext):  # noqa: N802
         # Recall rule: base (^ exponent)?
         base = self.visit(ctx.primary())
-        if ctx.expr():
-            exponent = self.visit(ctx.expr())
+        if ctx.exponentExpr():
+            exponent = self.visit(ctx.exponentExpr())
             return Power(base, exponent)
         return base
 

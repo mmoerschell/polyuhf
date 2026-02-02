@@ -32,7 +32,7 @@ mulDivExpr
     ;
 
 exponentExpr
-    : primary ('^' expr)?                           # Exponent
+    : primary ('^' exponentExpr)?                           # Exponent
     ;
 
 primary
