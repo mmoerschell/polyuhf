@@ -123,7 +123,9 @@ def lower_reduction(ast: Reduction, env: Env) -> IRReduction:
 
     # TODO: Shadowing
     if ast.var in env.vars:
-        raise NotImplementedError("Shadowing! What do we do?")
+        raise NotImplementedError(
+            f"Reduction variable '{ast.var}' shadows an existing variable"
+        )
 
     # TODO: is a copy necessary here?
     inner_env = Env(vars=dict(env.vars), signatures=dict(env.signatures))
