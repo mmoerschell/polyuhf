@@ -1,8 +1,9 @@
-/**
- * R: key
- * M: message
- * n (B in the paper): message size
- */
+/*
+R: key
+M: message
+n (B in the paper): message size
+*/
+
 func mmh(R, M bigint, n index) bigint {
     +[i,0:n - 1:1]{M[i] + R[i]} + M[n - 1]
 }
