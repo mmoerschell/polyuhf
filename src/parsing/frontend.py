@@ -1,32 +1,61 @@
 from antlr4 import CommonTokenStream, InputStream
+from antlr4.error.ErrorListener import ErrorListener
+from colorama import Fore, Style
 
 from parsing.ast.ast_builder import ASTBuilder
-from parsing.ir.lower import lower_program
+from parsing.ir.lower import LoweringError, lower_program
 from parsing.ir.nodes import IRProgram
 
 from .PolyUHFLexer import PolyUHFLexer
 from .PolyUHFParser import PolyUHFParser
 
 
+class BailErrorListener(ErrorListener):
+    # Raises exception if anything goes south
+    def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):  # noqa: N802, N803
+        raise SyntaxError(f"line {line}:{column} {msg}")
+
+
 def parse_string(text: str) -> IRProgram:
     input_stream = InputStream(text)
+
     lexer = PolyUHFLexer(input_stream)
+    lexer.removeErrorListeners()
+    lexer.addErrorListener(BailErrorListener())
+
     token_stream = CommonTokenStream(lexer)
+
     parser = PolyUHFParser(token_stream)
+    parser.removeErrorListeners()
+    parser.addErrorListener(BailErrorListener())
 
     # 1. Parse tree
-    parse_tree = parser.program()  # first rule to apply
-    # print(parse_tree.toStringTree(recog=parser))
+    try:
+        parse_tree = parser.program()  # first rule to apply
+        # print(parse_tree.toStringTree(recog=parser))
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Parsing complete")
+    except SyntaxError as e:
+        print(f"[{Fore.RED}-{Style.RESET_ALL}] Parsing error: {e}")
+        exit(1)
 
     # 2. Abstract Syntax tree
-    builder = ASTBuilder()
-    ast = builder.visit(parse_tree)
-    # pprint(ast)
+    try:
+        builder = ASTBuilder()
+        ast = builder.visit(parse_tree)
+        # pprint(ast)
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] AST complete")
+    except RuntimeError as e:
+        print(f"[{Fore.RED}-{Style.RESET_ALL}] AST build error: {e}")
+        exit(1)
 
     # 3. IR
-    ir = lower_program(ast)
-
-    return ir
+    try:
+        ir = lower_program(ast)
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] IR complete")
+        return ir
+    except LoweringError as e:
+        print(f"[{Fore.RED}-{Style.RESET_ALL}] IR lowering error: {e}")
+        exit(1)
 
 
 def parse_file(path: str) -> IRProgram:

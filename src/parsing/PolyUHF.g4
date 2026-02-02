@@ -7,7 +7,16 @@ program
     ;
 
 function
-    : FUNCTION IDENTIFIER '(' (IDENTIFIER ( ',' IDENTIFIER )*)? ')' ':' expr
+    : FUNCTION IDENTIFIER '(' (param_group ( ',' param_group )*)? ')' type_annotation '{' expr '}'
+    ;
+
+type_annotation
+    : BIGINT
+    | INDEX
+    ;
+
+param_group
+    : IDENTIFIER ( ',' IDENTIFIER )* type_annotation
     ;
 
 expr
@@ -38,7 +47,9 @@ primary
 
 // Lexer rules
 
-FUNCTION   : 'function' ;
+FUNCTION   : 'func' ;
+BIGINT     : 'bigint' ;
+INDEX      : 'index' ;
 IDENTIFIER : [a-zA-Z] [a-zA-Z0-9_]* ;
 INT        : [0-9]+ ;
 WS         : [ \t\r\n]+ -> skip ;

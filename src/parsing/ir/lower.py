@@ -1,8 +1,10 @@
-import string
+import copy
+from typing import Dict
 
 from parsing.ast.nodes import (
     Add,
     ArrayAccess,
+    Call,
     Div,
     Expr,
     Function,
@@ -17,8 +19,10 @@ from parsing.ast.nodes import (
 
 from .env import Env
 from .nodes import (
+    FunctionSignature,
     IRArrayAccess,
     IRBinOp,
+    IRCall,
     IRConst,
     IRFunction,
     IRNode,
@@ -56,7 +60,7 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
             raise LoweringError(
                 f"Cannot dereference anything else than variables. Found {type(base)}"
             )
-        if base.type != Type.FIELD:
+        if base.type != Type.BIGINT:
             raise LoweringError(
                 # TODO too strict? Do index arrays make sense?
                 f"Can only use FIELD as arrays. Illegal attempt on {ast.array}"
@@ -65,7 +69,7 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
         index = lower_expr(ast.index, env)
         if index.type != Type.INDEX:
             f"Array index type must be INDEX, got {index.type}"
-        return IRArrayAccess(base, index, Type.FIELD)
+        return IRArrayAccess(base, index, Type.BIGINT)
 
     if isinstance(ast, Add):
         return lower_binop("+", ast.left, ast.right, env)
@@ -83,7 +87,7 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
         base = lower_expr(ast.base, env)
         exponent = lower_expr(ast.exponent, env)
         assert isinstance(exponent, IRConst), "Only allow constant exponents?"
-        assert base.type == Type.FIELD
+        assert base.type == Type.BIGINT
         return IRPower(base, exponent, base.type)
 
     if isinstance(ast, ArrayAccess):
@@ -91,6 +95,9 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
 
     if isinstance(ast, Reduction):
         return lower_reduction(ast, env)
+
+    if isinstance(ast, Call):
+        return lower_call(ast, env)
 
     raise NotImplementedError(type(ast))
 
@@ -100,9 +107,9 @@ def lower_binop(op: str, lhs: Expr, rhs: Expr, env: Env) -> IRBinOp:
     right = lower_expr(rhs, env)
 
     if left.type == right.type:
-        if op == "-" and left.type == Type.FIELD:
+        if op == "-" and left.type == Type.BIGINT:
             raise LoweringError("field subtraction not allowed")
-        if op == "/" and left.type == Type.FIELD:
+        if op == "/" and left.type == Type.BIGINT:
             raise NotImplementedError("Field division? What do we do?")
         return IRBinOp(op, left, right, left.type)
 
@@ -123,7 +130,7 @@ def lower_reduction(ast: Reduction, env: Env) -> IRReduction:
         raise NotImplementedError("Shadowing! What do we do?")
 
     # TODO: is a copy necessary here?
-    inner_env = Env(vars=dict(env.vars))
+    inner_env = Env(vars=dict(env.vars), signatures=dict(env.signatures))
     inner_env.vars[ast.var] = IRVar(ast.var, Type.INDEX)
 
     body = lower_expr(ast.body, inner_env)
@@ -139,31 +146,68 @@ def lower_reduction(ast: Reduction, env: Env) -> IRReduction:
     )
 
 
-def infer_param_type(name: str) -> Type:
-    if name[0] in string.ascii_uppercase:
-        return Type.FIELD
-    else:
-        return Type.INDEX
+def lower_call(ast: Call, env: Env) -> IRCall:
+    # Function must exist
+    if ast.func not in env.signatures:
+        raise LoweringError(f"Call to undefined function '{ast.func}'")
+    signature = env.signatures[ast.func]
 
+    # Lower arguments
+    args = [lower_expr(arg, env) for arg in ast.args]
 
-def lower_function(ast: Function) -> IRFunction:
-    # Assuming no globals
-    env = Env({})
-    params = []
-    for param_name in ast.params:
-        if param_name in env.vars:
+    # Check number of arguments
+    if len(args) != len(signature.params):
+        raise LoweringError(
+            f"Function '{ast.func}' expects {len(signature.params)} args, "
+            f"got {len(args)}"
+        )
+
+    # Check argument types
+    for arg_node, param in zip(args, signature.params):
+        if arg_node.type != param:
             raise LoweringError(
-                f"Duplicate parameter '{param_name}' in function {ast.name}"
+                f"Function '{ast.func}' argument type mismatch for parameter "
+                f"'{param.name}': expected {param}, got {arg_node.type}"
             )
-        param_type = infer_param_type(param_name)
-        node = IRVar(param_name, param_type)
-        env.vars[param_name] = node
-        params.append(node)
+
+    return IRCall(function=signature.name, args=args, type=signature.return_type)
+
+
+def lower_function(ast: Function, env: Env) -> IRFunction:
+    # Assuming no globals
+    params: list[IRVar] = []
+    for name, ty in ast.params:
+        if name in env.vars:
+            raise LoweringError(f"Duplicate parameter '{name}' in function {ast.name}")
+        var = IRVar(name, ty)
+        env.vars[name] = var
+        params.append(var)
+    # Lower body
     body = lower_expr(ast.body, env)
-    return IRFunction(ast.name, params, body, body.type)
+    # Typechecking
+    if body.type != ast.return_type:
+        raise LoweringError(
+            f"Function '{ast.name}' declared return type '{ast.return_type}' but body "
+            f"has type '{body.type}'"
+        )
+    return IRFunction(ast.name, params, body, ast.return_type)
 
 
 def lower_program(ast: Program) -> IRProgram:
-    # Assuming no globals
-    functions = [lower_function(f) for f in ast.functions]
+    # Collect function signatures
+    signatures: Dict[str, FunctionSignature] = {}
+    for fn in ast.functions:
+        if fn.name in signatures:
+            raise LoweringError(f"Duplicate function {fn.name}")
+        param_types = [p[1] for p in fn.params]
+        signatures[fn.name] = FunctionSignature(
+            name=fn.name, params=param_types, return_type=fn.return_type
+        )
+
+    # Lower functions, each with a fresh environment!
+    functions = [
+        lower_function(f, Env(vars={}, signatures=copy.deepcopy(signatures)))
+        for f in ast.functions
+    ]
+
     return IRProgram(functions)

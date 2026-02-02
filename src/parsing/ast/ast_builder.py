@@ -1,6 +1,10 @@
+from itertools import chain
+from typing import List, Tuple
+
 from parsing.ast.nodes import (
     Add,
     ArrayAccess,
+    Call,
     Div,
     Function,
     Int,
@@ -11,6 +15,7 @@ from parsing.ast.nodes import (
     Sub,
     Var,
 )
+from parsing.ir.types import Type
 from parsing.PolyUHFParser import PolyUHFParser
 from parsing.PolyUHFVisitor import PolyUHFVisitor
 
@@ -22,11 +27,31 @@ class ASTBuilder(PolyUHFVisitor):
 
     # Visit a parse tree produced by PolyUHFParser#function.
     def visitFunction(self, ctx: PolyUHFParser.FunctionContext):  # noqa: N802
-        identifiers = [ter.getText() for ter in ctx.IDENTIFIER()]
-        name = identifiers[0]
-        params = identifiers[1:]
+        name = ctx.IDENTIFIER().getText()
+        assert isinstance(name, str)
+        param_groups = [self.visit(param_group) for param_group in ctx.param_group()]
+        params: List[Tuple[str, Type]] = list(chain.from_iterable(param_groups))
+        return_type = self.visit(ctx.type_annotation())
         body = self.visit(ctx.expr())
-        return Function(name, params, body)
+        return Function(name, params, return_type, body)
+
+    # Visit a parse tree produced by PolyUHFParser#type_annotation.
+    def visitType_annotation(self, ctx: PolyUHFParser.Type_annotationContext):  # noqa: N802
+        token = ctx.getText()
+        if token == "bigint":
+            return Type.BIGINT
+        elif token == "index":
+            return Type.INDEX
+        else:
+            raise RuntimeError(f"Unknown or missing type annotation '{token}'")
+
+    # Visit a parse tree produced by PolyUHFParser#param_group.
+    def visitParam_group(self, ctx: PolyUHFParser.Param_groupContext):  # noqa: N802
+        # Collect all identifiers
+        names = [tok.getText() for tok in ctx.IDENTIFIER()]
+        # The last child is the type annotation
+        ty = self.visit(ctx.type_annotation())
+        return [(name, ty) for name in names]
 
     # Visit a parse tree produced by PolyUHFParser#expr.
     def visitExpr(self, ctx: PolyUHFParser.ExprContext):  # noqa: N802
@@ -94,9 +119,10 @@ class ASTBuilder(PolyUHFVisitor):
         return Int(int(ctx.INT().getText()))
 
     # Visit a parse tree produced by PolyUHFParser#CallExpr.
-    def visitCallExpr(self, ctx: PolyUHFParser.CallExprContext):
-        # TODO!
-        return self.visitChildren(ctx)
+    def visitCallExpr(self, ctx: PolyUHFParser.CallExprContext):  # noqa: N802
+        function_name = ctx.IDENTIFIER().getText()
+        args = [self.visit(child) for child in ctx.expr()]
+        return Call(function_name, args)
 
     # Visit a parse tree produced by PolyUHFParser#ArrayExpr.
     def visitArrayExpr(self, ctx: PolyUHFParser.ArrayExprContext):  # noqa: N802

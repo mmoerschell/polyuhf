@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
+
+from parsing.ir.types import Type
 
 # ---------- Base nodes ----------
 
@@ -53,6 +55,12 @@ class Power(Expr):
 
 
 @dataclass
+class Call(Expr):
+    func: str  # function name. TODO make this point to IRFunction?
+    args: List[Expr]  # argument expressions
+
+
+@dataclass
 class ArrayAccess(Expr):
     array: str
     index: Expr
@@ -79,5 +87,6 @@ class Program(ASTNode):
 @dataclass
 class Function(ASTNode):
     name: str
-    params: List[str]
+    params: List[Tuple[str, Type]]
+    return_type: Type
     body: Expr

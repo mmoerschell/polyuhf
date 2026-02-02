@@ -1,7 +1,7 @@
-function debug(a, b, c):
-    1 + 2 + 3 * b
+func foo(A bigint, a index) bigint {
+    A + bar(A, a)
+}
 
-
-/*function foo(A, B, C, d):
-    A[0] + B[1] + C[2] + A[d-1]
-*/
+func bar(X bigint, n index) bigint {
+    foo(X, n)
+}

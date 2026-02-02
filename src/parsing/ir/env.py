@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 
-from .nodes import IRNode
+from .nodes import FunctionSignature, IRVar
 
 
 @dataclass
 class Env:
-    vars: dict[str, IRNode]
+    vars: dict[str, IRVar]
+    signatures: dict[str, FunctionSignature]

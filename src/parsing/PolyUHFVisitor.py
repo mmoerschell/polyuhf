@@ -19,6 +19,16 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by PolyUHFParser#type_annotation.
+    def visitType_annotation(self, ctx:PolyUHFParser.Type_annotationContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#param_group.
+    def visitParam_group(self, ctx:PolyUHFParser.Param_groupContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by PolyUHFParser#expr.
     def visitExpr(self, ctx:PolyUHFParser.ExprContext):
         return self.visitChildren(ctx)

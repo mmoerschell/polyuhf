@@ -23,7 +23,7 @@ class IRVar(IRNode):
 class IRArrayAccess(IRNode):
     array: IRVar  # variable, such as 'A' in 'A[i]'
     index: IRNode  # index, such as 'i' in 'A[i]'
-    type: Type = Type.FIELD
+    type: Type = Type.BIGINT
 
 
 @dataclass(frozen=True)
@@ -53,12 +53,25 @@ class IRPower(IRNode):
 
 
 @dataclass(frozen=True)
+class FunctionSignature:
+    name: str
+    params: list[Type]
+    return_type: Type
+
+
+@dataclass(frozen=True)
 class IRFunction(IRNode):
     name: str
-    params: list[tuple[str, Type]]  # name, type
+    params: list[IRVar]
     body: IRNode
     type: Type
 
+
+@dataclass(frozen=True)
+class IRCall(IRNode):
+    function: str  # function name, TODO actual pointer?
+    args: list[IRNode]  # evaluated arguments
+    type: Type  # return type
 
 @dataclass(frozen=True)
 class IRProgram(IRNode):
