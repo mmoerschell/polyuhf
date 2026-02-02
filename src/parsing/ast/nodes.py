@@ -55,6 +55,11 @@ class Power(Expr):
 
 
 @dataclass
+class Neg(Expr):
+    body: Expr
+
+
+@dataclass
 class Call(Expr):
     func: str  # function name. TODO make this point to IRFunction?
     args: List[Expr]  # argument expressions

@@ -48,7 +48,7 @@ def parse_string(text: str) -> IRProgram:
         ir = lower_program(ast)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] IR complete")
         return ir
-    except (SyntaxError, RuntimeError, LoweringError) as e:
+    except (SyntaxError, LoweringError) as e:
         print(
             f"[{Fore.RED}-{Style.RESET_ALL}] Compilation error: {e}",
             file=sys.stderr,

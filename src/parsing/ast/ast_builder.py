@@ -11,6 +11,7 @@ from parsing.ast.nodes import (
     Function,
     Int,
     Mul,
+    Neg,
     Power,
     Program,
     Reduction,
@@ -45,7 +46,7 @@ class ASTBuilder(PolyUHFVisitor):
         elif token == "index":
             return Type.INDEX
         else:
-            raise RuntimeError(f"Unknown or missing type annotation '{token}'")
+            raise SyntaxError(f"Unknown or missing type annotation '{token}'")
 
     # Visit a parse tree produced by PolyUHFParser#param_group.
     def visitParam_group(self, ctx: PolyUHFParser.Param_groupContext):  # noqa: N802
@@ -74,7 +75,7 @@ class ASTBuilder(PolyUHFVisitor):
             elif op == "-":
                 node = Sub(node, n)
             else:
-                raise RuntimeError(f"Invalid AddSub operator '{op}'")
+                raise SyntaxError(f"Invalid AddSub operator '{op}'")
         return node
 
     # Visit a parse tree produced by PolyUHFParser#MulDiv.
@@ -91,7 +92,7 @@ class ASTBuilder(PolyUHFVisitor):
             elif op == "/":
                 node = Div(node, n)
             else:
-                raise RuntimeError(f"Invalid MulDiv operator '{op}'")
+                raise SyntaxError(f"Invalid MulDiv operator '{op}'")
         return node
 
     # Visit a parse tree produced by PolyUHFParser#Exponent.
@@ -106,10 +107,7 @@ class ASTBuilder(PolyUHFVisitor):
     # Visit a parse tree produced by PolyUHFParser#UnaryMinus.
     def visitUnaryMinus(self, ctx: PolyUHFParser.UnaryMinusContext):  # noqa: N802
         value = self.visit(ctx.primary())
-        # Note: unary minus is represented as multiplication
-        # by -1. This is only used for indices, not bigints.
-        # Any C compiler will happily optimize it away.
-        return Mul(Int(-1), value)
+        return Neg(value)
 
     # Visit a parse tree produced by PolyUHFParser#Parentheses.
     def visitParentheses(self, ctx: PolyUHFParser.ParenthesesContext):  # noqa: N802

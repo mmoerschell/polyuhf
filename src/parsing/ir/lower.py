@@ -10,6 +10,7 @@ from parsing.ast.nodes import (
     Function,
     Int,
     Mul,
+    Neg,
     Power,
     Program,
     Reduction,
@@ -84,8 +85,17 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
         base = lower_expr(ast.base, env)
         exponent = lower_expr(ast.exponent, env)
         assert isinstance(exponent, IRConst), "Only allow constant exponents?"
-        assert base.type == Type.BIGINT
+        assert base.type == Type.BIGINT, "Only allow bigints as base of powers?"
         return IRPower(base, exponent, base.type)
+
+    if isinstance(ast, Neg):
+        body = lower_expr(ast.body, env)
+        if body.type != Type.INDEX:
+            raise LoweringError(
+                f"unary minus can only be used on expressions of type {Type.INDEX}"
+                f", found {body.type}"
+            )
+        return IRBinOp("*", IRConst(-1, Type.INDEX), body, Type.INDEX)
 
     if isinstance(ast, ArrayAccess):
         raise NotImplementedError("Array access")
@@ -96,7 +106,7 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
     if isinstance(ast, Call):
         return lower_call(ast, env)
 
-    raise NotImplementedError(type(ast))
+    raise NotImplementedError(f"lowering of {type(ast)}")
 
 
 def lower_binop(op: str, lhs: Expr, rhs: Expr, env: Env) -> IRBinOp:
