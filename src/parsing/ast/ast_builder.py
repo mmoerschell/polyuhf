@@ -140,5 +140,8 @@ class ASTBuilder(PolyUHFVisitor):
         # For bigints: '*' or '+'
         op = ctx.op.text  # type: ignore
         var = ctx.IDENTIFIER().getText()
-        start, stop, step, body = [self.visit(e) for e in ctx.expr()]
+        expressions = ctx.expr()
+        if len(expressions) != 4:
+            raise DSLParseError("malformed reduction expression")
+        start, stop, step, body = [self.visit(e) for e in expressions]
         return Reduction(op, var, start, stop, step, body)
