@@ -139,7 +139,7 @@ def lower_reduction(ast: Reduction, env: Env) -> IRReduction:
         )
 
     # TODO: is a copy necessary here?
-    inner_env = Env(vars=dict(env.vars), signatures=dict(env.signatures))
+    inner_env = Env(vars=dict(env.vars), signatures=env.signatures)
     inner_env.vars[ast.var] = IRVar(ast.var, Type.INDEX)
 
     body = lower_expr(ast.body, inner_env)
