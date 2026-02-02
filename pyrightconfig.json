@@ -1,0 +1,15 @@
+{
+    "include": [
+        "src"
+    ],
+    "exclude": [
+        "**/__pycache__",
+        "**/.*",
+        ".venv"
+    ],
+    "ignore": [
+        "src/parsing/PolyUHF*.py"
+    ],
+    "typeCheckingMode": "strict",
+    "reportMissingTypeStubs": false
+}

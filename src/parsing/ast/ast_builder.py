@@ -1,3 +1,5 @@
+# pyright: standard
+
 from itertools import chain
 from typing import List, Tuple
 
