@@ -61,13 +61,13 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
         if base.type != Type.BIGINT:
             raise LoweringError(
                 # TODO too strict? Do index arrays make sense?
-                f"Can only use FIELD as arrays. Illegal attempt on {ast.array}"
+                f"Can only use {Type.BIGINT} as arrays. Illegal attempt on {ast.array}"
             )
         # Index
         index = lower_expr(ast.index, env)
         if index.type != Type.INDEX:
             f"Array index type must be INDEX, got {index.type}"
-        return IRArrayAccess(base, index, base.type)
+        return IRArrayAccess(base, index, Type.BIGINT)
 
     if isinstance(ast, Add):
         return lower_binop("+", ast.left, ast.right, env)
