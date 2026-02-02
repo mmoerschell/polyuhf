@@ -5,7 +5,7 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from colorama import Fore, Style
 
-from parsing.ast.ast_builder import ASTBuilder
+from parsing.ast.ast_builder import ASTBuilder, DSLParseError
 from parsing.ir.lower import LoweringError, lower_program
 from parsing.ir.nodes import IRProgram
 
@@ -16,7 +16,7 @@ from .PolyUHFParser import PolyUHFParser
 class BailErrorListener(ErrorListener):
     # Raises exception if anything goes south
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):  # noqa: N802, N803
-        raise SyntaxError(f"line {line}:{column} {msg}")
+        raise DSLParseError(f"line {line}:{column} {msg}")
 
 
 def parse_string(text: str) -> IRProgram:
@@ -48,7 +48,7 @@ def parse_string(text: str) -> IRProgram:
         ir = lower_program(ast)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] IR complete")
         return ir
-    except (SyntaxError, LoweringError) as e:
+    except (DSLParseError, LoweringError) as e:
         print(
             f"[{Fore.RED}-{Style.RESET_ALL}] Compilation error: {e}",
             file=sys.stderr,

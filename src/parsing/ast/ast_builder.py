@@ -23,6 +23,10 @@ from parsing.PolyUHFParser import PolyUHFParser
 from parsing.PolyUHFVisitor import PolyUHFVisitor
 
 
+class DSLParseError(SyntaxError):
+    pass
+
+
 class ASTBuilder(PolyUHFVisitor):
     # Visit a parse tree produced by PolyUHFParser#program.
     def visitProgram(self, ctx: PolyUHFParser.ProgramContext):  # noqa: N802
@@ -46,7 +50,7 @@ class ASTBuilder(PolyUHFVisitor):
         elif token == "index":
             return Type.INDEX
         else:
-            raise SyntaxError(f"Unknown or missing type annotation '{token}'")
+            raise DSLParseError(f"Unknown or missing type annotation '{token}'")
 
     # Visit a parse tree produced by PolyUHFParser#param_group.
     def visitParam_group(self, ctx: PolyUHFParser.Param_groupContext):  # noqa: N802
@@ -75,7 +79,7 @@ class ASTBuilder(PolyUHFVisitor):
             elif op == "-":
                 node = Sub(node, n)
             else:
-                raise SyntaxError(f"Invalid AddSub operator '{op}'")
+                raise DSLParseError(f"Invalid AddSub operator '{op}'")
         return node
 
     # Visit a parse tree produced by PolyUHFParser#MulDiv.
@@ -92,7 +96,7 @@ class ASTBuilder(PolyUHFVisitor):
             elif op == "/":
                 node = Div(node, n)
             else:
-                raise SyntaxError(f"Invalid MulDiv operator '{op}'")
+                raise DSLParseError(f"Invalid MulDiv operator '{op}'")
         return node
 
     # Visit a parse tree produced by PolyUHFParser#Exponent.
