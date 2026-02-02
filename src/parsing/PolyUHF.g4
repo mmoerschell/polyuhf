@@ -30,8 +30,9 @@ primary
     : '-' primary                                                               # UnaryMinus
     | '(' expr ')'                                                              # Parentheses
     | INT                                                                       # IntExpr
-    | IDENTIFIER                                                                # IdentifierExpression
+    | IDENTIFIER '(' (expr (',' expr)*)? ')'                                    # CallExpr
     | IDENTIFIER '[' expr ']'                                                   # ArrayExpr
+    | IDENTIFIER                                                                # IdentifierExpression
     | op=('*' | '+') '[' IDENTIFIER ',' expr ':' expr ':' expr ']' '{' expr '}' # ReductionExpr
     ;
 

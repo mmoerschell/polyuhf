@@ -93,15 +93,20 @@ class ASTBuilder(PolyUHFVisitor):
     def visitIntExpr(self, ctx: PolyUHFParser.IntExprContext):  # noqa: N802
         return Int(int(ctx.INT().getText()))
 
-    # Visit a parse tree produced by PolyUHFParser#IdentifierExpression.
-    def visitIdentifierExpression(self, ctx: PolyUHFParser.IdentifierExpressionContext):  # noqa: N802
-        return Var(ctx.IDENTIFIER().getText())
+    # Visit a parse tree produced by PolyUHFParser#CallExpr.
+    def visitCallExpr(self, ctx: PolyUHFParser.CallExprContext):
+        # TODO!
+        return self.visitChildren(ctx)
 
     # Visit a parse tree produced by PolyUHFParser#ArrayExpr.
     def visitArrayExpr(self, ctx: PolyUHFParser.ArrayExprContext):  # noqa: N802
         identifier = ctx.IDENTIFIER().getText()
         index = self.visit(ctx.expr())
         return ArrayAccess(identifier, index)
+
+    # Visit a parse tree produced by PolyUHFParser#IdentifierExpression.
+    def visitIdentifierExpression(self, ctx: PolyUHFParser.IdentifierExpressionContext):  # noqa: N802
+        return Var(ctx.IDENTIFIER().getText())
 
     # Visit a parse tree produced by PolyUHFParser#ReductionExpr.
     def visitReductionExpr(self, ctx: PolyUHFParser.ReductionExprContext):  # noqa: N802
