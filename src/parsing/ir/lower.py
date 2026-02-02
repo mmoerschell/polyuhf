@@ -56,10 +56,6 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
             raise LoweringError(f"Undefined array {ast.array}")
         # Array
         base = env.vars[ast.array]
-        if not isinstance(base, IRVar):
-            raise LoweringError(
-                f"Cannot dereference anything else than variables. Found {type(base)}"
-            )
         if base.type != Type.BIGINT:
             raise LoweringError(
                 # TODO too strict? Do index arrays make sense?
