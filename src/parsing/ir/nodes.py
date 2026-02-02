@@ -23,7 +23,7 @@ class IRVar(IRNode):
 class IRArrayAccess(IRNode):
     array: IRVar  # variable, such as 'A' in 'A[i]'
     index: IRNode  # index, such as 'i' in 'A[i]'
-    type: Type = Type.BIGINT
+    type: Type  # TODO/note: enforce bigint type?
 
 
 @dataclass(frozen=True)

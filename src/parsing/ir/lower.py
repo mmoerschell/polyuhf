@@ -56,6 +56,7 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
             raise LoweringError(f"Undefined array {ast.array}")
         # Array
         base = env.vars[ast.array]
+        # ArrayAccess is only valid on BIGINT variables.
         if base.type != Type.BIGINT:
             raise LoweringError(
                 # TODO too strict? Do index arrays make sense?
@@ -65,7 +66,7 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
         index = lower_expr(ast.index, env)
         if index.type != Type.INDEX:
             f"Array index type must be INDEX, got {index.type}"
-        return IRArrayAccess(base, index, Type.BIGINT)
+        return IRArrayAccess(base, index, base.type)
 
     if isinstance(ast, Add):
         return lower_binop("+", ast.left, ast.right, env)
