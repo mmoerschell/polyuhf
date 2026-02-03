@@ -85,7 +85,8 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
         # Paper-specific constraints
         if base.type != Type.BIGINT:
             raise LoweringError(
-                f"exponentiation is only permitted on {Type.BIGINT} type, found {base.type}"
+                f"exponentiation is only permitted on {Type.BIGINT} type, "
+                f"found {base.type}"
             )
         if not isinstance(exponent, IRConst):
             raise LoweringError(
