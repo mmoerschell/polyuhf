@@ -437,6 +437,10 @@ class PolyUHFParser ( Parser ):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a PolyUHFParser.AddSubExprContext
             super().__init__(parser)
+            self.s6 = None # Token
+            self.op = list() # of Tokens
+            self.s7 = None # Token
+            self._tset103 = None # Token
             self.copyFrom(ctx)
 
         def mulDivExpr(self, i:int=None):
@@ -469,12 +473,14 @@ class PolyUHFParser ( Parser ):
             _la = self._input.LA(1)
             while _la==6 or _la==7:
                 self.state = 59
+                localctx._tset103 = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not(_la==6 or _la==7):
-                    self._errHandler.recoverInline(self)
+                    localctx._tset103 = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
+                localctx.op.append(localctx._tset103)
                 self.state = 60
                 self.mulDivExpr()
                 self.state = 65
@@ -511,6 +517,10 @@ class PolyUHFParser ( Parser ):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a PolyUHFParser.MulDivExprContext
             super().__init__(parser)
+            self.s8 = None # Token
+            self.op = list() # of Tokens
+            self.s9 = None # Token
+            self._tset134 = None # Token
             self.copyFrom(ctx)
 
         def exponentExpr(self, i:int=None):
@@ -543,12 +553,14 @@ class PolyUHFParser ( Parser ):
             _la = self._input.LA(1)
             while _la==8 or _la==9:
                 self.state = 67
+                localctx._tset134 = self._input.LT(1)
                 _la = self._input.LA(1)
                 if not(_la==8 or _la==9):
-                    self._errHandler.recoverInline(self)
+                    localctx._tset134 = self._errHandler.recoverInline(self)
                 else:
                     self._errHandler.reportMatch(self)
                     self.consume()
+                localctx.op.append(localctx._tset134)
                 self.state = 68
                 self.exponentExpr()
                 self.state = 73

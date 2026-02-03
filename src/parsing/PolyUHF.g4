@@ -24,11 +24,11 @@ expr
     ;
 
 addSubExpr
-    : mulDivExpr ( ( '+' | '-' ) mulDivExpr )*      # AddSub
+    : mulDivExpr ( op+=( '+' | '-' ) mulDivExpr )*      # AddSub
     ;
 
 mulDivExpr
-    : exponentExpr ( ( '*' | '/' ) exponentExpr )*  # MulDiv
+    : exponentExpr ( op+=( '*' | '/' ) exponentExpr )*  # MulDiv
     ;
 
 exponentExpr

@@ -1,6 +1,7 @@
 # pyright: standard
 
 from itertools import chain
+from pprint import pprint
 from typing import List, Tuple
 
 from parsing.ast.nodes import (
@@ -69,15 +70,14 @@ class ASTBuilder(PolyUHFVisitor):
         if len(nodes) == 1:
             return nodes[0]
         node = nodes[0]
-        for i, n in enumerate(nodes[1:]):
-            # TODO WARNING refactor grammar -> this breaks silently
-            op = ctx.getChild(2 * i + 1).getText()  # operator token: '+' or '-'
-            if op == "+":
-                node = Add(node, n)
-            elif op == "-":
-                node = Sub(node, n)
+        for op_token, rhs in zip(ctx.op, nodes[1:], strict=True):
+            if op_token.text == "+":
+                node = Add(node, rhs)
+            elif op_token.text == "-":
+                node = Sub(node, rhs)
             else:
-                raise DSLParseError(f"Invalid AddSub operator '{op}'")
+                # CF reaches here -> grammar is broken
+                raise RuntimeError(f"Invalid AddSub operator '{op_token.text}'")
         return node
 
     # Visit a parse tree produced by PolyUHFParser#MulDiv.
@@ -87,15 +87,14 @@ class ASTBuilder(PolyUHFVisitor):
         if len(nodes) == 1:
             return nodes[0]
         node = nodes[0]
-        for i, n in enumerate(nodes[1:]):
-            # TODO WARNING refactor grammar -> this breaks silently
-            op = ctx.getChild(2 * i + 1).getText()  # '*' or '/'
-            if op == "*":
-                node = Mul(node, n)
-            elif op == "/":
-                node = Div(node, n)
+        for op_token, rhs in zip(ctx.op, nodes[1:], strict=True):
+            if op_token.text == "*":
+                node = Mul(node, rhs)
+            elif op_token.text == "/":
+                node = Div(node, rhs)
             else:
-                raise DSLParseError(f"Invalid MulDiv operator '{op}'")
+                # CF reaches here -> grammar is broken
+                raise RuntimeError(f"Invalid MulDiv operator '{op_token.text}'")
         return node
 
     # Visit a parse tree produced by PolyUHFParser#Exponent.
