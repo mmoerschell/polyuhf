@@ -11,8 +11,8 @@ function
     ;
 
 type_annotation
-    : BIGINT
-    | INDEX
+    : TYPE_BIGINT
+    | TYPE_INDEX
     ;
 
 param_group
@@ -32,13 +32,16 @@ mulDivExpr
     ;
 
 exponentExpr
-    : primary ('^' exponentExpr)?                           # Exponent
+    : primary ('^' exponentExpr)?                       # Exponent
     ;
 
 primary
     : '-' primary                                                               # UnaryMinus
     | '(' expr ')'                                                              # Parentheses
-    | INT                                                                       # IntExpr
+    | HEX_BIGINT                                                                # HexBigIntExpr
+    | DEC_BIGINT                                                                # DecBigIntExpr
+    | HEX_INT                                                                   # HexIntExpr
+    | DEC_INT                                                                   # DecIntExpr
     | IDENTIFIER '(' (expr (',' expr)*)? ')'                                    # CallExpr
     | IDENTIFIER '[' expr ']'                                                   # ArrayExpr
     | IDENTIFIER                                                                # IdentifierExpression
@@ -47,12 +50,21 @@ primary
 
 // Lexer rules
 
-FUNCTION   : 'func' ;
-BIGINT     : 'bigint' ;
-INDEX      : 'index' ;
-IDENTIFIER : [a-zA-Z] [a-zA-Z0-9_]* ;
-INT        : [0-9]+ ;
-WS         : [ \t\r\n]+ -> skip ;
+FUNCTION    : 'func' ;
+TYPE_BIGINT : 'bigint' ;
+TYPE_INDEX  : 'index' ;
+IDENTIFIER  : [a-zA-Z] [a-zA-Z0-9_]* ;
+
+// Bigint literals
+
+HEX_BIGINT : '0x' [0-9a-fA-F]+ ('L' | 'l') ;
+DEC_BIGINT : [0-9]+ ('L' | 'l') ;
+
+// Index literals
+HEX_INT : '0x' [0-9a-fA-F]+ ;
+DEC_INT : [0-9]+ ;
+
+WS          : [ \t\r\n]+ -> skip ;
 
 // Comment rules
 

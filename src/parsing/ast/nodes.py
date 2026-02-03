@@ -17,6 +17,7 @@ class Expr(ASTNode):
 @dataclass
 class Int(Expr):
     value: int
+    type: Type  # index, bigint
 
 
 @dataclass

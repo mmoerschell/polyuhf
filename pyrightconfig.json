@@ -8,7 +8,7 @@
         ".venv"
     ],
     "ignore": [
-        "src/parsing/PolyUHF*.py"
+        "src/parsing/antlr/PolyUHF*.py"
     ],
     "typeCheckingMode": "strict",
     "reportMissingTypeStubs": false

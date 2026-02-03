@@ -115,9 +115,35 @@ class ASTBuilder(PolyUHFVisitor):
         # Remove parentheses
         return self.visit(ctx.expr())
 
-    # Visit a parse tree produced by PolyUHFParser#IntExpr.
-    def visitIntExpr(self, ctx: PolyUHFParser.IntExprContext):  # noqa: N802
-        return Int(int(ctx.INT().getText()))
+    # Visit a parse tree produced by PolyUHFParser#HexBigIntExpr.
+    def visitHexBigIntExpr(self, ctx: PolyUHFParser.HexBigIntExprContext):  # noqa: N802
+        payload = ctx.HEX_BIGINT().getText()[:-1]  # drop 'L'/'l', keep '0x'
+        try:
+            value = int(payload, 16)
+            return Int(value, Type.BIGINT)
+        except ValueError as e:
+            raise DSLParseError(f"invalid hex litteral: '{payload}'") from e
+
+    # Visit a parse tree produced by PolyUHFParser#DecBigIntExpr.
+    def visitDecBigIntExpr(self, ctx: PolyUHFParser.DecBigIntExprContext):  # noqa: N802
+        payload = ctx.DEC_BIGINT().getText()[:-1]  # drop 'L'/'l'
+        value = int(payload, 10)
+        return Int(value, Type.BIGINT)
+
+    # Visit a parse tree produced by PolyUHFParser#HexIntExpr.
+    def visitHexIntExpr(self, ctx: PolyUHFParser.HexIntExprContext):  # noqa: N802
+        payload = ctx.HEX_INT().getText()  # keep '0x'
+        try:
+            value = int(payload, 16)
+            return Int(value, Type.INDEX)
+        except ValueError as e:
+            raise DSLParseError(f"invalid hex litteral: '{payload}'") from e
+
+    # Visit a parse tree produced by PolyUHFParser#DecIntExpr.
+    def visitDecIntExpr(self, ctx: PolyUHFParser.DecIntExprContext):  # noqa: N802
+        payload = ctx.DEC_INT().getText()
+        value = int(payload, 10)
+        return Int(value, Type.INDEX)
 
     # Visit a parse tree produced by PolyUHFParser#CallExpr.
     def visitCallExpr(self, ctx: PolyUHFParser.CallExprContext):  # noqa: N802

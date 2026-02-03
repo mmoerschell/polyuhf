@@ -59,8 +59,23 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#IntExpr.
-    def visitIntExpr(self, ctx:PolyUHFParser.IntExprContext):
+    # Visit a parse tree produced by PolyUHFParser#HexBigIntExpr.
+    def visitHexBigIntExpr(self, ctx:PolyUHFParser.HexBigIntExprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#DecBigIntExpr.
+    def visitDecBigIntExpr(self, ctx:PolyUHFParser.DecBigIntExprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#HexIntExpr.
+    def visitHexIntExpr(self, ctx:PolyUHFParser.HexIntExprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#DecIntExpr.
+    def visitDecIntExpr(self, ctx:PolyUHFParser.DecIntExprContext):
         return self.visitChildren(ctx)
 
 

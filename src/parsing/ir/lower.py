@@ -41,9 +41,7 @@ class LoweringError(Exception):
 
 def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
     if isinstance(ast, Int):
-        # TODO: allow bigint literals?
-        # In that case, constants would not always have type INDEX
-        return IRConst(ast.value, Type.INDEX)
+        return IRConst(ast.value, ast.type)
 
     if isinstance(ast, Var):
         # Variable should be defined
