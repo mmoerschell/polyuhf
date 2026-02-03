@@ -82,7 +82,7 @@ class ASTBuilder(PolyUHFVisitor):
     # Visit a parse tree produced by PolyUHFParser#MulDiv.
     def visitMulDiv(self, ctx: PolyUHFParser.MulDivContext):  # noqa: N802
         # left-associative fold
-        nodes = [self.visit(child) for child in ctx.exponentExpr()]
+        nodes = [self.visit(child) for child in ctx.unaryMinusExpr()]
         if len(nodes) == 1:
             return nodes[0]
         node = nodes[0]
@@ -96,19 +96,21 @@ class ASTBuilder(PolyUHFVisitor):
                 raise RuntimeError(f"Invalid MulDiv operator '{op_token.text}'")
         return node
 
+    # Visit a parse tree produced by PolyUHFParser#UnaryMinus.
+    def visitUnaryMinus(self, ctx: PolyUHFParser.UnaryMinusContext):  # noqa: N802
+        payload = self.visit(ctx.unaryMinusExpr())
+        return Neg(payload)
+
+    # visitUnaryAtom omitted, handled by base class
+
     # Visit a parse tree produced by PolyUHFParser#Exponent.
     def visitExponent(self, ctx: PolyUHFParser.ExponentContext):  # noqa: N802
         # Recall rule: base (^ exponent)?
         base = self.visit(ctx.primary())
-        if ctx.exponentExpr():
-            exponent = self.visit(ctx.exponentExpr())
-            return Power(base, exponent)
-        return base
-
-    # Visit a parse tree produced by PolyUHFParser#UnaryMinus.
-    def visitUnaryMinus(self, ctx: PolyUHFParser.UnaryMinusContext):  # noqa: N802
-        value = self.visit(ctx.primary())
-        return Neg(value)
+        rhs = ctx.exponentExpr()
+        if rhs is None:
+            return base
+        return Power(base, self.visit(rhs))
 
     # Visit a parse tree produced by PolyUHFParser#Parentheses.
     def visitParentheses(self, ctx: PolyUHFParser.ParenthesesContext):  # noqa: N802

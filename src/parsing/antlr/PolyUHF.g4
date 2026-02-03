@@ -24,20 +24,24 @@ expr
     ;
 
 addSubExpr
-    : mulDivExpr ( op+=( '+' | '-' ) mulDivExpr )*      # AddSub
+    : mulDivExpr ( op+=( '+' | '-' ) mulDivExpr )*          # AddSub
     ;
 
 mulDivExpr
-    : exponentExpr ( op+=( '*' | '/' ) exponentExpr )*  # MulDiv
+    : unaryMinusExpr ( op+=( '*' | '/' ) unaryMinusExpr )*  # MulDiv
+    ;
+
+unaryMinusExpr
+    : '-' unaryMinusExpr                                    # UnaryMinus
+    | exponentExpr                                          # UnaryAtom
     ;
 
 exponentExpr
-    : primary ('^' exponentExpr)?                       # Exponent
+    : primary ('^' exponentExpr)?                           # Exponent
     ;
 
 primary
-    : '-' primary                                                               # UnaryMinus
-    | '(' expr ')'                                                              # Parentheses
+    : '(' expr ')'                                                              # Parentheses
     | HEX_BIGINT                                                                # HexBigIntExpr
     | DEC_BIGINT                                                                # DecBigIntExpr
     | HEX_INT                                                                   # HexIntExpr
