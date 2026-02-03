@@ -3,6 +3,8 @@
 from itertools import chain
 from typing import List, Tuple
 
+from parsing.antlr.PolyUHFParser import PolyUHFParser
+from parsing.antlr.PolyUHFVisitor import PolyUHFVisitor
 from parsing.ast.nodes import (
     Add,
     ArrayAccess,
@@ -19,8 +21,6 @@ from parsing.ast.nodes import (
     Var,
 )
 from parsing.ir.types import Type
-from parsing.PolyUHFParser import PolyUHFParser
-from parsing.PolyUHFVisitor import PolyUHFVisitor
 
 
 class DSLParseError(SyntaxError):

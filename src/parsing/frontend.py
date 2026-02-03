@@ -5,12 +5,11 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from colorama import Fore, Style
 
+from parsing.antlr.PolyUHFLexer import PolyUHFLexer
+from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.ast.ast_builder import ASTBuilder, DSLParseError
 from parsing.ir.lower import LoweringError, lower_program
 from parsing.ir.nodes import IRProgram
-
-from .PolyUHFLexer import PolyUHFLexer
-from .PolyUHFParser import PolyUHFParser
 
 
 class BailErrorListener(ErrorListener):
