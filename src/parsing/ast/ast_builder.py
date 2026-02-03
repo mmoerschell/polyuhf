@@ -1,7 +1,6 @@
 # pyright: standard
 
 from itertools import chain
-from pprint import pprint
 from typing import List, Tuple
 
 from parsing.ast.nodes import (
