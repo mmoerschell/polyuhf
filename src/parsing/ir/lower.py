@@ -97,9 +97,6 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
             )
         return IRBinOp("*", IRConst(-1, Type.INDEX), body, Type.INDEX)
 
-    if isinstance(ast, ArrayAccess):
-        raise NotImplementedError("Array access")
-
     if isinstance(ast, Reduction):
         return lower_reduction(ast, env)
 
