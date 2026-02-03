@@ -124,7 +124,7 @@ class ASTBuilder(PolyUHFVisitor):
             value = int(payload, 16)
             return Int(value, Type.BIGINT)
         except ValueError as e:
-            raise DSLParseError(f"invalid hex litteral: '{payload}'") from e
+            raise DSLParseError(f"invalid hex literal: '{payload}'") from e
 
     # Visit a parse tree produced by PolyUHFParser#DecBigIntExpr.
     def visitDecBigIntExpr(self, ctx: PolyUHFParser.DecBigIntExprContext):  # noqa: N802
@@ -139,7 +139,7 @@ class ASTBuilder(PolyUHFVisitor):
             value = int(payload, 16)
             return Int(value, Type.INDEX)
         except ValueError as e:
-            raise DSLParseError(f"invalid hex litteral: '{payload}'") from e
+            raise DSLParseError(f"invalid hex literal: '{payload}'") from e
 
     # Visit a parse tree produced by PolyUHFParser#DecIntExpr.
     def visitDecIntExpr(self, ctx: PolyUHFParser.DecIntExprContext):  # noqa: N802
