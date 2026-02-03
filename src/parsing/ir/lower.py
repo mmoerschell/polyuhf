@@ -82,8 +82,19 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
     if isinstance(ast, Power):
         base = lower_expr(ast.base, env)
         exponent = lower_expr(ast.exponent, env)
-        assert isinstance(exponent, IRConst), "Only allow constant exponents?"
-        assert base.type == Type.BIGINT, "Only allow bigints as base of powers?"
+        # Paper-specific constraints
+        if base.type != Type.BIGINT:
+            raise LoweringError(
+                f"exponentiation is only permitted on {Type.BIGINT} type, found {base.type}"
+            )
+        if not isinstance(exponent, IRConst):
+            raise LoweringError(
+                f"exponents must be constant, found {type(exponent)}"
+            )  # metatype, intentional
+        if exponent.type != Type.INDEX:
+            raise LoweringError(
+                f"exponents must have type {Type.INDEX}, found {exponent.type}"
+            )
         return IRPower(base, exponent, base.type)
 
     if isinstance(ast, Neg):
