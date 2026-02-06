@@ -3,6 +3,7 @@
 from itertools import chain
 from typing import List, Tuple
 
+from ir.types import Type
 from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.antlr.PolyUHFVisitor import PolyUHFVisitor
 from parsing.ast.nodes import (
@@ -20,7 +21,6 @@ from parsing.ast.nodes import (
     Sub,
     Var,
 )
-from parsing.ir.types import Type
 
 
 class DSLParseError(SyntaxError):

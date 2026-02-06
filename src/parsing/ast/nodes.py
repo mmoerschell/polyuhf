@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from parsing.ir.types import Type
+from ir.types import Type
 
 # ---------- Base nodes ----------
 
