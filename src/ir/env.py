@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .nodes import FunctionSignature, IRVar
+from ir.high_level.nodes import FunctionSignature, IRVar
 
 
 @dataclass

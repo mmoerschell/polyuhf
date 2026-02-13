@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from .types import Type
+from ir.types import Type
 
 
 class IRNode:

@@ -2,7 +2,7 @@ import copy
 from typing import Dict, List
 
 from ir.env import Env
-from ir.nodes import (
+from ir.high_level.nodes import (
     FunctionSignature,
     IRArrayAccess,
     IRBinOp,
