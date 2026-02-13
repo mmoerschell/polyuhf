@@ -1,6 +1,21 @@
 import copy
 from typing import Dict, List
 
+from ir.env import Env
+from ir.nodes import (
+    FunctionSignature,
+    IRArrayAccess,
+    IRBinOp,
+    IRCall,
+    IRConst,
+    IRFunction,
+    IRNode,
+    IRPower,
+    IRProgram,
+    IRReduction,
+    IRVar,
+)
+from ir.types import Type
 from parsing.ast.nodes import (
     Add,
     ArrayAccess,
@@ -17,22 +32,6 @@ from parsing.ast.nodes import (
     Sub,
     Var,
 )
-
-from .env import Env
-from .nodes import (
-    FunctionSignature,
-    IRArrayAccess,
-    IRBinOp,
-    IRCall,
-    IRConst,
-    IRFunction,
-    IRNode,
-    IRPower,
-    IRProgram,
-    IRReduction,
-    IRVar,
-)
-from .types import Type
 
 
 class LoweringError(Exception):
