@@ -1,7 +1,3 @@
-func foo(A bigint, a index) bigint {
-    A + bar(A, a)
-}
-
-func bar(X bigint, n index) bigint {
-    foo(X, n)
+func foo(a, b bigint) bigint {
+    a + b + 1L
 }

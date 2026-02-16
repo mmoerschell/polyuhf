@@ -15,7 +15,7 @@ from ir.high_level.nodes import (
     IRReduction,
     IRVar,
 )
-from ir.types import Type
+from ir.types import LoweringError, Type
 from parsing.ast.nodes import (
     Add,
     ArrayAccess,
@@ -32,10 +32,6 @@ from parsing.ast.nodes import (
     Sub,
     Var,
 )
-
-
-class LoweringError(Exception):
-    pass
 
 
 def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
@@ -188,7 +184,7 @@ def lower_call(ast: Call, env: Env) -> IRCall:
     return IRCall(function=signature.name, args=args, type=signature.return_type)
 
 
-def lower_function(ast: Function, env: Env) -> IRFunction:
+def lower_ast_function(ast: Function, env: Env) -> IRFunction:
     # Assuming no globals
     params: list[IRVar] = []
     for name, ty in ast.params:
@@ -208,7 +204,7 @@ def lower_function(ast: Function, env: Env) -> IRFunction:
     return IRFunction(ast.name, params, body, ast.return_type)
 
 
-def lower_program(ast: Program) -> IRProgram:
+def lower_ast_program(ast: Program) -> IRProgram:
     # Collect function signatures
     signatures: Dict[str, FunctionSignature] = {}
     for fn in ast.functions:
@@ -224,7 +220,7 @@ def lower_program(ast: Program) -> IRProgram:
     for f in ast.functions:
         try:
             functions.append(
-                lower_function(f, Env(vars={}, signatures=copy.deepcopy(signatures)))
+                lower_ast_function(f, Env(vars={}, signatures=copy.deepcopy(signatures)))
             )
         except LoweringError as e:
             raise LoweringError(f"in '{f.name}': {e}") from e
