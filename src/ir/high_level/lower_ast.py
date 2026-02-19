@@ -36,7 +36,7 @@ from parsing.ast.nodes import (
 
 def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
     if isinstance(ast, Int):
-        return IRConst(ast.value, ast.type)
+        return IRConst(ast.type, ast.value)
 
     if isinstance(ast, Var):
         # Variable should be defined
@@ -51,16 +51,16 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
         # Array
         base = env.vars[ast.array]
         # ArrayAccess is only valid on BIGINT variables.
-        if base.type != Type.BIGINT:
+        if base.ty != Type.BIGINT:
             raise LoweringError(
                 # TODO too strict? Do index arrays make sense?
                 f"Can only use {Type.BIGINT} as arrays. Illegal attempt on {ast.array}"
             )
         # Index
         index = lower_expr(ast.index, env)
-        if index.type != Type.INDEX:
-            f"Array index type must be INDEX, got {index.type}"
-        return IRArrayAccess(base, index, Type.BIGINT)
+        if index.ty != Type.INDEX:
+            f"Array index type must be INDEX, got {index.ty}"
+        return IRArrayAccess(Type.BIGINT, base, index)
 
     if isinstance(ast, Add):
         return lower_binop("+", ast.left, ast.right, env)
@@ -78,29 +78,29 @@ def lower_expr(ast: Expr, env: Env) -> IRNode:  # noqa: C901
         base = lower_expr(ast.base, env)
         exponent = lower_expr(ast.exponent, env)
         # Paper-specific constraints
-        if base.type != Type.BIGINT:
+        if base.ty != Type.BIGINT:
             raise LoweringError(
                 f"exponentiation is only permitted on {Type.BIGINT} type, "
-                f"found {base.type}"
+                f"found {base.ty}"
             )
         if not isinstance(exponent, IRConst):
             raise LoweringError(
                 f"exponents must be constant, found {type(exponent)}"
             )  # metatype, intentional
-        if exponent.type != Type.INDEX:
+        if exponent.ty != Type.INDEX:
             raise LoweringError(
-                f"exponents must have type {Type.INDEX}, found {exponent.type}"
+                f"exponents must have type {Type.INDEX}, found {exponent.ty}"
             )
-        return IRPower(base, exponent, base.type)
+        return IRPower(base.ty, base, exponent)
 
     if isinstance(ast, Neg):
         body = lower_expr(ast.body, env)
-        if body.type != Type.INDEX:
+        if body.ty != Type.INDEX:
             raise LoweringError(
                 f"unary minus can only be used on expressions of type {Type.INDEX}"
-                f", found {body.type}"
+                f", found {body.ty}"
             )
-        return IRBinOp("*", IRConst(-1, Type.INDEX), body, Type.INDEX)
+        return IRBinOp(Type.INDEX, "*", IRConst(Type.INDEX, -1), body)
 
     if isinstance(ast, Reduction):
         return lower_reduction(ast, env)
@@ -115,12 +115,12 @@ def lower_binop(op: str, lhs: Expr, rhs: Expr, env: Env) -> IRBinOp:
     left = lower_expr(lhs, env)
     right = lower_expr(rhs, env)
 
-    if left.type == right.type:
-        if op == "-" and left.type == Type.BIGINT:
+    if left.ty == right.ty:
+        if op == "-" and left.ty == Type.BIGINT:
             raise LoweringError("field subtraction not allowed")
-        if op == "/" and left.type == Type.BIGINT:
+        if op == "/" and left.ty == Type.BIGINT:
             raise NotImplementedError("Field division? What do we do?")
-        return IRBinOp(op, left, right, left.type)
+        return IRBinOp(left.ty, op, left, right)
 
     raise LoweringError(f"type mismatch on {op} operation")
 
@@ -131,7 +131,7 @@ def lower_reduction(ast: Reduction, env: Env) -> IRReduction:
     stop = lower_expr(ast.stop, env)
     step = lower_expr(ast.step, env)
     for n in (start, stop, step):
-        if n.type != Type.INDEX:
+        if n.ty != Type.INDEX:
             raise LoweringError("Reduction bounds must be indices")
 
     # TODO: Shadowing
@@ -142,18 +142,18 @@ def lower_reduction(ast: Reduction, env: Env) -> IRReduction:
 
     # TODO: is a copy necessary here?
     inner_env = Env(vars=dict(env.vars), signatures=env.signatures)
-    inner_env.vars[ast.var] = IRVar(ast.var, Type.INDEX)
+    inner_env.vars[ast.var] = IRVar(Type.INDEX, ast.var)
 
     body = lower_expr(ast.body, inner_env)
 
     return IRReduction(
+        body.ty,
         ast.op,
         ast.var,
         start,
         stop,
         step,
         body,
-        body.type,
     )
 
 
@@ -175,13 +175,13 @@ def lower_call(ast: Call, env: Env) -> IRCall:
 
     # Check argument types
     for arg_node, param in zip(args, signature.params):
-        if arg_node.type != param:
+        if arg_node.ty != param:
             raise LoweringError(
                 f"Function '{ast.func}' argument type mismatch for parameter "
-                f"'{param.name}': expected {param}, got {arg_node.type}"
+                f"'{param.name}': expected {param}, got {arg_node.ty}"
             )
 
-    return IRCall(function=signature.name, args=args, type=signature.return_type)
+    return IRCall(signature.return_type, signature.name, args)
 
 
 def lower_ast_function(ast: Function, env: Env) -> IRFunction:
@@ -190,18 +190,18 @@ def lower_ast_function(ast: Function, env: Env) -> IRFunction:
     for name, ty in ast.params:
         if name in env.vars:
             raise LoweringError(f"duplicate parameter '{name}' in function {ast.name}")
-        var = IRVar(name, ty)
+        var = IRVar(ty, name)
         env.vars[name] = var
         params.append(var)
     # Lower body
     body = lower_expr(ast.body, env)
     # Typechecking
-    if body.type != ast.return_type:
+    if body.ty != ast.return_type:
         raise LoweringError(
             f"function '{ast.name}' declared return type '{ast.return_type}' but body "
-            f"has type '{body.type}'"
+            f"has type '{body.ty}'"
         )
-    return IRFunction(ast.name, params, body, ast.return_type)
+    return IRFunction(ast.return_type, ast.name, params, body)
 
 
 def lower_ast_program(ast: Program) -> IRProgram:
@@ -220,7 +220,9 @@ def lower_ast_program(ast: Program) -> IRProgram:
     for f in ast.functions:
         try:
             functions.append(
-                lower_ast_function(f, Env(vars={}, signatures=copy.deepcopy(signatures)))
+                lower_ast_function(
+                    f, Env(vars={}, signatures=copy.deepcopy(signatures))
+                )
             )
         except LoweringError as e:
             raise LoweringError(f"in '{f.name}': {e}") from e
