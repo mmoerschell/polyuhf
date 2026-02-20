@@ -1,0 +1,78 @@
+from dataclasses import dataclass
+from typing import List, Optional, Tuple
+
+from ir.types import Type
+
+
+@dataclass(frozen=True)
+class CExpression:
+    pass
+
+
+@dataclass(frozen=True)
+class CVariable(CExpression):
+    name: str
+
+
+@dataclass(frozen=True)
+class CArrayAccess(CExpression):
+    name: CVariable
+    index: int
+
+
+@dataclass(frozen=True)
+class CConst(CExpression):
+    value: int
+
+
+@dataclass(frozen=True)
+class CParameter(CExpression):
+    name: str
+
+
+@dataclass(frozen=True)
+class CBinop(CExpression):
+    operator: str
+    operand1: CExpression
+    operand2: CExpression
+
+
+@dataclass(frozen=True)
+class CUnaryMinus(CExpression):
+    body: CExpression
+
+
+@dataclass(frozen=True)
+class CStatement:
+    pass
+
+
+@dataclass(frozen=True)
+class CDeclaration(CStatement):
+    type: str  # e.g., "int64_t"
+    name: str
+    init: Optional[CExpression] = None
+
+
+@dataclass(frozen=True)
+class CAssign(CStatement):
+    lhs: CVariable
+    rhs: CExpression
+
+
+@dataclass(frozen=True)
+class CReturn(CStatement):
+    expression: CExpression | None
+
+
+@dataclass(frozen=True)
+class CFunction:
+    name: str
+    parameters: List[Tuple[Type, str]]
+    statements: List[CStatement]
+    return_type: Type
+
+
+@dataclass(frozen=True)
+class CProgram:
+    functions: List[CFunction]

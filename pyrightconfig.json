@@ -4,8 +4,9 @@
     ],
     "exclude": [
         "**/__pycache__",
+        "**/node_modules",
         "**/.*",
-        ".venv"
+        ".venv",
     ],
     "ignore": [
         "src/parsing/antlr/PolyUHF*.py"

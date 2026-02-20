@@ -13,8 +13,9 @@ from colorama import Fore, Style
 
 from codegen.formatter import format_c_code
 from codegen.generator import generate_program
-from ir.c_like.lower_to_c_like import lower_hl_program
-from ir.high_level.lower_ast import lower_ast_program
+from ir.c.lower_imperative_ir import lower_imperative_program
+from ir.imperative.lower_typed_ir import lower_typed_program
+from ir.typed.lower_ast import lower_ast_program
 from ir.types import LoweringError
 from parsing.antlr.PolyUHFLexer import PolyUHFLexer
 from parsing.antlr.PolyUHFParser import PolyUHFParser
@@ -41,35 +42,40 @@ def compile_string(text: str, flags):
     parser.addErrorListener(BailErrorListener())
 
     try:
-        # 1. Parse tree
+        # Parse tree
         parse_tree = parser.program()  # first rule to apply
         # print(parse_tree.toStringTree(recog=parser))
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Parsing complete")
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Parsing")
 
-        # 2. Abstract Syntax tree
+        # Abstract Syntax tree
         builder = ASTBuilder()
         ast = builder.visit(parse_tree)
         # pprint(ast)
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] AST complete")
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] AST")
 
-        # 3. High-level IR
-        hl_ir = lower_ast_program(ast)
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] High-level IR complete")
+        # Typed IR
+        typed_ir = lower_ast_program(ast)  # type: ignore
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Typed IR")
 
-        # objgraph.show_refs(hl_ir.functions, max_depth=100, filter=lambda x:isinstance(x, IRNode), filename="hl_ir.png")
+        # Imperative IR
+        imperative_ir = lower_typed_program(typed_ir)
+        # pprint(imperative_ir)
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Imperative IR")
 
-        # 4. C-Like
-        clike = lower_hl_program(hl_ir)
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] C nodes generated")
+        # C IR
+        c_ir = lower_imperative_program(imperative_ir)
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] C nodes")
 
-        # 5. Codegen
-        text = generate_program(clike)
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen completed")
+        # Codegen (pretty-printing)
+        text = generate_program(c_ir)
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
 
-        # 6. Formatter
+        # Formatter
         if flags.format:
             text = format_c_code(text)
+            print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Optional formatting")
 
+        # Verbose output
         if flags.verbose:
             print(text)
 
