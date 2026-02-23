@@ -3,14 +3,13 @@
 
 import argparse
 import sys
-from pprint import pprint
 
 import colorama
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from colorama import Fore, Style
 
-from codegen.formatter import format_c_code
+from codegen.formatter import tidy_and_format_c
 from codegen.generator import generate_program
 from ir.c.lower_imperative_ir import lower_imperative_program
 from ir.imperative.lower_typed_ir import lower_typed_program
@@ -63,7 +62,7 @@ def compile_string(text: str, flags):
 
         # C IR
         c_ir = lower_imperative_program(imperative_ir)
-        pprint(c_ir)
+        # pprint(c_ir)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] C nodes")
 
         # Codegen (pretty-printing)
@@ -72,7 +71,7 @@ def compile_string(text: str, flags):
 
         # Formatter
         if flags.format:
-            text = format_c_code(text)
+            text = tidy_and_format_c(text)
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Optional formatting")
 
         # Verbose output

@@ -1,34 +1,57 @@
+import os
 import subprocess
 import sys
+import tempfile
 
-from colorama import Fore, Style
+import colorama
 
-CLANG_FORMAT_BINARY = "clang-format-mp-21"
+CLANG_TIDY = "clang-tidy-mp-21"
+CLANG_FORMAT = "clang-format-mp-21"
 
 
-def format_c_code(unformatted: str) -> str:
+def tidy_and_format_c(code: str) -> str:
+    fd, path = tempfile.mkstemp(suffix=".c")
     try:
-        # TODO add flags "-style=Google" or "-style=file"
-        result = subprocess.run(
-            [CLANG_FORMAT_BINARY],
-            input=unformatted,
-            text=True,
-            capture_output=True,
+        # write generated code
+        with os.fdopen(fd, "w") as f:
+            f.write(code)
+
+        # clang-tidy: semantic cleanup
+        subprocess.run(
+            [
+                CLANG_TIDY,
+                path,
+                "-checks=readability-redundant-parentheses",
+                "-fix",
+                "-format-style=none",
+                "--",
+                "-x",
+                "c",
+            ],
             check=True,
+            capture_output=True,
+            text=True,
         )
-        return result.stdout
 
-    except FileNotFoundError:
+        # # clang-format: layout cleanup
+        subprocess.run(
+            [CLANG_FORMAT, "-i", path],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        # read back result
+        with open(path) as f:
+            return f.read()
+
+    except (FileNotFoundError, subprocess.CalledProcessError) as e:
         print(
-            f"[{Fore.RED}-{Style.RESET_ALL}] clang-format binary not found",
+            f"[{colorama.Fore.RED}-{colorama.Style.RESET_ALL}] "
+            f"[clang pipeline failed] {e}",
             file=sys.stderr,
         )
-        return unformatted
+        return code
 
-    except subprocess.CalledProcessError as e:
-        print(
-            f"[{Fore.RED}-{Style.RESET_ALL}] clang-format "
-            f"failed with error:\n{e.stderr}",
-            file=sys.stderr,
-        )
-        return unformatted
+    finally:
+        os.unlink(path)
