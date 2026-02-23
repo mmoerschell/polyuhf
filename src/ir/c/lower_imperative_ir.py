@@ -1,6 +1,8 @@
 from typing import List, Tuple
 
 from ir.c.c_nodes import (
+    CAssign,
+    CBinOp,
     CConst,
     CDeclaration,
     CExpression,
@@ -10,12 +12,12 @@ from ir.c.c_nodes import (
     CStatement,
     CUnaryMinus,
     CVariable,
+    CWhile,
 )
 from ir.imperative.imperative_nodes import (
     IArrayAccess,
     IAssign,
     IBinOp,
-    IBlock,
     ICall,
     IConst,
     IDecl,
@@ -29,15 +31,6 @@ from ir.imperative.imperative_nodes import (
     IVar,
     IWhile,
 )
-from ir.typed.typed_nodes import (
-    TBinOp,
-    TConst,
-    TFunction,
-    TNode,
-    TProgram,
-    TReduction,
-    TVar,
-)
 from ir.types import Type
 
 
@@ -45,18 +38,16 @@ def lower_imperative_expression(e: IExpr) -> Tuple[CExpression, List[CStatement]
     match e:
         case IConst(Type.INDEX, value):
             return (CConst(value), [])
-        case IVar(
-            Type.INDEX, name
-        ):
+        case IVar(Type.INDEX, name):
             return (CVariable(name), [])
         case IArrayAccess(
             Type.INDEX,
         ):
             raise NotImplementedError(type(e))
-        case IBinOp(
-            Type.INDEX,
-        ):
-            raise NotImplementedError(type(e))
+        case IBinOp(Type.INDEX, op, left, right):
+            ll, stmts_left = lower_imperative_expression(left)
+            rr, stmts_right = lower_imperative_expression(right)
+            return (CBinOp(op, ll, rr), stmts_left + stmts_right)
         case IUnaryMinus(Type.INDEX, body):
             bb, stmts = lower_imperative_expression(body)
             return (CUnaryMinus(bb), stmts)
@@ -75,24 +66,34 @@ def lower_imperative_expression(e: IExpr) -> Tuple[CExpression, List[CStatement]
 def lower_imperative_statement(stmt: IStmt) -> List[CStatement]:
     output: List[CStatement] = []
     match stmt:
-        case IDecl(ty, name, init):
-            # Type
-            c_type = "struct bigint" if ty == Type.BIGINT else "int64_t"
+        case IDecl(IVar(ty, name), init):
+            # # Type
+            # c_type = "struct bigint" if ty == Type.BIGINT else "int64_t"
             # Initializer
             if init:
                 c_expr, intermediate_statments = lower_imperative_expression(init)
                 output.extend(intermediate_statments)
-                output.append(CDeclaration(c_type, name, c_expr))
+                output.append(CDeclaration(ty, name, c_expr))
             else:
-                output.append(CDeclaration(c_type, name, None))
-        case IAssign():
-            raise NotImplementedError(type(stmt))
+                output.append(CDeclaration(ty, name, None))
+        case IAssign(lhs, rhs):
+            lo_rhs, stmts_rhs = lower_imperative_expression(rhs)
+            match lhs:
+                case IVar(_, name):
+                    return stmts_rhs + [CAssign(CVariable(name), lo_rhs)]
+                case IArrayAccess():
+                    raise NotImplementedError()
+                case _:
+                    raise ValueError(f"invalid lhs of assignment {lhs}")
         case IReturn(expr):
             c_expr, intermediate_statments = lower_imperative_expression(expr)
             output.extend(intermediate_statments)
             output.append(CReturn(c_expr))
-        case IWhile():
-            raise NotImplementedError(type(stmt))
+        case IWhile(cond, body):
+            lo_cond, stmts_cond = lower_imperative_expression(cond)
+            stmts_body = sum(map(lower_imperative_statement, body.stmts), [])  # type: ignore
+            # recompute condition after every iteration
+            return stmts_cond + [CWhile(lo_cond, stmts_body + stmts_cond)]
         case _:
             raise ValueError(f"undefined statement {type(stmt)}")
     return output

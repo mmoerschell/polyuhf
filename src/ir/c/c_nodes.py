@@ -31,7 +31,7 @@ class CParameter(CExpression):
 
 
 @dataclass(frozen=True)
-class CBinop(CExpression):
+class CBinOp(CExpression):
     operator: str
     operand1: CExpression
     operand2: CExpression
@@ -49,7 +49,7 @@ class CStatement:
 
 @dataclass(frozen=True)
 class CDeclaration(CStatement):
-    type: str  # e.g., "int64_t"
+    type: Type
     name: str
     init: Optional[CExpression] = None
 
@@ -63,6 +63,12 @@ class CAssign(CStatement):
 @dataclass(frozen=True)
 class CReturn(CStatement):
     expression: CExpression | None
+
+
+@dataclass(frozen=True)
+class CWhile(CStatement):
+    condition: CExpression
+    statements: List[CStatement]
 
 
 @dataclass(frozen=True)

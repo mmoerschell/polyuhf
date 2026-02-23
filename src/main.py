@@ -6,7 +6,6 @@ import sys
 from pprint import pprint
 
 import colorama
-import objgraph
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from colorama import Fore, Style
@@ -64,6 +63,7 @@ def compile_string(text: str, flags):
 
         # C IR
         c_ir = lower_imperative_program(imperative_ir)
+        pprint(c_ir)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] C nodes")
 
         # Codegen (pretty-printing)

@@ -2,9 +2,11 @@ from typing import List, Tuple
 
 from ir.imperative.imperative_nodes import (
     IArrayAccess,
+    IAssign,
     IBinOp,
     IBlock,
     IConst,
+    IDecl,
     IExpr,
     IFunction,
     IParam,
@@ -13,6 +15,7 @@ from ir.imperative.imperative_nodes import (
     IStmt,
     IUnaryMinus,
     IVar,
+    IWhile,
 )
 from ir.typed.typed_nodes import (
     TArrayAccess,
@@ -27,6 +30,16 @@ from ir.typed.typed_nodes import (
     TUnaryMinus,
     TVar,
 )
+from ir.types import Type
+
+variable_name_counter = 0
+
+
+def fresh_var_name() -> str:
+    global variable_name_counter
+    variable_name_counter += 1
+    return f"_{variable_name_counter}"
+
 
 
 def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
@@ -51,8 +64,35 @@ def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
             raise NotImplementedError()
         case TCall():
             raise NotImplementedError()
-        case TReduction():
-            raise NotImplementedError()
+        case TReduction(ty, op, var, start, stop, step, body):
+            output: List[IStmt] = []
+            # Lower start, stop, step expressions
+            lo_start, stmts_start = lower_typed_expression(start)
+            lo_stop, stmts_stop = lower_typed_expression(stop)
+            lo_step, stmts_step = lower_typed_expression(step)
+            output.extend(stmts_start + stmts_stop + stmts_step)
+            # Declare accumulator
+            accumulator = IVar(ty, fresh_var_name() + "_acc")
+            output.append(IDecl(accumulator, IConst(ty, 0 if op == "+" else 1)))
+            # Declare loop index variable
+            loop_index = IVar(Type.INDEX, var)
+            output.append(IDecl(loop_index, lo_start))
+            # Loop condition
+            cond = IBinOp(Type.INDEX, "<", loop_index, lo_stop)
+            # Loop body
+            lo_body, stmts_body = lower_typed_expression(body)
+            body_block = IBlock(
+                # Loop body computation
+                # TODO: Loop-invariant code motion?
+                stmts_body
+                 + [
+                # Loop body reduction
+                IAssign(accumulator, IBinOp(ty, op, accumulator, lo_body)),
+                # Loop increment
+                IAssign(loop_index, IBinOp(Type.INDEX, "+", loop_index, lo_step)),
+            ])
+            output.append(IWhile(cond, body_block))
+            return (accumulator, output)
         case _:
             raise RuntimeError(type(e))
 

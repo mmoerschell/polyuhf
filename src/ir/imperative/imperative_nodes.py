@@ -63,8 +63,7 @@ class IBlock(IStmt):
 class IDecl(IStmt):
     """Variable declaration with optional initializer."""
 
-    ty: Type
-    name: str
+    var: IVar
     init: Optional[IExpr] = None
 
 
