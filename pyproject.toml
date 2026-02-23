@@ -3,13 +3,13 @@
 lint.select = ["E", "W", "F", "C", "N", "I", "B"]
 
 exclude = [
-    "src/parsing/PolyUHFLexer.py",
-    "src/parsing/PolyUHFParser.py",
-    "src/parsing/PolyUHFVisitor.py",
+    "src/parsing/antlr/PolyUHFLexer.py",
+    "src/parsing/antlr/PolyUHFParser.py",
+    "src/parsing/antlr/PolyUHFVisitor.py",
 ]
 
 # Line length
 line-length = 88
 
 # Enable auto-fixing where possible
-lint.fixable = ["E", "W", "F", "I", "B"]  # Ruff will only auto-fix these
+lint.fixable = ["E", "W", "F", "I", "B"]  # Only auto-fix these
