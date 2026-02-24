@@ -4,6 +4,6 @@ M: message
 n (B in the paper): message size
 */
 
-func nmh(R, M bigint, n index) bigint {
+func nmh(R, M []bigint, n index) bigint {
     +[i,0:n:2]{(M[i] + R[i]) * (M[i+1] + R[i+1])}
 }
