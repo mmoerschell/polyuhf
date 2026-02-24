@@ -10,18 +10,19 @@ class CExpression:
 
 
 @dataclass(frozen=True)
-class CVariable(CExpression):
+class CIdentifier(CExpression):
     name: str
 
 
 @dataclass(frozen=True)
 class CArrayAccess(CExpression):
-    var: CVariable
+    array: CIdentifier
     index: CExpression
 
 
 @dataclass(frozen=True)
 class CConst(CExpression):
+    ty: Type
     value: int
 
 
@@ -43,6 +44,12 @@ class CUnaryMinus(CExpression):
 
 
 @dataclass(frozen=True)
+class CFunctionCall(CExpression):
+    func: str
+    args: List[CExpression]
+
+
+@dataclass(frozen=True)
 class CStatement:
     pass
 
@@ -56,7 +63,7 @@ class CDeclaration(CStatement):
 
 @dataclass(frozen=True)
 class CAssign(CStatement):
-    lhs: CVariable
+    lhs: CExpression  # must be identifier or array
     rhs: CExpression
 
 

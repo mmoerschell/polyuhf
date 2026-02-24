@@ -5,13 +5,15 @@ from ir.c.c_nodes import (
     CConst,
     CDeclaration,
     CExpression,
+    CFunctionCall,
+    CIdentifier,
     CProgram,
     CReturn,
     CStatement,
-    CVariable,
     CWhile,
 )
-from ir.types import ArrayType, BigIntType, IndexType, Type
+from ir.c.lower_imperative_ir import BUILTIN_BIGINT_FUNCTIONS
+from ir.types import ArrayType, BigIntType, IndexType, LoweringError, Type
 
 
 # One level higher ATM
@@ -31,15 +33,32 @@ def generate_type(t: Type) -> str:
 
 def generate_expr(expr: CExpression) -> str:
     match expr:
-        case CVariable(name):
+        case CIdentifier(name):
             return name
-        case CArrayAccess(var, index):
-            return f"{generate_expr(var)}[{generate_expr(index)}]"
-        case CConst(value):
-            return str(value)
+        case CArrayAccess(array, index):
+            return f"{generate_expr(array)}[{generate_expr(index)}]"
+        case CConst(ty, value):
+            match ty:
+                case IndexType():
+                    return str(value)
+                case BigIntType():
+                    value = 0xDEADBEEF
+                    LIMBS = 6
+                    LAMBD = 48
+                    bits = [int(x) for x in bin(value)[2:]][::-1]  # LSB first
+                    limbs = [
+                        bits[i * LAMBD : (i + 1) * LAMBD][::-1] for i in range(LIMBS)
+                    ]  # MSB first
+                    limbs = ["0b0" + "".join([str(y) for y in x]) for x in limbs]
+                    return f"{{{','.join(limbs)}}}"
+                case ArrayType(_):
+                    raise LoweringError("array-typed constants?")
         case CBinOp(op, lhs, rhs):
             # Parentheses: better safe than sorry
             return f"(({generate_expr(lhs)}){op}({generate_expr(rhs)}))"
+        case CFunctionCall(func, args):
+            chained_args = ",".join(map(generate_expr, args))
+            return f"{func}({chained_args})"
         case _:
             raise NotImplementedError(f"missing printing pass for expr {type(expr)}")
 
@@ -50,7 +69,9 @@ def generate_stmt(stmt: CStatement) -> str:
             return f"{generate_type(ty)} {name};"
         case CDeclaration(ty, name, CExpression() as init):
             return f"{generate_type(ty)} {name}={generate_expr(init)};"
-        case CAssign(CVariable(name), rhs):
+        case CAssign(CIdentifier(name), rhs):
+            return f"{name}={generate_expr(rhs)};"
+        case CAssign(CArrayAccess(CIdentifier(name)), rhs):
             return f"{name}={generate_expr(rhs)};"
         case CReturn(None):
             return "return;"
@@ -60,23 +81,41 @@ def generate_stmt(stmt: CStatement) -> str:
             body = "".join(map(generate_stmt, stmts))
             return f"while({generate_expr(cond)}){{{body}}}"
         case _:
-            raise NotImplementedError(f"missing printing pass for {type(stmt)}")
+            raise NotImplementedError(f"missing printing pass for {type(stmt)} {stmt}")
 
 
 def generate_program(p: CProgram) -> str:
-    # Imports
+    # Includes
     output = ["#include <stdint.h>", ""]
 
-    # TODO data-structure declarations
+    # Data-structure declarations
+    output.extend(
+        [
+            "typedef struct { int64_t limbs[6]; } bigint_t;",
+        ]
+    )
+
+    # Built-ins
+    output.extend(
+        [
+            f"bigint_t {BUILTIN_BIGINT_FUNCTIONS['+']} (bigint_t a, bigint_t b)",
+            "{",
+            "bigint_t acc;",
+            "for (int64_t i = 0; i < 6; ++i)",
+            "acc.limbs[i] = a.limbs[i] + b.limbs[i];",
+            "return acc;",
+            "}",
+        ]
+    )
 
     # Functions
     for f in p.functions:
         # Params
-        params = ",".join([
-            f"{generate_type(ty)} {name}" for ty, name in f.parameters
-        ])
+        params = ",".join([f"{generate_type(ty)} {name}" for ty, name in f.parameters])
         output.append(f"{generate_type(f.return_type)} {f.name}({params})" + "{")
         # Statements
+        for s in f.statements:
+            assert s
         output.extend(map(generate_stmt, f.statements))
         # Closing curly brace
         output.append("}")
