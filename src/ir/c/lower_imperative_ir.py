@@ -34,33 +34,60 @@ from ir.imperative.imperative_nodes import (
 from ir.types import Type
 
 
-def lower_imperative_expression(e: IExpr) -> Tuple[CExpression, List[CStatement]]:
-    match e:
+def lower_imperative_index_expr(expr: IExpr) -> Tuple[CExpression, List[CStatement]]:
+    assert expr.ty == Type.INDEX
+    match expr:
         case IConst(Type.INDEX, value):
             return (CConst(value), [])
         case IVar(Type.INDEX, name):
             return (CVariable(name), [])
-        case IArrayAccess(
-            Type.INDEX,
-        ):
-            raise NotImplementedError(type(e))
+        case IArrayAccess(Type.INDEX):
+            raise NotImplementedError(type(expr))
         case IBinOp(Type.INDEX, op, left, right):
-            ll, stmts_left = lower_imperative_expression(left)
-            rr, stmts_right = lower_imperative_expression(right)
+            ll, stmts_left = lower_imperative_index_expr(left)
+            rr, stmts_right = lower_imperative_index_expr(right)
             return (CBinOp(op, ll, rr), stmts_left + stmts_right)
         case IUnaryMinus(Type.INDEX, body):
-            bb, stmts = lower_imperative_expression(body)
+            bb, stmts = lower_imperative_index_expr(body)
             return (CUnaryMinus(bb), stmts)
-        case IPower(
-            Type.INDEX,
-        ):
-            raise NotImplementedError(type(e))
-        case ICall(
-            Type.INDEX,
-        ):
-            raise NotImplementedError(type(e))
+        case IPower(Type.INDEX):
+            raise NotImplementedError(type(expr))
+        case ICall(Type.INDEX):
+            raise NotImplementedError(type(expr))
         case _:
-            raise RuntimeError(f"{type(e)} {e.ty}")
+            raise NotImplementedError(type(expr))
+
+
+def lower_imperative_bigint_expr(expr: IExpr) -> Tuple[CExpression, List[CStatement]]:
+    assert expr.ty == Type.BIGINT
+    match expr:
+        case IConst(Type.BIGINT, value):
+            return (CConst(value), [])
+        case IVar(Type.BIGINT, name):
+            return (CVariable(name), [])
+        case IArrayAccess(Type.BIGINT):
+            raise NotImplementedError(type(expr))
+        case IBinOp(Type.BIGINT, op, left, right):
+            ll, stmts_left = lower_imperative_bigint_expr(left)
+            rr, stmts_right = lower_imperative_bigint_expr(right)
+            return (CBinOp(op, ll, rr), stmts_left + stmts_right)
+        case IUnaryMinus(Type.BIGINT, body):
+            bb, stmts = lower_imperative_bigint_expr(body)
+            return (CUnaryMinus(bb), stmts)
+        case IPower(Type.BIGINT):
+            raise NotImplementedError(type(expr))
+        case ICall(Type.BIGINT):
+            raise NotImplementedError(type(expr))
+        case _:
+            raise NotImplementedError(type(expr))
+
+
+def lower_imperative_expression(expr: IExpr) -> Tuple[CExpression, List[CStatement]]:
+    match expr.ty:
+        case Type.INDEX:
+            return lower_imperative_index_expr(expr)
+        case Type.BIGINT:
+            return lower_imperative_bigint_expr(expr)
 
 
 def lower_imperative_statement(stmt: IStmt) -> List[CStatement]:
