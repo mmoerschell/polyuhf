@@ -11,8 +11,7 @@ function
     ;
 
 type_annotation
-    : TYPE_BIGINT
-    | TYPE_INDEX
+    : TYPE_ANNOTATION
     ;
 
 param_group
@@ -55,9 +54,13 @@ primary
 // Lexer rules
 
 FUNCTION    : 'func' ;
+TYPE_ANNOTATION
+    : '[' DEC_INT? ']' (TYPE_BIGINT | TYPE_INDEX)
+    | TYPE_BIGINT
+    | TYPE_INDEX
+    ;
 TYPE_BIGINT : 'bigint' ;
 TYPE_INDEX  : 'index' ;
-IDENTIFIER  : [a-zA-Z] [a-zA-Z0-9_]* ;
 
 // Bigint literals
 
@@ -67,6 +70,9 @@ DEC_BIGINT : [0-9]+ ('L' | 'l') ;
 // Index literals
 HEX_INT : '0x' [0-9a-fA-F]+ ;
 DEC_INT : [0-9]+ ;
+
+// Identifiers
+IDENTIFIER  : [a-zA-Z] [a-zA-Z0-9_]* ;
 
 WS          : [ \t\r\n]+ -> skip ;
 

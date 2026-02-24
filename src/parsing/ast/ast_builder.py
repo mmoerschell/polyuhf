@@ -3,7 +3,7 @@
 from itertools import chain
 from typing import List, Tuple
 
-from ir.types import Type
+from ir.types import ArrayType, BigIntType, IndexType, Type
 from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.antlr.PolyUHFVisitor import PolyUHFVisitor
 from parsing.ast.nodes import (
@@ -44,13 +44,24 @@ class ASTBuilder(PolyUHFVisitor):
 
     # Visit a parse tree produced by PolyUHFParser#type_annotation.
     def visitType_annotation(self, ctx: PolyUHFParser.Type_annotationContext):  # noqa: N802
-        token = ctx.getText()
-        if token == "bigint":
-            return Type.BIGINT
-        elif token == "index":
-            return Type.INDEX
+        annotation: str = ctx.TYPE_ANNOTATION().getText()
+        if annotation == "index":
+            return IndexType()
+        elif annotation == "bigint":
+            return BigIntType()
+        elif annotation.startswith("["):
+            close = annotation.index("]")
+            size_part = annotation[1:close]
+            elem_part = annotation[close + 1 :]
+            size = int(size_part) if size_part else None
+            if elem_part == "index":
+                return ArrayType(size, IndexType())
+            elif elem_part == "bigint":
+                return ArrayType(size, BigIntType())
+            else:
+                raise DSLParseError(f"Unknown array element type '{annotation}'")
         else:
-            raise DSLParseError(f"Unknown or missing type annotation '{token}'")
+            raise DSLParseError(f"Unknown or missing type annotation '{annotation}'")
 
     # Visit a parse tree produced by PolyUHFParser#param_group.
     def visitParam_group(self, ctx: PolyUHFParser.Param_groupContext):  # noqa: N802
@@ -122,7 +133,7 @@ class ASTBuilder(PolyUHFVisitor):
         payload = ctx.HEX_BIGINT().getText()[:-1]  # drop 'L'/'l', keep '0x'
         try:
             value = int(payload, 16)
-            return Int(value, Type.BIGINT)
+            return Int(value, BigIntType())
         except ValueError as e:
             raise DSLParseError(f"invalid hex literal: '{payload}'") from e
 
@@ -130,14 +141,14 @@ class ASTBuilder(PolyUHFVisitor):
     def visitDecBigIntExpr(self, ctx: PolyUHFParser.DecBigIntExprContext):  # noqa: N802
         payload = ctx.DEC_BIGINT().getText()[:-1]  # drop 'L'/'l'
         value = int(payload, 10)
-        return Int(value, Type.BIGINT)
+        return Int(value, BigIntType())
 
     # Visit a parse tree produced by PolyUHFParser#HexIntExpr.
     def visitHexIntExpr(self, ctx: PolyUHFParser.HexIntExprContext):  # noqa: N802
         payload = ctx.HEX_INT().getText()  # keep '0x'
         try:
             value = int(payload, 16)
-            return Int(value, Type.INDEX)
+            return Int(value, IndexType())
         except ValueError as e:
             raise DSLParseError(f"invalid hex literal: '{payload}'") from e
 
@@ -145,7 +156,7 @@ class ASTBuilder(PolyUHFVisitor):
     def visitDecIntExpr(self, ctx: PolyUHFParser.DecIntExprContext):  # noqa: N802
         payload = ctx.DEC_INT().getText()
         value = int(payload, 10)
-        return Int(value, Type.INDEX)
+        return Int(value, IndexType())
 
     # Visit a parse tree produced by PolyUHFParser#CallExpr.
     def visitCallExpr(self, ctx: PolyUHFParser.CallExprContext):  # noqa: N802
