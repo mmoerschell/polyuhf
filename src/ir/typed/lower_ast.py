@@ -16,8 +16,8 @@ from ir.typed.typed_nodes import (
     TUnaryMinus,
     TVar,
 )
-from ir.types import LoweringError, Type
-from parsing.ast.nodes import (
+from ir.types import ArrayType, BigIntType, IndexType, LoweringError
+from parsing.ast.ast_nodes import (
     Add,
     ArrayAccess,
     Call,
@@ -52,17 +52,18 @@ def lower_ast_expr(ast: Expr, env: Env) -> TNode:  # noqa: C901
             raise LoweringError(f"Undefined array {ast.array}")
         # Array
         base = env.vars[ast.array]
-        # ArrayAccess is only valid on BIGINT variables.
-        if base.ty != Type.BIGINT:
+        # Base must be an array
+        if not isinstance(base.ty, ArrayType):
             raise LoweringError(
                 # TODO too strict? Do index arrays make sense?
-                f"Can only use {Type.BIGINT} as arrays. Illegal attempt on {ast.array}"
+                f"Bracket notation implies a mandatory array type. "
+                f"Illegal attempt on {ast.array}"
             )
         # Index
         index = lower_ast_expr(ast.index, env)
-        if index.ty != Type.INDEX:
-            f"Array index type must be INDEX, got {index.ty}"
-        return TArrayAccess(Type.BIGINT, base, index)
+        if index.ty != IndexType():
+            f"Array index type must be index, got {index.ty}"
+        return TArrayAccess(base.ty.elem, base, index)
 
     if isinstance(ast, Add):
         return lower_ast_binop("+", ast.left, ast.right, env)
@@ -80,29 +81,29 @@ def lower_ast_expr(ast: Expr, env: Env) -> TNode:  # noqa: C901
         base = lower_ast_expr(ast.base, env)
         exponent = lower_ast_expr(ast.exponent, env)
         # Paper-specific constraints
-        if base.ty != Type.BIGINT:
+        if base.ty != BigIntType():
             raise LoweringError(
-                f"exponentiation is only permitted on {Type.BIGINT} type, "
+                f"exponentiation is only permitted on {BigIntType()} type, "
                 f"found {base.ty}"
             )
         if not isinstance(exponent, TConst):
             raise LoweringError(
                 f"exponents must be constant, found {type(exponent)}"
             )  # metatype, intentional
-        if exponent.ty != Type.INDEX:
+        if exponent.ty != IndexType():
             raise LoweringError(
-                f"exponents must have type {Type.INDEX}, found {exponent.ty}"
+                f"exponents must have type {IndexType()}, found {exponent.ty}"
             )
         return TPower(base.ty, base, exponent)
 
     if isinstance(ast, Neg):
         body = lower_ast_expr(ast.body, env)
-        if body.ty != Type.INDEX:
+        if body.ty != IndexType():
             raise LoweringError(
-                f"unary minus can only be used on expressions of type {Type.INDEX}"
+                f"unary minus can only be used on expressions of type {IndexType()}"
                 f", found {body.ty}"
             )
-        return TUnaryMinus(Type.INDEX, body)
+        return TUnaryMinus(IndexType(), body)
 
     if isinstance(ast, Reduction):
         return lower_ast_reduction(ast, env)
@@ -118,9 +119,9 @@ def lower_ast_binop(op: str, lhs: Expr, rhs: Expr, env: Env) -> TBinOp:
     right = lower_ast_expr(rhs, env)
 
     if left.ty == right.ty:
-        if op == "-" and left.ty == Type.BIGINT:
+        if op == "-" and left.ty == BigIntType():
             raise LoweringError("field subtraction not allowed")
-        if op == "/" and left.ty == Type.BIGINT:
+        if op == "/" and left.ty == BigIntType():
             raise NotImplementedError("Field division? What do we do?")
         return TBinOp(left.ty, op, left, right)
 
@@ -133,7 +134,7 @@ def lower_ast_reduction(ast: Reduction, env: Env) -> TReduction:
     stop = lower_ast_expr(ast.stop, env)
     step = lower_ast_expr(ast.step, env)
     for n in (start, stop, step):
-        if n.ty != Type.INDEX:
+        if n.ty != IndexType():
             raise LoweringError("Reduction bounds must be indices")
 
     # TODO: Shadowing
@@ -144,7 +145,7 @@ def lower_ast_reduction(ast: Reduction, env: Env) -> TReduction:
 
     # TODO: is a copy necessary here?
     inner_env = Env(vars=dict(env.vars), signatures=env.signatures)
-    inner_env.vars[ast.var] = TVar(Type.INDEX, ast.var)
+    inner_env.vars[ast.var] = TVar(IndexType(), ast.var)
 
     body = lower_ast_expr(ast.body, inner_env)
 
@@ -166,7 +167,11 @@ def lower_ast_call(ast: Call, env: Env) -> TCall:
     signature = env.signatures[ast.func]
 
     # Lower arguments
-    args = [lower_ast_expr(arg, env) for arg in ast.args]
+    args: List[TNode] = []
+    for arg in ast.args:
+        lo = lower_ast_expr(arg, env)
+        assert isinstance(lo, TVar)
+        args.append(lo)
 
     # Check number of arguments
     if len(args) != len(signature.params):
@@ -180,7 +185,7 @@ def lower_ast_call(ast: Call, env: Env) -> TCall:
         if arg_node.ty != param:
             raise LoweringError(
                 f"Function '{ast.func}' argument type mismatch for parameter "
-                f"'{param.name}': expected {param}, got {arg_node.ty}"
+                f"'{arg_node.name}': expected {param}, got {arg_node.ty}"  # type: ignore
             )
 
     return TCall(signature.return_type, signature.name, args)
@@ -197,11 +202,17 @@ def lower_ast_function(ast: Function, env: Env) -> TFunction:
         params.append(var)
     # Lower body
     body = lower_ast_expr(ast.body, env)
+    # Only allow subset of return types
+    if ast.return_type not in [IndexType(), BigIntType()]:
+        raise LoweringError(
+            f"function '{ast.name}' declared "
+            f"return type {ast.return_type}, but only index or bigint are allowed"
+        )
     # Typechecking
     if body.ty != ast.return_type:
         raise LoweringError(
-            f"function '{ast.name}' declared return type '{ast.return_type}' but body "
-            f"has type '{body.ty}'"
+            f"function '{ast.name}' declared return type '{ast.return_type}' but "
+            f"its body has type '{body.ty}'"
         )
     return TFunction(ast.name, params, ast.return_type, body)
 

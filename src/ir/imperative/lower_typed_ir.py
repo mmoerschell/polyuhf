@@ -30,7 +30,7 @@ from ir.typed.typed_nodes import (
     TUnaryMinus,
     TVar,
 )
-from ir.types import Type
+from ir.types import IndexType
 
 variable_name_counter = 0
 
@@ -75,10 +75,10 @@ def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
             accumulator = IVar(ty, fresh_var_name() + "_acc")
             output.append(IDecl(accumulator, IConst(ty, 0 if op == "+" else 1)))
             # Declare loop index variable
-            loop_index = IVar(Type.INDEX, var)
+            loop_index = IVar(IndexType(), var)
             output.append(IDecl(loop_index, lo_start))
             # Loop condition
-            cond = IBinOp(Type.INDEX, "<", loop_index, lo_stop)
+            cond = IBinOp(IndexType(), "<", loop_index, lo_stop)
             # Loop body
             lo_body, stmts_body = lower_typed_expression(body)
             body_block = IBlock(
@@ -89,7 +89,7 @@ def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
                 # Loop body reduction
                 IAssign(accumulator, IBinOp(ty, op, accumulator, lo_body)),
                 # Loop increment
-                IAssign(loop_index, IBinOp(Type.INDEX, "+", loop_index, lo_step)),
+                IAssign(loop_index, IBinOp(IndexType(), "+", loop_index, lo_step)),
             ])
             output.append(IWhile(cond, body_block))
             return (accumulator, output)

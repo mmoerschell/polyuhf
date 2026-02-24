@@ -1,6 +1,7 @@
 from typing import List, Tuple
 
 from ir.c.c_nodes import (
+    CArrayAccess,
     CAssign,
     CBinOp,
     CConst,
@@ -31,63 +32,76 @@ from ir.imperative.imperative_nodes import (
     IVar,
     IWhile,
 )
-from ir.types import Type
+from ir.types import BigIntType, IndexType
 
 
 def lower_imperative_index_expr(expr: IExpr) -> Tuple[CExpression, List[CStatement]]:
-    assert expr.ty == Type.INDEX
+    assert isinstance(expr.ty, IndexType)
     match expr:
-        case IConst(Type.INDEX, value):
-            return (CConst(value), [])
-        case IVar(Type.INDEX, name):
-            return (CVariable(name), [])
-        case IArrayAccess(Type.INDEX):
+        case IConst(IndexType(), value):
+            return CConst(value), []
+        case IVar(IndexType(), name):
+            return CVariable(name), []
+        case IArrayAccess(IndexType(), array, index):
+            aa = CVariable(array.name)
+            ii, stmts_ii = lower_imperative_expr(index)
+            assert isinstance(aa, CVariable)
+            return CArrayAccess(aa, ii), stmts_ii
+        case IBinOp(IndexType(), op, left, right):
+            ll, stmts_left = lower_imperative_expr(left)
+            rr, stmts_right = lower_imperative_expr(right)
+            return CBinOp(op, ll, rr), stmts_left + stmts_right
+        case IUnaryMinus(IndexType(), body):
+            bb, stmts = lower_imperative_expr(body)
+            return CUnaryMinus(bb), stmts
+        case IPower(IndexType()):
             raise NotImplementedError(type(expr))
-        case IBinOp(Type.INDEX, op, left, right):
-            ll, stmts_left = lower_imperative_index_expr(left)
-            rr, stmts_right = lower_imperative_index_expr(right)
-            return (CBinOp(op, ll, rr), stmts_left + stmts_right)
-        case IUnaryMinus(Type.INDEX, body):
-            bb, stmts = lower_imperative_index_expr(body)
-            return (CUnaryMinus(bb), stmts)
-        case IPower(Type.INDEX):
-            raise NotImplementedError(type(expr))
-        case ICall(Type.INDEX):
+        case ICall(IndexType()):
             raise NotImplementedError(type(expr))
         case _:
             raise NotImplementedError(type(expr))
 
 
 def lower_imperative_bigint_expr(expr: IExpr) -> Tuple[CExpression, List[CStatement]]:
-    assert expr.ty == Type.BIGINT
+    assert isinstance(expr.ty, BigIntType)
     match expr:
-        case IConst(Type.BIGINT, value):
-            return (CConst(value), [])
-        case IVar(Type.BIGINT, name):
-            return (CVariable(name), [])
-        case IArrayAccess(Type.BIGINT):
+        case IConst(BigIntType(), value):
+            return CConst(value), []
+        case IVar(BigIntType(), name):
+            return CVariable(name), []
+        case IArrayAccess(BigIntType()):
             raise NotImplementedError(type(expr))
-        case IBinOp(Type.BIGINT, op, left, right):
-            ll, stmts_left = lower_imperative_bigint_expr(left)
-            rr, stmts_right = lower_imperative_bigint_expr(right)
-            return (CBinOp(op, ll, rr), stmts_left + stmts_right)
-        case IUnaryMinus(Type.BIGINT, body):
-            bb, stmts = lower_imperative_bigint_expr(body)
-            return (CUnaryMinus(bb), stmts)
-        case IPower(Type.BIGINT):
+        case IBinOp(BigIntType(), op, left, right):
+            ll, stmts_left = lower_imperative_expr(left)
+            rr, stmts_right = lower_imperative_expr(right)
+            return CBinOp(op, ll, rr), stmts_left + stmts_right
+        case IUnaryMinus(BigIntType(), body):
+            bb, stmts = lower_imperative_expr(body)
+            return CUnaryMinus(bb), stmts
+        case IPower(BigIntType()):
             raise NotImplementedError(type(expr))
-        case ICall(Type.BIGINT):
+        case ICall(BigIntType()):
             raise NotImplementedError(type(expr))
         case _:
             raise NotImplementedError(type(expr))
 
 
-def lower_imperative_expression(expr: IExpr) -> Tuple[CExpression, List[CStatement]]:
+# def lower_imperative_array_expr(expr: IExpr) -> Tuple[CExpression, List[CStatement]]:
+#     assert isinstance(expr.ty, ArrayType)
+
+#     pass
+
+
+def lower_imperative_expr(expr: IExpr) -> Tuple[CExpression, List[CStatement]]:
     match expr.ty:
-        case Type.INDEX:
+        case IndexType():
             return lower_imperative_index_expr(expr)
-        case Type.BIGINT:
+        case BigIntType():
             return lower_imperative_bigint_expr(expr)
+        case _:
+            raise NotImplementedError()
+        # case ArrayType():
+        #     return lower_imperative_array_expr(expr)
 
 
 def lower_imperative_statement(stmt: IStmt) -> List[CStatement]:
@@ -95,16 +109,16 @@ def lower_imperative_statement(stmt: IStmt) -> List[CStatement]:
     match stmt:
         case IDecl(IVar(ty, name), init):
             # # Type
-            # c_type = "struct bigint" if ty == Type.BIGINT else "int64_t"
+            # c_type = "struct bigint" if ty == BigIntType() else "int64_t"
             # Initializer
             if init:
-                c_expr, intermediate_statments = lower_imperative_expression(init)
+                c_expr, intermediate_statments = lower_imperative_expr(init)
                 output.extend(intermediate_statments)
                 output.append(CDeclaration(ty, name, c_expr))
             else:
                 output.append(CDeclaration(ty, name, None))
         case IAssign(lhs, rhs):
-            lo_rhs, stmts_rhs = lower_imperative_expression(rhs)
+            lo_rhs, stmts_rhs = lower_imperative_expr(rhs)
             match lhs:
                 case IVar(_, name):
                     return stmts_rhs + [CAssign(CVariable(name), lo_rhs)]
@@ -113,11 +127,11 @@ def lower_imperative_statement(stmt: IStmt) -> List[CStatement]:
                 case _:
                     raise ValueError(f"invalid lhs of assignment {lhs}")
         case IReturn(expr):
-            c_expr, intermediate_statments = lower_imperative_expression(expr)
+            c_expr, intermediate_statments = lower_imperative_expr(expr)
             output.extend(intermediate_statments)
             output.append(CReturn(c_expr))
         case IWhile(cond, body):
-            lo_cond, stmts_cond = lower_imperative_expression(cond)
+            lo_cond, stmts_cond = lower_imperative_expr(cond)
             stmts_body = sum(map(lower_imperative_statement, body.stmts), [])  # type: ignore
             # recompute condition after every iteration
             return stmts_cond + [CWhile(lo_cond, stmts_body + stmts_cond)]

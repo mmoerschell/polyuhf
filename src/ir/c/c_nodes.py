@@ -16,8 +16,8 @@ class CVariable(CExpression):
 
 @dataclass(frozen=True)
 class CArrayAccess(CExpression):
-    name: CVariable
-    index: int
+    var: CVariable
+    index: CExpression
 
 
 @dataclass(frozen=True)

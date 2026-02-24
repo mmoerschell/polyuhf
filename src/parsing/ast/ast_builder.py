@@ -6,7 +6,7 @@ from typing import List, Tuple
 from ir.types import ArrayType, BigIntType, IndexType, Type
 from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.antlr.PolyUHFVisitor import PolyUHFVisitor
-from parsing.ast.nodes import (
+from parsing.ast.ast_nodes import (
     Add,
     ArrayAccess,
     Call,

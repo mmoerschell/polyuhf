@@ -48,7 +48,7 @@ def tidy_and_format_c(code: str) -> str:
     except (FileNotFoundError, subprocess.CalledProcessError) as e:
         print(
             f"[{colorama.Fore.RED}-{colorama.Style.RESET_ALL}] "
-            f"[clang pipeline failed] {e}",
+            f"[clang pipeline failed]\n{e.stdout}\n{e.stderr}",  # type: ignore
             file=sys.stderr,
         )
         return code
