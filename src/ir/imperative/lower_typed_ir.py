@@ -60,8 +60,13 @@ def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
         case TUnaryMinus(ty, body):
             b, stmts = lower_typed_expression(body)
             return (IUnaryMinus(ty, b), stmts)
-        case TPower():
-            raise NotImplementedError()
+        case TPower(ty, base, exponent):
+            match exponent:
+                # Turn into multiplication
+                case TConst(IndexType(), 2):
+                    return lower_typed_expression(TBinOp(base.ty, "*", base, base))
+                case _:
+                    raise NotImplementedError()
         case TCall():
             raise NotImplementedError()
         case TReduction(ty, op, var, start, stop, step, body):
