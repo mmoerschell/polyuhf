@@ -12,7 +12,7 @@ using boost::multiprecision::cpp_int;
 using boost::multiprecision::export_bits;
 using boost::multiprecision::import_bits;
 
-#define LIMBS 20
+#define LIMBS 6
 #define LAMBDA 25
 #define LAMBDA_MASK ((1ull << LAMBDA) - 1)
 
@@ -85,6 +85,27 @@ void mul(const bigint_t *a, const bigint_t *b, bigint_t *result) {
     carry_round(result);
 }
 
+bigint_t _bigint_add(bigint_t a, bigint_t b) {
+    bigint_t result;
+    add(&a, &b, &result);
+    return result;
+}
+
+bigint_t _bigint_mul(bigint_t a, bigint_t b) {
+    bigint_t result;
+    mul(&a, &b, &result);
+    return result;
+}
+
+bigint_t mmh(bigint_t *R, bigint_t *M, int64_t n) {
+    bigint_t _1_acc = {0b00, 0b0, 0b0, 0b0, 0b0, 0b0};
+    int64_t i = 0;
+    while (((i) < (((n) - (1))))) {
+        _1_acc = _bigint_add(_1_acc, _bigint_add(M[i], R[i]));
+        i = ((i) + (1));
+    }
+    return _bigint_add(_1_acc, M[((n) - (1))]);
+}
 int main(int argc, char **argv) {
     // Some random numbers
     const std::string a = "349960181123123123123123123123184565089498273"
@@ -107,4 +128,7 @@ int main(int argc, char **argv) {
     std::println("{}", to_boost(cu_sum).convert_to<std::string>());
     std::println("{}", mp_prod.convert_to<std::string>());
     std::println("{}", to_boost(cu_prod).convert_to<std::string>());
+
+    // MMH
+    constexpr size_t N = 10;
 }
