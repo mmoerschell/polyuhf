@@ -1,50 +1,65 @@
-# Compiler and flags
+# Compiler
 CXX = clang++
-CXXFLAGS = -std=c++23 -Wall -Wextra -O3 -isystem /opt/local/include
-LDFLAGS = -L/opt/local/lib
+CXXFLAGS_BASE = -std=c++26 -Wall -Wextra -Wpedantic -isystem /opt/local/include
+LDFLAGS = -L/opt/local/lib -lboost_unit_test_framework-mt
 
-# Main target
-TARGET = driver
-SOURCES = references.cpp driver.cpp
-OBJECTS = $(SOURCES:.cpp=.o)
+# Release flags
+CXXFLAGS_RELEASE = -O3 -DNDEBUG
+# Debug flags
+CXXFLAGS_DEBUG = -O0 -g -fno-omit-frame-pointer
 
-# Test target (using pre-built Boost.Test)
-TEST_TARGET = test_runner
-TEST_SOURCES = references.cpp test_runner.cpp
-TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
-TEST_LDFLAGS = $(LDFLAGS) -lboost_unit_test_framework-mt
-TEST_CXXFLAGS = $(CXXFLAGS) -DBOOST_TEST_DYN_LINK  # For dynamic linking
+# Sources
+SRC = $(filter-out main.cpp, $(wildcard *.cpp))
+TESTS = tests.cpp
 
-# Default target
-all: $(TARGET)
+# Object directory
+BUILD_RELEASE = build/release
+BUILD_DEBUG   = build/debug
 
-# Link the main target
-$(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $(TARGET) $(LDFLAGS)
+# Object files
+OBJ_RELEASE = $(addprefix $(BUILD_RELEASE)/, $(SRC:.cpp=.o)) $(BUILD_RELEASE)/tests.o
+OBJ_DEBUG   = $(addprefix $(BUILD_DEBUG)/, $(SRC:.cpp=.o)) $(BUILD_DEBUG)/tests.o
 
-# Link the test target
-$(TEST_TARGET): $(TEST_OBJECTS)
-	$(CXX) $(TEST_OBJECTS) -o $(TEST_TARGET) $(TEST_LDFLAGS)
+# Target executables
+TARGET_TEST_RELEASE = $(BUILD_RELEASE)/tests
+TARGET_TEST_DEBUG   = $(BUILD_DEBUG)/tests
 
-# Compile source files
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+.PHONY: all release debug run-test debug-test clean
 
-# Special rule for test objects (with different flags)
-test_runner.o: test_runner.cpp
-	$(CXX) $(TEST_CXXFLAGS) -c $< -o $@
+all: release debug
 
-# Clean build files
+# --------------------
+# Release test build
+# --------------------
+release: $(TARGET_TEST_RELEASE)
+
+$(TARGET_TEST_RELEASE): $(OBJ_RELEASE)
+	$(CXX) $^ -o $@ $(LDFLAGS)
+
+$(BUILD_RELEASE)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS_BASE) $(CXXFLAGS_RELEASE) -c $< -o $@
+
+run-test: release
+	$(TARGET_TEST_RELEASE)
+
+# --------------------
+# Debug test build
+# --------------------
+debug: $(TARGET_TEST_DEBUG)
+
+$(TARGET_TEST_DEBUG): $(OBJ_DEBUG)
+	$(CXX) $^ -o $@ $(LDFLAGS)
+
+$(BUILD_DEBUG)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS_BASE) $(CXXFLAGS_DEBUG) -c $< -o $@
+
+debug-test: debug
+	lldb $(TARGET_TEST_DEBUG)
+
+# --------------------
+# Clean
+# --------------------
 clean:
-	rm -f $(OBJECTS) $(TEST_OBJECTS) $(TARGET) $(TEST_TARGET)
-
-# Run the main program
-run: $(TARGET)
-	./$(TARGET)
-
-# Build and run tests
-test: $(TEST_TARGET)
-	@echo "Running tests..."
-	./$(TEST_TARGET)
-
-.PHONY: all clean run test
+	rm -rf build
