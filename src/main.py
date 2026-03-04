@@ -3,6 +3,7 @@
 
 import argparse
 import sys
+from pprint import pprint
 
 import colorama
 from antlr4 import CommonTokenStream, InputStream
@@ -11,6 +12,7 @@ from colorama import Fore, Style
 
 from codegen.formatter import tidy_and_format_c
 from codegen.generator import generate_program
+from field_settings import ArbitraryPrime, BinaryField, CrandallPrime, PrimeField
 from ir.c.lower_imperative_ir import lower_imperative_program
 from ir.imperative.lower_typed_ir import lower_typed_program
 from ir.typed.lower_ast import lower_ast_program
@@ -94,12 +96,60 @@ def compile_file(path: str, flags):
 
 if __name__ == "__main__":
     colorama.init(autoreset=True)  # resets terminal color after each print
+
+    # CL arguments
     cli = argparse.ArgumentParser(description="DSL Compiler")
-    cli.add_argument("input", type=str, help="input file")
+
+    # File
+    cli.add_argument("input_file", type=str, help="input file")
+
+    # Verbosity
     cli.add_argument("--verbose", "-v", action="store_true", help="Show IR")
+
+    # Post-processing
     cli.add_argument(
         "--format", "-f", action="store_true", help="Format using clang-tidy"
     )
+
+    # Subcommands for field selection
+    subparsers = cli.add_subparsers(
+        dest="field_type", required=True, help="Field type: prime or binary"
+    )
+
+    # Prime field subparser
+    prime_parser = subparsers.add_parser("prime", help="Prime field GF(p)")
+    prime_group = prime_parser.add_mutually_exclusive_group(required=True)
+    prime_group.add_argument(
+        "--crandall",
+        nargs=2,
+        type=int,
+        metavar=("PI", "THETA"),
+        help="Crandall prime: 2^PI - THETA",
+    )
+    prime_group.add_argument(
+        "--arbitrary", nargs=1, type=int, metavar="VALUE", help="Arbitrary prime p"
+    )
+
+    # Binary field subparser
+    binary_parser = subparsers.add_parser("binary", help="Binary field GF(2^n)")
+    binary_parser.add_argument("n", type=int, help="Exponent n for GF(2^n)")
     flags = cli.parse_args()
 
-    program = compile_file(flags.input, flags)
+    field = None
+    # Build field object
+    match flags.field_type:
+        case "prime":
+            if flags.crandall:
+                pi, theta = map(int, flags.crandall)
+                prime = CrandallPrime(pi, theta)
+            elif flags.arbitrary:
+                value = int(flags.arbitrary[0])
+                prime = ArbitraryPrime(value)
+            else:
+                raise ValueError()
+            field = PrimeField(prime)
+        case "binary":
+            field = BinaryField(int(flags.n))
+    pprint(field)
+
+    program = compile_file(flags.input_file, flags)
