@@ -12,7 +12,6 @@ from colorama import Fore, Style
 
 from codegen.formatter import tidy_and_format_c
 from codegen.generator import generate_program
-from field_settings import ArbitraryPrime, BinaryField, CrandallPrime, PrimeField
 from ir.c.lower_imperative_ir import lower_imperative_program
 from ir.imperative.lower_typed_ir import lower_typed_program
 from ir.typed.lower_ast import lower_ast_program
@@ -20,6 +19,13 @@ from ir.types import LoweringError
 from parsing.antlr.PolyUHFLexer import PolyUHFLexer
 from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.ast.ast_builder import ASTBuilder, DSLParseError
+from settings import (
+    ArbitraryPrime,
+    BigIntConfiguration,
+    BinaryField,
+    CrandallPrime,
+    PrimeField,
+)
 
 
 class BailErrorListener(ErrorListener):
@@ -135,8 +141,8 @@ if __name__ == "__main__":
     binary_parser.add_argument("n", type=int, help="Exponent n for GF(2^n)")
     flags = cli.parse_args()
 
-    field = None
     # Build field object
+    field = None
     match flags.field_type:
         case "prime":
             if flags.crandall:
@@ -150,6 +156,11 @@ if __name__ == "__main__":
             field = PrimeField(prime)
         case "binary":
             field = BinaryField(int(flags.n))
+    assert field
     pprint(field)
+
+    # Deduce bigint configuration
+    bigint_config = BigIntConfiguration.from_field(field)
+    pprint(bigint_config)
 
     program = compile_file(flags.input_file, flags)
