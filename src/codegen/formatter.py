@@ -1,21 +1,11 @@
-import os
 import subprocess
-import sys
-import tempfile
-
-import colorama
 
 CLANG_TIDY = "clang-tidy-mp-21"
 CLANG_FORMAT = "clang-format-mp-21"
 
 
-def tidy_and_format_c(code: str) -> str:
-    fd, path = tempfile.mkstemp(suffix=".c")
+def tidy_and_format_c(path: str) -> None:
     try:
-        # write generated code
-        with os.fdopen(fd, "w") as f:
-            f.write(code)
-
         # clang-tidy: semantic cleanup
         subprocess.run(
             [
@@ -25,6 +15,7 @@ def tidy_and_format_c(code: str) -> str:
                 "-fix",
                 "-format-style=none",
                 "--",
+                "-std=c23",
                 "-x",
                 "c",
             ],
@@ -33,25 +24,19 @@ def tidy_and_format_c(code: str) -> str:
             text=True,
         )
 
-        # # clang-format: layout cleanup
+        # clang-format: layout cleanup
         subprocess.run(
-            [CLANG_FORMAT, "-i", path],
+            [
+                CLANG_FORMAT,
+                "-i",
+                path
+            ],
             check=True,
             capture_output=True,
             text=True,
         )
 
-        # read back result
-        with open(path) as f:
-            return f.read()
-
-    except (FileNotFoundError, subprocess.CalledProcessError) as e:
-        print(
-            f"[{colorama.Fore.RED}-{colorama.Style.RESET_ALL}] "
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
             f"[clang pipeline failed]\n{e.stdout}\n{e.stderr}",  # type: ignore
-            file=sys.stderr,
-        )
-        return code
-
-    finally:
-        os.unlink(path)
+        ) from e

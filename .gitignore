@@ -222,3 +222,8 @@ __marimo__/
 
 # Debug program, changes all the time but not meaningful
 programs/debug.txt
+
+# Generated code
+src/cpp/configuration.h
+src/cpp/helpers.h
+src/cpp/library.h

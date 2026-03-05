@@ -12,7 +12,6 @@ from ir.c.c_nodes import (
     CStatement,
     CWhile,
 )
-from ir.c.lower_imperative_ir import BUILTIN_BIGINT_FUNCTIONS
 from ir.types import ArrayType, BigIntType, IndexType, LoweringError, Type
 
 
@@ -42,15 +41,15 @@ def generate_expr(expr: CExpression) -> str:
                 case IndexType():
                     return str(value)
                 case BigIntType():
-                    value = 0xDEADBEEF
-                    LIMBS = 6
-                    LAMBD = 48
-                    bits = [int(x) for x in bin(value)[2:]][::-1]  # LSB first
-                    limbs = [
-                        bits[i * LAMBD : (i + 1) * LAMBD][::-1] for i in range(LIMBS)
-                    ]  # MSB first
-                    limbs = ["0b0" + "".join([str(y) for y in x]) for x in limbs]
-                    return f"{{{','.join(limbs)}}}"
+                    raise NotImplementedError("generalize limbs & lambda")
+                    # LIMBS = 6
+                    # LAMBD = 48
+                    # bits = [int(x) for x in bin(value)[2:]][::-1]  # LSB first
+                    # limbs = [
+                    #     bits[i * LAMBD : (i + 1) * LAMBD][::-1] for i in range(LIMBS)
+                    # ]  # MSB first
+                    # limbs = ["0b0" + "".join([str(y) for y in x]) for x in limbs]
+                    # return f"{{{','.join(limbs)}}}"
                 case ArrayType(_):
                     raise LoweringError("array-typed constants?")
         case CBinOp(op, lhs, rhs):
@@ -86,27 +85,12 @@ def generate_stmt(stmt: CStatement) -> str:
 
 def generate_program(p: CProgram) -> str:
     # Includes
-    output = ["#include <stdint.h>", ""]
-
-    # Data-structure declarations
-    output.extend(
-        [
-            "typedef struct { int64_t limbs[6]; } bigint_t;",
-        ]
-    )
-
-    # Built-ins
-    output.extend(
-        [
-            f"bigint_t {BUILTIN_BIGINT_FUNCTIONS['+']} (bigint_t a, bigint_t b)",
-            "{",
-            "bigint_t acc;",
-            "for (int64_t i = 0; i < 6; ++i)",
-            "acc.limbs[i] = a.limbs[i] + b.limbs[i];",
-            "return acc;",
-            "}",
-        ]
-    )
+    output = [
+        f'#include {x}'
+        for x in ['<stddef.h>', '<stdint.h>', '"configuration.h"', '"helpers.h"']
+    ]
+    output.insert(2, "")
+    output.insert(5, "")
 
     # Functions
     for f in p.functions:
@@ -117,6 +101,6 @@ def generate_program(p: CProgram) -> str:
         for s in f.statements:
             assert s
         output.extend(map(generate_stmt, f.statements))
-        # Closing curly brace
-        output.append("}")
+        # Closing curly brace and empty line
+        output.append("}\n")
     return "\n".join(output)

@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import List, Union
-import math
 
 
 @dataclass(frozen=True)
@@ -69,11 +69,11 @@ class BigIntConfiguration:
             f"#define LAMBDA {self.lambd}",
             f"#define LAMBDA_MASK {lambd_mask}",
             "",
-            "typedef union alignas(64) {",
-            f"    int64_t limbs[{self.limbs}];",
+            "typedef union {",
+            f"    alignas(64) int64_t limbs[{self.limbs}];",
             # optionally other views into the data
             "} bigint_t;",
             "",
         ]
-        with open(output_path, "w+") as f:
+        with open(output_path, "w") as f:
             f.write("\n".join(lines))

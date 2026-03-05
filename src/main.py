@@ -3,8 +3,8 @@
 
 import argparse
 import sys
-from pprint import pprint
 
+# from pprint import pprint
 import colorama
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
@@ -12,6 +12,7 @@ from colorama import Fore, Style
 
 from codegen.formatter import tidy_and_format_c
 from codegen.generator import generate_program
+from helpers import Helpers
 from ir.c.lower_imperative_ir import lower_imperative_program
 from ir.imperative.lower_typed_ir import lower_typed_program
 from ir.typed.lower_ast import lower_ast_program
@@ -48,7 +49,7 @@ def compile_string(text: str, flags):
     parser.addErrorListener(BailErrorListener())
 
     try:
-        # Settings/config
+        # Settings/config
 
         # Build field object
         field = None
@@ -72,10 +73,6 @@ def compile_string(text: str, flags):
         bigint_config = BigIntConfiguration.from_field(field)
         # pprint(bigint_config)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Settings")
-
-        # Generate settings header
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Configuration header")
-        bigint_config.generate_header("src/cpp/configuration.h")
 
         # Parse tree
         parse_tree = parser.program()  # first rule to apply
@@ -106,17 +103,41 @@ def compile_string(text: str, flags):
         text = generate_program(c_ir)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
 
+        # Generate settings header
+        config_header_path = "src/cpp/configuration.h"
+        bigint_config.generate_header(config_header_path)
+        print(
+            f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote configuration "
+            f'header to "{config_header_path}"'
+        )
+
+        # Generate add/mul/carry helpers
+        helpers_path = "src/cpp/helpers.h"
+        helpers = Helpers(bigint_config)
+        helpers.generate_header(helpers_path)
+        print(
+            f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote add-mul helpers "
+            f'header to "{helpers_path}"'
+        )
+
+        # Write code to file
+        output_path = "src/cpp/library.h"
+        with open(output_path, "w") as code_output:
+            code_output.write(text)
+        print(f'[{Fore.GREEN}+{Style.RESET_ALL}] Wrote code to "{output_path}"')
+
         # Formatter
         if flags.format:
-            text = tidy_and_format_c(text)
+            tidy_and_format_c(output_path)
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Optional formatting")
 
         # Verbose output
         if flags.verbose:
-            print(text)
+            with open(output_path) as f:
+                print("".join(f.readlines()))
 
         return text
-    except (DSLParseError, LoweringError, AssertionError) as e:
+    except (DSLParseError, LoweringError, AssertionError, RuntimeError) as e:
         print(
             f"[{Fore.RED}-{Style.RESET_ALL}] Compilation error: {e}",
             file=sys.stderr,
