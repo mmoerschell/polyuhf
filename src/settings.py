@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Union
+from typing import List, Union
 import math
+
 
 @dataclass(frozen=True)
 class CrandallPrime:
@@ -42,7 +43,7 @@ class BigIntConfiguration:
     @staticmethod
     def from_field(field: Field) -> BigIntConfiguration:
         required_width = None
-        match field: # type: ignore
+        match field:  # type: ignore
             case PrimeField(CrandallPrime(pi, _)):
                 required_width = pi
             case PrimeField(ArbitraryPrime(value)):
@@ -54,3 +55,25 @@ class BigIntConfiguration:
         limbs = math.ceil(required_width / lambd)
         assert limbs > 0
         return BigIntConfiguration(limbs, lambd)
+
+    def generate_header(self, output_path: str) -> None:
+        lambd_mask = hex((1 << self.lambd) - 1)
+        assert lambd_mask.startswith("0x"), "skill issue"
+        lines: List[str] = [
+            "#pragma once",
+            "",
+            "#include <stddef.h>",
+            "#include <stdint.h>",
+            "",
+            f"#define LIMBS {self.limbs}",
+            f"#define LAMBDA {self.lambd}",
+            f"#define LAMBDA_MASK {lambd_mask}",
+            "",
+            "typedef union alignas(64) {",
+            f"    int64_t limbs[{self.limbs}];",
+            # optionally other views into the data
+            "} bigint_t;",
+            "",
+        ]
+        with open(output_path, "w+") as f:
+            f.write("\n".join(lines))

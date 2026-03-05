@@ -48,6 +48,35 @@ def compile_string(text: str, flags):
     parser.addErrorListener(BailErrorListener())
 
     try:
+        # Settings/config
+
+        # Build field object
+        field = None
+        match flags.field_type:
+            case "prime":
+                if flags.crandall:
+                    pi, theta = map(int, flags.crandall)
+                    prime = CrandallPrime(pi, theta)
+                elif flags.arbitrary:
+                    value = int(flags.arbitrary[0])
+                    prime = ArbitraryPrime(value)
+                else:
+                    raise ValueError()
+                field = PrimeField(prime)
+            case "binary":
+                field = BinaryField(int(flags.n))
+        assert field, "invalid field"
+        # pprint(field)
+
+        # Deduce bigint configuration
+        bigint_config = BigIntConfiguration.from_field(field)
+        # pprint(bigint_config)
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Settings")
+
+        # Generate settings header
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Configuration header")
+        bigint_config.generate_header("src/cpp/configuration.h")
+
         # Parse tree
         parse_tree = parser.program()  # first rule to apply
         # print(parse_tree.toStringTree(recog=parser))
@@ -87,7 +116,7 @@ def compile_string(text: str, flags):
             print(text)
 
         return text
-    except (DSLParseError, LoweringError) as e:
+    except (DSLParseError, LoweringError, AssertionError) as e:
         print(
             f"[{Fore.RED}-{Style.RESET_ALL}] Compilation error: {e}",
             file=sys.stderr,
@@ -140,27 +169,5 @@ if __name__ == "__main__":
     binary_parser = subparsers.add_parser("binary", help="Binary field GF(2^n)")
     binary_parser.add_argument("n", type=int, help="Exponent n for GF(2^n)")
     flags = cli.parse_args()
-
-    # Build field object
-    field = None
-    match flags.field_type:
-        case "prime":
-            if flags.crandall:
-                pi, theta = map(int, flags.crandall)
-                prime = CrandallPrime(pi, theta)
-            elif flags.arbitrary:
-                value = int(flags.arbitrary[0])
-                prime = ArbitraryPrime(value)
-            else:
-                raise ValueError()
-            field = PrimeField(prime)
-        case "binary":
-            field = BinaryField(int(flags.n))
-    assert field
-    pprint(field)
-
-    # Deduce bigint configuration
-    bigint_config = BigIntConfiguration.from_field(field)
-    pprint(bigint_config)
 
     program = compile_file(flags.input_file, flags)
