@@ -1,4 +1,8 @@
+#include <bitset>
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
+#include <stdexcept>
 #include <vector>
 
 #define BOOST_TEST_MODULE CorrectnessTests
@@ -7,7 +11,10 @@
 #include <boost/test/included/unit_test.hpp>
 #include <boost/test/unit_test.hpp>
 
-#include "poly1305.h"
+#include "poly1305_ref.h"
+
+#include "configuration.h"
+#include "library.h"
 
 struct Poly1305_RFC_Testcases {
     alignas(uint64_t) std::vector<uint8_t> key;
@@ -231,7 +238,7 @@ std::vector<Poly1305_RFC_Testcases> testcases = {
                 0x00,
                 0x00,
             },
-        .description = "carry,from,lower,limb",
+        .description = "carry from lower limb",
     },
     {
         .key =
@@ -400,10 +407,64 @@ std::vector<Poly1305_RFC_Testcases> testcases = {
 
 };
 
+uint8_t get_bit(const bigint_t *src, size_t bit_index) {
+    const auto limb_index = bit_index / LAMBDA;
+    const auto in_limb_index = bit_index % LAMBDA;
+    if (limb_index > LIMBS)
+        throw std::runtime_error("get_bit: index too large");
+    return ((src->limbs[limb_index] >> in_limb_index) & 1L) != 0L;
+}
+
+void set_bit(bigint_t *dst, size_t bit_index) {
+    const auto limb_index = bit_index / LAMBDA;
+    const auto in_limb_index = bit_index % LAMBDA;
+    if (limb_index > LIMBS)
+        throw std::runtime_error("set_bit: index too large");
+    dst->limbs[limb_index] |= 1L << in_limb_index;
+}
+
+bigint_t from_little_endian_bytes(const uint8_t *data, const size_t n) {
+    if (8 * n > LIMBS * LAMBDA)
+        throw std::runtime_error("from_little_endian_bytes: too much data");
+    bigint_t result{};
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = 0; j < 8; ++j)
+            if (((data[i] >> j) & 1U) != 0L)
+                set_bit(&result, i * 8 + j);
+    return result;
+}
+
+void to_little_endian_bytes(uint8_t *data, const size_t n,
+                            const bigint_t *src) {
+    if (8 * n > LIMBS * LAMBDA)
+        throw std::runtime_error("to_little_endian_bytes: too much data");
+    std::memset(data, 0, n);
+    for (size_t i = 0; i < n; ++i)
+        for (size_t j = 0; j < n; ++j)
+            if (get_bit(src, i * 8 + j))
+                data[i] |= 1U << j;
+}
+
+void poly1305_dsl_wrapper(uint8_t *tag, const uint8_t *key,
+                          const uint8_t *message, const size_t n_bytes) {
+    std::memset(tag, 0, 16);
+    bigint_t r = from_little_endian_bytes(key, 16),
+             s = from_little_endian_bytes(key + 16, 16);
+    std::vector<bigint_t> blocks((n_bytes + 15) / 16);
+    for (size_t i = 0; i < blocks.size(); ++i) {
+        const auto block_start = i * 16;
+        const auto block_end = std::min((i + 1) * 16, n_bytes);
+        blocks[i] = from_little_endian_bytes(message + block_start,
+                                             block_end - block_start);
+    }
+    const auto big_int = poly1305(r, s, blocks.data(), blocks.size());
+    to_little_endian_bytes(tag, 16, &big_int);
+}
+
 BOOST_AUTO_TEST_SUITE(Poly1305_Tests)
 
-BOOST_DATA_TEST_CASE(CorrectnessTests, boost::unit_test::data::make(testcases),
-                     tc_const) {
+BOOST_DATA_TEST_CASE(OfficialTestVectors,
+                     boost::unit_test::data::make(testcases), tc_const) {
     // Mask
     auto tc = tc_const; // mutable copy
     tc.key[3] &= 15;
@@ -414,14 +475,61 @@ BOOST_DATA_TEST_CASE(CorrectnessTests, boost::unit_test::data::make(testcases),
     tc.key[8] &= 252;
     tc.key[12] &= 252;
 
-    std::array<uint8_t, 16> tag = {
-        // Random non-zero data
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
-    };
+    // Output data-structure
+    std::array<uint8_t, 16> tag;
 
-    poly1305(tag.data(), tc.key.data(), tc.message.data(), tc.message.size());
+    // Test reference implementation
+    for (size_t i = 0; i < tag.size(); ++i)
+        tag[i] = 42 + i; // randomize tag
+    poly1305_ref(tag.data(), tc.key.data(), tc.message.data(),
+                 tc.message.size());
+    BOOST_CHECK_EQUAL_COLLECTIONS(tag.cbegin(), tag.cend(), tc.tag.cbegin(),
+                                  tc.tag.cend());
+
+    // Test DSL-generated code
+    for (size_t i = 0; i < tag.size(); ++i)
+        tag[i] = 42 + i; // randomize tag
+    poly1305_dsl_wrapper(tag.data(), tc.key.data(), tc.message.data(),
+                         tc.message.size());
     BOOST_CHECK_EQUAL_COLLECTIONS(tag.cbegin(), tag.cend(), tc.tag.cbegin(),
                                   tc.tag.cend());
 }
+
+// BOOST_DATA_TEST_CASE(RandomTests, boost::unit_test::data::xrange(100), i) {
+//     std::mt19937 rng(42 + i); // deterministic per test case
+//     std::uniform_int_distribution<uint8_t> dist(0, 255);
+
+//     // Key
+//     std::array<uint8_t, 32> key;
+//     for (auto &x : key)
+//         x = static_cast<uint8_t>(dist(rng));
+//     key[3] &= 15;
+//     key[7] &= 15;
+//     key[11] &= 15;
+//     key[15] &= 15;
+//     key[4] &= 252;
+//     key[8] &= 252;
+//     key[12] &= 252;
+
+//     // Message
+//     const size_t MESSAGE_LENGTH = 256;
+//     std::array<uint8_t, MESSAGE_LENGTH> message;
+//     for (auto &x : message)
+//         x = static_cast<uint8_t>(dist(rng));
+
+//     // Expected tag as per reference
+//     std::array<uint8_t, 16> expected_tag;
+//     poly1305_ref(expected_tag.data(), key.data(), message.data(),
+//                  message.size());
+
+//     // Actual tag
+//     std::array<uint8_t, 16> actual_tag;
+//     poly1305_dsl_wrapper(actual_tag.data(), key.data(), message.data(),
+//                          message.size());
+
+//     BOOST_CHECK_EQUAL_COLLECTIONS(actual_tag.cbegin(), actual_tag.cend(),
+//                                   expected_tag.cbegin(),
+//                                   expected_tag.cend());
+// }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -10,7 +10,7 @@ using boost::multiprecision::cpp_int;
 using boost::multiprecision::export_bits;
 using boost::multiprecision::import_bits;
 
-void poly1305(uint8_t *tag_, const uint8_t *key_, const uint8_t *message_,
+void poly1305_ref(uint8_t *tag_, const uint8_t *key_, const uint8_t *message_,
               const size_t M_) {
     const std::span<const uint8_t> r_(key_, 16);
     const std::span<const uint8_t> s_(key_ + 16, 16);
