@@ -1,4 +1,4 @@
 // Assumes message blocks are all 16 bytes
 func poly1305(r, s bigint, blocks []bigint, n_blocks index) bigint {
-    +[i,0:n_blocks:1]{r^(n_blocks - i) * (blocks[i] + 0x100000000000000000000000000000000)} + s
+    +[i,0:n_blocks:1]{r^(n_blocks - i) * (blocks[i] + 0x100000000000000000000000000000000L)} + s
 }
