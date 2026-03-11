@@ -10,7 +10,7 @@
 #include <openssl/evp.h>
 
 static const std::vector<TestCase> tests =
-    load_tests_from_file("poly1305-rfc-test-vectors.json");
+    load_tests_from_file("src/cpp/poly1305-rfc-test-vectors.json");
 
 namespace bdata = boost::unit_test::data;
 

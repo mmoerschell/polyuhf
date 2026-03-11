@@ -10,7 +10,6 @@ find_package(OpenSSL REQUIRED)
 
 add_executable(tests
     main.cpp
-    poly1305_ref.cpp
     poly1305_tests.cpp
 )
 
