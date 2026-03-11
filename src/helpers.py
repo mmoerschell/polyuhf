@@ -33,7 +33,7 @@ inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["+"]}(const bigint_t lhs, const bigint
     bigint_t dst;
     for (size_t i = 0; i < {self.bigint_config.limbs}; ++i)
         dst.limbs[i] = lhs.limbs[i] + rhs.limbs[i];
-    {BUILTIN_BIGINT_FUNCTIONS["carry"]}(dst);
+    dst = {BUILTIN_BIGINT_FUNCTIONS["carry"]}(dst);
     return dst;
 }}
 """
@@ -48,7 +48,7 @@ inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["*"]}(const bigint_t lhs, const bigint
             dst.limbs[i] += lhs.limbs[j] * rhs.limbs[i - j];
         }}
     }}
-    {BUILTIN_BIGINT_FUNCTIONS["carry"]}(dst);
+    dst = {BUILTIN_BIGINT_FUNCTIONS["carry"]}(dst);
     return dst;
 }}
 """
