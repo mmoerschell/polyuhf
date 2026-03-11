@@ -1,5 +1,6 @@
 from typing import List, Tuple
 
+from helpers import BUILTIN_BIGINT_FUNCTIONS
 from ir.c.c_nodes import (
     CArrayAccess,
     CAssign,
@@ -34,11 +35,6 @@ from ir.imperative.imperative_nodes import (
     IWhile,
 )
 from ir.types import ArrayType, BigIntType, IndexType, LoweringError
-
-BUILTIN_BIGINT_FUNCTIONS = {
-    "+": "_bigint_add",
-    "*": "_bigint_mult",
-}
 
 
 def lower_imperative_expr(expr: IExpr) -> Tuple[CExpression, List[CStatement]]:  # noqa: C901

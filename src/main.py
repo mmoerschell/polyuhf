@@ -2,7 +2,9 @@
 # pyright: standard
 
 import argparse
+import re
 import sys
+import traceback
 
 # from pprint import pprint
 import colorama
@@ -35,7 +37,7 @@ class BailErrorListener(ErrorListener):
         raise DSLParseError(f"line {line}:{column} {msg}")
 
 
-def compile_string(text: str, flags):
+def compile_string(text: str, flags, program_name: str):
     input_stream = InputStream(text)
 
     lexer = PolyUHFLexer(input_stream)
@@ -99,10 +101,6 @@ def compile_string(text: str, flags):
         # pprint(c_ir)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] C nodes")
 
-        # Codegen (pretty-printing)
-        text = generate_program(c_ir)
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
-
         # Generate settings header
         config_header_path = "src/cpp/configuration.h"
         bigint_config.generate_header(config_header_path)
@@ -120,8 +118,12 @@ def compile_string(text: str, flags):
             f'header to "{helpers_path}"'
         )
 
+        # Codegen (pretty-printing)
+        text = generate_program(c_ir, bigint_config)
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
+
         # Write code to file
-        output_path = "src/cpp/library.h"
+        output_path = f"src/cpp/{program_name}.h"
         with open(output_path, "w") as code_output:
             code_output.write(text)
         print(f'[{Fore.GREEN}+{Style.RESET_ALL}] Wrote code to "{output_path}"')
@@ -137,6 +139,13 @@ def compile_string(text: str, flags):
                 print("".join(f.readlines()))
 
         return text
+    except NotImplementedError as e:
+        print(
+            f"[{Fore.RED}-{Style.RESET_ALL}] NotImplementedError {e}\n"
+            f"{traceback.format_exc()}",
+            file=sys.stderr,
+        )
+        exit(1)
     except (DSLParseError, LoweringError, AssertionError, RuntimeError) as e:
         print(
             f"[{Fore.RED}-{Style.RESET_ALL}] Compilation error: {e}",
@@ -146,8 +155,15 @@ def compile_string(text: str, flags):
 
 
 def compile_file(path: str, flags):
+    # Extract progam name from path
+    match = re.search(r"([^/\\]+)\.txt$", path)
+    assert match, "Can't find program name in path"
+    program_name = match.group(1)
+    if program_name in ["configuration", "helpers"]:
+        raise ValueError("Illegal program name")
+
     with open(path, mode="r", encoding="utf-8") as f:
-        return compile_string(f.read(), flags)
+        return compile_string(f.read(), flags, program_name)
 
 
 if __name__ == "__main__":

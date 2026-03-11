@@ -39,6 +39,7 @@ Field = Union[PrimeField, BinaryField]
 class BigIntConfiguration:
     limbs: int
     lambd: int
+    field: Field
 
     @staticmethod
     def from_field(field: Field) -> BigIntConfiguration:
@@ -54,13 +55,15 @@ class BigIntConfiguration:
         lambd = 22  # TODO, fixed for now
         limbs = math.ceil(required_width / lambd)
         assert limbs > 0
-        return BigIntConfiguration(limbs, lambd)
+        return BigIntConfiguration(limbs, lambd, field)
 
     def generate_header(self, output_path: str) -> None:
         lambd_mask = hex((1 << self.lambd) - 1)
         assert lambd_mask.startswith("0x"), "skill issue"
         lines: List[str] = [
             "#pragma once",
+            "",
+            f"// Generated for {str(self.field)} ({self.limbs}x{self.lambd} bits)",
             "",
             "#include <stddef.h>",
             "#include <stdint.h>",
