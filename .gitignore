@@ -226,4 +226,4 @@ programs/debug.txt
 # Generated code
 src/cpp/configuration.h
 src/cpp/helpers.h
-src/cpp/library.h
+src/cpp/compile_commands.json
