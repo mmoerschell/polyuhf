@@ -79,9 +79,6 @@ def lower_imperative_statement(stmt: IStmt) -> List[CStatement]:
     output: List[CStatement] = []
     match stmt:
         case IDecl(IVar(ty, name), init):
-            # # Type
-            # c_type = "struct bigint" if ty == BigIntType() else "int64_t"
-            # Initializer
             if init:
                 c_expr, intermediate_statments = lower_imperative_expr(init)
                 output.extend(intermediate_statments)

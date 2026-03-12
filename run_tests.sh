@@ -13,7 +13,7 @@ src/main.py -f programs/addition.txt prime --crandall 130 5
 # mkdir -p src/cpp/build/Release
 
 # cmake -S src/cpp -B src/cpp/build/Debug -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake -S src/cpp -B src/cpp/build/Release -G Ninja -DCMAKE_BUILD_TYPE=Release
+# cmake -S src/cpp -B src/cpp/build/Release -G Ninja -DCMAKE_BUILD_TYPE=Release
 
 # cmake --build src/cpp/build/Debug
 cmake --build src/cpp/build/Release

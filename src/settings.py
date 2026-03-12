@@ -39,6 +39,7 @@ Field = Union[PrimeField, BinaryField]
 class BigIntConfiguration:
     limbs: int
     lambd: int
+    lambd_prime: int
     field: Field
 
     @staticmethod
@@ -47,18 +48,20 @@ class BigIntConfiguration:
         match field:  # type: ignore
             case PrimeField(CrandallPrime(pi, _)):
                 required_width = pi
-            case PrimeField(ArbitraryPrime(value)):
-                required_width = value.bit_count() + 1
+            case PrimeField(ArbitraryPrime(value)): # pyright: ignore[reportUnusedVariable]
+                raise NotImplementedError("how many bits do we need??")
             case BinaryField(n):
                 required_width = n
         assert required_width
         lambd = 22  # TODO, fixed for now
+        lambd_prime = required_width % lambd
         limbs = math.ceil(required_width / lambd)
         assert limbs > 0
-        return BigIntConfiguration(limbs, lambd, field)
+        return BigIntConfiguration(limbs, lambd, lambd_prime, field)
 
     def generate_header(self, output_path: str) -> None:
         lambd_mask = hex((1 << self.lambd) - 1)
+        lambd_prime_mask = hex((1 << self.lambd_prime) - 1)
         assert lambd_mask.startswith("0x"), "skill issue"
         lines: List[str] = [
             "#pragma once",
@@ -70,10 +73,12 @@ class BigIntConfiguration:
             "",
             f"#define LIMBS {self.limbs}",
             f"#define LAMBDA {self.lambd}",
+            f"#define LAMBDA_PRIME {self.lambd_prime}",
             f"#define LAMBDA_MASK {lambd_mask}",
+            f"#define LAMBDA_PRIME_MASK {lambd_prime_mask}",
             "",
             "typedef union {",
-            f"    alignas(64) int64_t limbs[{self.limbs}];",
+            f"    alignas(64) uint64_t limbs[{self.limbs}];",
             # optionally other views into the data
             "} bigint_t;",
             "",

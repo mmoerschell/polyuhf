@@ -13,13 +13,14 @@ from ir.c.c_nodes import (
     CWhile,
 )
 from ir.types import ArrayType, BigIntType, IndexType, LoweringError, Type
+from settings import BigIntConfiguration
 
 
 # One level higher ATM
 def generate_type(t: Type) -> str:
     match t:
         case IndexType():
-            return "int64_t"
+            return "uint64_t"
         case BigIntType():
             return "bigint_t"
         case ArrayType(None, elem):
@@ -83,12 +84,24 @@ def generate_stmt(stmt: CStatement) -> str:
             raise NotImplementedError(f"missing printing pass for {type(stmt)} {stmt}")
 
 
-def generate_program(p: CProgram) -> str:
-    # Includes
+def generate_program(p: CProgram, bigint_config: BigIntConfiguration) -> str:
+    # This and that
     output = [
-        f'#include {x}'
-        for x in ['<stddef.h>', '<stdint.h>', '"configuration.h"', '"helpers.h"']
+        "#pragma once",
+        "",
+        f"// Generated for "
+        f"{str(bigint_config.field)} "
+        f"({bigint_config.limbs}x{bigint_config.lambd} bits)",
+        "",
     ]
+
+    # Includes
+    output.extend(
+        [
+            f"#include {x}"
+            for x in ["<stddef.h>", "<stdint.h>", '"configuration.h"', '"helpers.h"']
+        ]
+    )
     output.insert(2, "")
     output.insert(5, "")
 

@@ -5,7 +5,8 @@ from settings import BigIntConfiguration
 BUILTIN_BIGINT_FUNCTIONS = {
     "+": "_bigint_add",
     "*": "_bigint_mult",
-    "carry": "_bigint_carry",
+    "carry_round": "_bigint_carry_round",
+    "print": "_bigint_print",
 }
 
 
@@ -13,13 +14,38 @@ BUILTIN_BIGINT_FUNCTIONS = {
 class Helpers:
     bigint_config: BigIntConfiguration
 
+    def print(self) -> str:
+        return f"""
+inline void {BUILTIN_BIGINT_FUNCTIONS["print"]}(bigint_t x) {{
+    printf("[");
+    for (size_t i = 0; i < {self.bigint_config.limbs - 1}; ++i)
+        printf("%llx, ", x.limbs[i]);
+    printf("%llx]\\n", x.limbs[{self.bigint_config.limbs - 1}]);
+}}
+"""
+
     def carry(self) -> str:
         # TODO: field arithmetic, carry last limb back to first?
         return f"""
-inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["carry"]}(bigint_t x) {{
+inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["carry_round"]}(bigint_t x) {{
     bigint_t dst = x;
-    for (size_t i = 0; i < {self.bigint_config.limbs} - 1; ++i) {{
-        const int64_t carry_amount = dst.limbs[i] >> LAMBDA;
+
+    // All limbs except most significant: carry over to next limb
+    for (size_t i = 0; i < {self.bigint_config.limbs - 1}; ++i) {{
+        const uint64_t carry_amount = dst.limbs[i] >> LAMBDA;
+        dst.limbs[i] &= LAMBDA_MASK;
+        dst.limbs[i + 1] += carry_amount;
+    }}
+
+    // Most significant limb: take (& remove) high bits,
+    // multiply by theta and add to first limb
+    const uint64_t high_bits = dst.limbs[{self.bigint_config.limbs - 1}] >> LAMBDA_PRIME;
+    dst.limbs[{self.bigint_config.limbs - 1}] &= LAMBDA_PRIME_MASK;
+    dst.limbs[0] += {self.bigint_config.field.p.theta} * high_bits;
+
+    // Propagate carry over lowest two limbs
+    for (size_t i = 0; i < 2; ++i) {{
+        const uint64_t carry_amount = dst.limbs[i] >> LAMBDA;
         dst.limbs[i] &= LAMBDA_MASK;
         dst.limbs[i + 1] += carry_amount;
     }}
@@ -33,7 +59,7 @@ inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["+"]}(const bigint_t lhs, const bigint
     bigint_t dst;
     for (size_t i = 0; i < {self.bigint_config.limbs}; ++i)
         dst.limbs[i] = lhs.limbs[i] + rhs.limbs[i];
-    dst = {BUILTIN_BIGINT_FUNCTIONS["carry"]}(dst);
+    dst = {BUILTIN_BIGINT_FUNCTIONS["carry_round"]}(dst);
     return dst;
 }}
 """
@@ -43,12 +69,10 @@ inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["+"]}(const bigint_t lhs, const bigint
 inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["*"]}(const bigint_t lhs, const bigint_t rhs) {{
     bigint_t dst;
     memset(&dst, 0, sizeof(bigint_t));
-    for (size_t i = 0; i < {self.bigint_config.limbs}; ++i) {{
-        for (size_t j = 0; j <= i; ++j) {{
+    for (size_t i = 0; i < {self.bigint_config.limbs}; ++i)
+        for (size_t j = 0; j <= i; ++j)
             dst.limbs[i] += lhs.limbs[j] * rhs.limbs[i - j];
-        }}
-    }}
-    dst = {BUILTIN_BIGINT_FUNCTIONS["carry"]}(dst);
+    dst = {BUILTIN_BIGINT_FUNCTIONS["carry_round"]}(dst);
     return dst;
 }}
 """
@@ -62,11 +86,12 @@ inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["*"]}(const bigint_t lhs, const bigint
             f"({self.bigint_config.limbs}x{self.bigint_config.lambd} bits)",
             "",
             "#include <stddef.h>",
+            "#include <stdio.h>",
             "#include <stdint.h>",
             "#include <string.h>",
             "",
             '#include "configuration.h"',
-            "\n".join([self.carry(), self.add(), self.mul()]),
+            "\n".join([self.print(), self.carry(), self.add(), self.mul()]),
         ]
         with open(output_path, "w") as f:
             f.write("\n".join(lines))
