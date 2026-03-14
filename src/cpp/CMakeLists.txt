@@ -11,6 +11,8 @@ find_package(OpenSSL REQUIRED)
 add_executable(tests
     main.cpp
     addition_tests.cpp
+    multiplication_tests.cpp
+    exponentiation_tests.cpp
     poly1305_tests.cpp
 )
 

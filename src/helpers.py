@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from settings import BigIntConfiguration
 
+# TODO Python type correctness
+
 BUILTIN_BIGINT_FUNCTIONS = {
     "+": "_bigint_add",
     "*": "_bigint_mult",
@@ -65,13 +67,20 @@ inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["+"]}(const bigint_t lhs, const bigint
 """
 
     def mul(self) -> str:
+        kappa = hex(
+            self.bigint_config.field.p.theta
+            * (1 << (self.bigint_config.lambd - self.bigint_config.lambd_prime))
+        )
         return f"""
 inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["*"]}(const bigint_t lhs, const bigint_t rhs) {{
     bigint_t dst;
     memset(&dst, 0, sizeof(bigint_t));
-    for (size_t i = 0; i < {self.bigint_config.limbs}; ++i)
+    for (size_t i = 0; i < {self.bigint_config.limbs}; ++i) {{
         for (size_t j = 0; j <= i; ++j)
             dst.limbs[i] += lhs.limbs[j] * rhs.limbs[i - j];
+        for (size_t j = i + 1; j < {self.bigint_config.limbs}; ++j)
+            dst.limbs[i] += lhs.limbs[j] * {kappa}UL * rhs.limbs[{self.bigint_config.limbs} + i - j];
+    }}
     dst = {BUILTIN_BIGINT_FUNCTIONS["carry_round"]}(dst);
     return dst;
 }}

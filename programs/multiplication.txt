@@ -1,0 +1,3 @@
+func multiplication(a, b bigint) bigint {
+    a * b
+}

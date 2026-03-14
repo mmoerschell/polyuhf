@@ -3,6 +3,7 @@ set -ex
 
 # Build all DSL source files with appropriate fields
 src/main.py -f programs/addition.txt prime --crandall 130 5
+src/main.py -f programs/multiplication.txt prime --crandall 130 5
 # src/main.py -f programs/poly1305.txt prime --crandall 130 5
 # src/main.py -f programs/exponentiation.txt prime --crandall 130 5
 
