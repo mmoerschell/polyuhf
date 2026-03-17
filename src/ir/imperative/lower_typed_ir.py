@@ -10,6 +10,7 @@ from ir.imperative.imperative_nodes import (
     IExpr,
     IFunction,
     IParam,
+    IPower,
     IProgram,
     IReturn,
     IStmt,
@@ -41,7 +42,6 @@ def fresh_var_name() -> str:
     return f"_{variable_name_counter}"
 
 
-
 def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
     match e:
         case TConst(ty, value):
@@ -62,9 +62,14 @@ def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
             return (IUnaryMinus(ty, b), stmts)
         case TPower(ty, base, exponent):
             match exponent:
-                # Turn into multiplication
+                # Small consts: turn into multiplication
                 case TConst(IndexType(), 2):
                     return lower_typed_expression(TBinOp(base.ty, "*", base, base))
+                # Other expressions: keep it as a power
+                case TNode(IndexType()):
+                    bb, stmts_base = lower_typed_expression(base)
+                    ee, stmts_exp = lower_typed_expression(exponent)
+                    return IPower(base.ty, bb, ee), stmts_base + stmts_exp
                 case _:
                     raise NotImplementedError()
         case TCall():
@@ -82,20 +87,21 @@ def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
             # Declare loop index variable
             loop_index = IVar(IndexType(), var)
             output.append(IDecl(loop_index, lo_start))
-            # Loop condition
+            # Loop condition
             cond = IBinOp(IndexType(), "<", loop_index, lo_stop)
             # Loop body
             lo_body, stmts_body = lower_typed_expression(body)
             body_block = IBlock(
                 # Loop body computation
-                # TODO: Loop-invariant code motion?
+                # TODO: Loop-invariant code motion?
                 stmts_body
-                 + [
-                # Loop body reduction
-                IAssign(accumulator, IBinOp(ty, op, accumulator, lo_body)),
-                # Loop increment
-                IAssign(loop_index, IBinOp(IndexType(), "+", loop_index, lo_step)),
-            ])
+                + [
+                    # Loop body reduction
+                    IAssign(accumulator, IBinOp(ty, op, accumulator, lo_body)),
+                    # Loop increment
+                    IAssign(loop_index, IBinOp(IndexType(), "+", loop_index, lo_step)),
+                ]
+            )
             output.append(IWhile(cond, body_block))
             return (accumulator, output)
         case _:

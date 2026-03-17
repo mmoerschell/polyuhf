@@ -1,0 +1,3 @@
+func exponentiation(base bigint, exponent index) bigint {
+    base ^ exponent
+}

@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(MultCarry) {
         BOOST_CHECK_EQUAL(c.limbs[i], 0);
 }
 
-BOOST_DATA_TEST_CASE(RandomMultiplicationTests, boost::unit_test::data::xrange(200),
+BOOST_DATA_TEST_CASE(RandomMultiplicationTests, boost::unit_test::data::xrange(10000),
                      i) {
     std::mt19937 rng(42 + i); // deterministic per test case
     std::uniform_int_distribution<uint32_t> dist(0, LAMBDA_MASK);

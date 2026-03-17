@@ -67,8 +67,17 @@ def lower_imperative_expr(expr: IExpr) -> Tuple[CExpression, List[CStatement]]: 
         case IUnaryMinus(ty, body):
             bb, stmts = lower_imperative_expr(body)
             return CUnaryMinus(bb), stmts
-        case IPower(ty):
-            raise NotImplementedError(type(expr))
+        case IPower(ty, base, exp):
+            if not isinstance(base.ty, BigIntType):
+                raise RuntimeError("Can only raise bigints to powers, found index")
+            if not isinstance(exp.ty, IndexType):
+                raise RuntimeError("Can only raise to index-typed powers, found bigint")
+            bb, stmts_base = lower_imperative_expr(base)
+            ee, stmts_exp = lower_imperative_expr(exp)
+            return (
+                CFunctionCall(BUILTIN_BIGINT_FUNCTIONS["^"], [bb, ee]),
+                stmts_base + stmts_exp,
+            )
         case ICall(ty):
             raise NotImplementedError(type(expr))
         case _:

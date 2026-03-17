@@ -6,7 +6,8 @@ from settings import BigIntConfiguration
 
 BUILTIN_BIGINT_FUNCTIONS = {
     "+": "_bigint_add",
-    "*": "_bigint_mult",
+    "*": "_bigint_mul",
+    "^": "_bigint_exp",
     "carry_round": "_bigint_carry_round",
     "print": "_bigint_print",
 }
@@ -21,13 +22,12 @@ class Helpers:
 inline void {BUILTIN_BIGINT_FUNCTIONS["print"]}(bigint_t x) {{
     printf("[");
     for (size_t i = 0; i < {self.bigint_config.limbs - 1}; ++i)
-        printf("%llx, ", x.limbs[i]);
-    printf("%llx]\\n", x.limbs[{self.bigint_config.limbs - 1}]);
+        printf("%06llx, ", x.limbs[i]);
+    printf("%05llx]\\n", x.limbs[{self.bigint_config.limbs - 1}]);
 }}
 """
 
     def carry(self) -> str:
-        # TODO: field arithmetic, carry last limb back to first?
         return f"""
 inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["carry_round"]}(bigint_t x) {{
     bigint_t dst = x;
@@ -86,6 +86,18 @@ inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["*"]}(const bigint_t lhs, const bigint
 }}
 """
 
+    def exp(self):
+        return f"""
+inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["^"]}(const bigint_t base, const uint64_t power) {{
+    bigint_t dst;
+    memset(&dst, 0, sizeof(bigint_t));
+    dst.limbs[0] = 1UL;
+    for (uint64_t i = 0; i < power; ++i)
+        dst = {BUILTIN_BIGINT_FUNCTIONS["*"]}(dst, base);
+    return dst;
+}}
+"""
+
     def generate_header(self, output_path: str) -> None:
         lines = [
             "#pragma once",
@@ -100,7 +112,7 @@ inline bigint_t {BUILTIN_BIGINT_FUNCTIONS["*"]}(const bigint_t lhs, const bigint
             "#include <string.h>",
             "",
             '#include "configuration.h"',
-            "\n".join([self.print(), self.carry(), self.add(), self.mul()]),
+            "\n".join([self.print(), self.carry(), self.add(), self.mul(), self.exp()]),
         ]
         with open(output_path, "w") as f:
             f.write("\n".join(lines))

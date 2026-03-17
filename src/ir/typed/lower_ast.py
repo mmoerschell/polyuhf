@@ -86,10 +86,6 @@ def lower_ast_expr(ast: Expr, env: Env) -> TNode:  # noqa: C901
                 f"exponentiation is only permitted on {BigIntType()} type, "
                 f"found {base.ty}"
             )
-        if not isinstance(exponent, TConst):
-            raise LoweringError(
-                f"exponents must be constant, found {type(exponent)}"
-            )  # metatype, intentional
         if exponent.ty != IndexType():
             raise LoweringError(
                 f"exponents must have type {IndexType()}, found {exponent.ty}"
