@@ -14,6 +14,7 @@ add_executable(tests
     multiplication_tests.cpp
     exponentiation_tests.cpp
     poly1305_tests.cpp
+    polynomial_hashing_tests.cpp
 )
 
 target_link_libraries(tests

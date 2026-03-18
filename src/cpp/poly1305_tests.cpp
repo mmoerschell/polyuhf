@@ -10,43 +10,19 @@
 #include <boost/test/unit_test.hpp>
 
 using namespace boost::multiprecision;
+namespace bdata = boost::unit_test::data;
+
+#include <openssl/evp.h>
+
+#include "poly1305_testcases_loader.hpp"
+#include "util.hpp"
 
 #include "configuration.h"
 #include "helpers.h"
 #include "poly1305.h"
 
-#include "poly1305_testcases_loader.hpp"
-
-#include <openssl/evp.h>
-
 static const std::vector<TestCase> tests =
     load_tests_from_file("src/cpp/poly1305-rfc-test-vectors.json");
-
-namespace bdata = boost::unit_test::data;
-
-bigint_t from_le_bytes(const uint8_t *data, const size_t n) {
-    bigint_t res{};
-    for (size_t i = 0; i < n; ++i) {
-        const size_t lsbit_idx = 8 * i;
-        const size_t limb_idx = lsbit_idx / LAMBDA;
-        const size_t in_limb_idx = lsbit_idx % LAMBDA;
-        res.limbs[limb_idx] |= data[i] << in_limb_idx;
-    }
-    return _bigint_carry_round(res);
-}
-
-void to_le_bytes(uint8_t *dst, const size_t n, const bigint_t &bigint) {
-    memset(dst, 0, n);
-    for (size_t i = 0; i < n; ++i) {
-        const size_t lsbit_idx = 8 * i;
-        const size_t limb_idx = lsbit_idx / LAMBDA;
-        const size_t in_limb_idx = lsbit_idx % LAMBDA;
-        dst[i] |= static_cast<uint8_t>(bigint.limbs[limb_idx] >> in_limb_idx);
-        if (limb_idx + 1 < LIMBS)
-            dst[i] |= static_cast<uint8_t>(bigint.limbs[limb_idx + 1]
-                                           << (LAMBDA - in_limb_idx));
-    }
-}
 
 void poly1305_wrapper(uint8_t *tag, const uint8_t *key, const uint8_t *message,
                       const size_t message_size) {
