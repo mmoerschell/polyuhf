@@ -12,10 +12,10 @@ namespace bdata = boost::unit_test::data;
 
 #include "util.hpp"
 
-#include "configuration.h"
-#include "mmh.h"
-#include "nmh.h"
-#include "sqh.h"
+#include "generated/configuration.h"
+#include "generated/mmh.h"
+#include "generated/nmh.h"
+#include "generated/sqh.h"
 
 static const cpp_int c_1305("0x3FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB");
 

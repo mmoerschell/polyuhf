@@ -102,7 +102,7 @@ def compile_string(text: str, flags, program_name: str):
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] C nodes")
 
         # Generate settings header
-        config_header_path = "src/cpp/configuration.h"
+        config_header_path = "src/cpp/generated/configuration.h"
         bigint_config.generate_header(config_header_path)
         print(
             f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote configuration "
@@ -110,7 +110,7 @@ def compile_string(text: str, flags, program_name: str):
         )
 
         # Generate add/mul/carry helpers
-        helpers_path = "src/cpp/helpers.h"
+        helpers_path = "src/cpp/generated/helpers.h"
         helpers = Helpers(bigint_config)
         helpers.generate_header(helpers_path)
         print(
@@ -123,7 +123,7 @@ def compile_string(text: str, flags, program_name: str):
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
 
         # Write code to file
-        output_path = f"src/cpp/{program_name}.h"
+        output_path = f"src/cpp/generated/{program_name}.h"
         with open(output_path, "w") as code_output:
             code_output.write(text)
         print(f'[{Fore.GREEN}+{Style.RESET_ALL}] Wrote code to "{output_path}"')

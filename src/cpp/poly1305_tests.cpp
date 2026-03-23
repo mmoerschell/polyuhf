@@ -17,9 +17,9 @@ namespace bdata = boost::unit_test::data;
 #include "poly1305_testcases_loader.hpp"
 #include "util.hpp"
 
-#include "configuration.h"
-#include "helpers.h"
-#include "poly1305.h"
+#include "generated/configuration.h"
+#include "generated/helpers.h"
+#include "generated/poly1305.h"
 
 static const std::vector<TestCase> tests =
     load_tests_from_file("src/cpp/poly1305-rfc-test-vectors.json");

@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-#include "configuration.h"
-#include "helpers.h"
+#include "generated/configuration.h"
+#include "generated/helpers.h"
 
 inline bigint_t from_le_bytes(const uint8_t *data, const size_t n) {
     bigint_t res{};
