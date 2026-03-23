@@ -7,6 +7,8 @@ set -ex
 # src/main.py -f programs/poly1305.txt prime --crandall 130 5
 # src/main.py -f programs/exponentiation.txt prime --crandall 130 5
 src/main.py -f programs/mmh.txt prime --crandall 130 5
+src/main.py -f programs/sqh.txt prime --crandall 130 5
+src/main.py -f programs/nmh.txt prime --crandall 130 5
 
 
 # Build & run test harness
