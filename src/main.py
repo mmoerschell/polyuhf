@@ -14,6 +14,7 @@ from colorama import Fore, Style
 
 from codegen.formatter import tidy_and_format_c
 from codegen.generator import generate_program
+from field_configuration import BinaryField, FieldConfiguration, PrimeField
 from helpers import Helpers
 from ir.c.lower_imperative_ir import lower_imperative_program
 from ir.imperative.lower_typed_ir import lower_typed_program
@@ -22,13 +23,6 @@ from ir.types import LoweringError
 from parsing.antlr.PolyUHFLexer import PolyUHFLexer
 from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.ast.ast_builder import ASTBuilder, DSLParseError
-from settings import (
-    ArbitraryPrime,
-    BigIntConfiguration,
-    BinaryField,
-    CrandallPrime,
-    PrimeField,
-)
 
 
 class BailErrorListener(ErrorListener):
@@ -53,27 +47,19 @@ def compile_string(text: str, flags, program_name: str):
     try:
         # Settings/config
 
-        # Build field object
+        # Set up field configuration
         field = None
         match flags.field_type:
             case "prime":
-                if flags.crandall:
-                    pi, theta = map(int, flags.crandall)
-                    prime = CrandallPrime(pi, theta)
-                elif flags.arbitrary:
-                    value = int(flags.arbitrary[0])
-                    prime = ArbitraryPrime(value)
-                else:
-                    raise ValueError()
-                field = PrimeField(prime)
+                field = PrimeField(int(flags.pi), int(flags.theta))
             case "binary":
                 field = BinaryField(int(flags.n))
         assert field, "invalid field"
+        field_configuration = FieldConfiguration.from_field(
+            field, lambda_=int(flags.limb_size)
+        )
         # pprint(field)
-
-        # Deduce bigint configuration
-        bigint_config = BigIntConfiguration.from_field(field)
-        # pprint(bigint_config)
+        # pprint(field_configuration)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Settings")
 
         # Parse tree
@@ -103,15 +89,15 @@ def compile_string(text: str, flags, program_name: str):
 
         # Generate settings header
         config_header_path = "src/cpp/generated/configuration.h"
-        bigint_config.generate_header(config_header_path)
+        field_configuration.generate_header(config_header_path)
         print(
-            f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote configuration "
+            f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote field configuration "
             f'header to "{config_header_path}"'
         )
 
-        # Generate add/mul/carry helpers
+        # Generate helpers
         helpers_path = "src/cpp/generated/helpers.h"
-        helpers = Helpers(bigint_config)
+        helpers = Helpers(field_configuration)
         helpers.generate_header(helpers_path)
         print(
             f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote add-mul helpers "
@@ -119,7 +105,7 @@ def compile_string(text: str, flags, program_name: str):
         )
 
         # Codegen (pretty-printing)
-        text = generate_program(c_ir, bigint_config)
+        text = generate_program(c_ir, field_configuration)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
 
         # Write code to file
@@ -182,29 +168,25 @@ if __name__ == "__main__":
     cli.add_argument(
         "--format", "-f", action="store_true", help="Format using clang-tidy"
     )
-
     # Subcommands for field selection
-    subparsers = cli.add_subparsers(
-        dest="field_type", required=True, help="Field type: prime or binary"
-    )
+    subparsers = cli.add_subparsers(dest="field_type", required=True, help="Field type")
 
-    # Prime field subparser
-    prime_parser = subparsers.add_parser("prime", help="Prime field GF(p)")
-    prime_group = prime_parser.add_mutually_exclusive_group(required=True)
-    prime_group.add_argument(
-        "--crandall",
-        nargs=2,
+    # Optional global limb size request
+    cli.add_argument(
+        "--limb-size",
+        "-l",
         type=int,
-        metavar=("PI", "THETA"),
-        help="Crandall prime: 2^PI - THETA",
+        default=22,
+        help="Limb size in bits (default: 22)",
     )
-    prime_group.add_argument(
-        "--arbitrary", nargs=1, type=int, metavar="VALUE", help="Arbitrary prime p"
-    )
+    # Prime field subparser: usage -> prime <PI> <THETA>
+    prime_parser = subparsers.add_parser("prime", help="Prime field GF(2^pi-theta)")
+    prime_parser.add_argument("pi", type=int, help="Exponent pi")
+    prime_parser.add_argument("theta", type=int, help="Subtrahend theta")
 
-    # Binary field subparser
+    # Binary field subparser: usage -> binary <N>
     binary_parser = subparsers.add_parser("binary", help="Binary field GF(2^n)")
-    binary_parser.add_argument("n", type=int, help="Exponent n for GF(2^n)")
+    binary_parser.add_argument("n", type=int, help="Exponent n")
     flags = cli.parse_args()
 
     program = compile_file(flags.input_file, flags)

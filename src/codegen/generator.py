@@ -1,3 +1,4 @@
+from field_configuration import FieldConfiguration
 from ir.c.c_nodes import (
     CArrayAccess,
     CAssign,
@@ -13,7 +14,6 @@ from ir.c.c_nodes import (
     CWhile,
 )
 from ir.types import ArrayType, BigIntType, IndexType, LoweringError, Type
-from settings import BigIntConfiguration
 
 
 # One level higher ATM
@@ -31,64 +31,61 @@ def generate_type(t: Type) -> str:
             raise ValueError("pattern matching")
 
 
-def generate_expr(expr: CExpression, bigint_config: BigIntConfiguration) -> str:
+def generate_expr(expr: CExpression, field_configuration: FieldConfiguration) -> str:
     match expr:
         case CIdentifier(name):
             return name
         case CArrayAccess(array, index):
-            return f"{generate_expr(array, bigint_config)}[{generate_expr(index, bigint_config)}]"
+            return f"{generate_expr(array, field_configuration)}[{generate_expr(index, field_configuration)}]"
         case CConst(ty, value):
             match ty:
                 case IndexType():
                     return str(value)
                 case BigIntType():
-                    lambd_mask = (1 << bigint_config.lambd) - 1
                     limbs_consts = [
-                        (value >> (i * bigint_config.lambd)) & lambd_mask
-                        for i in range(bigint_config.limbs)
+                        (value >> (i * field_configuration.lambda_))
+                        & field_configuration.lambda_mask
+                        for i in range(field_configuration.limbs)
                     ]
                     return f"bigint_t{{.limbs={{{','.join([f'{hex(x)}UL' for x in limbs_consts])}}}}}"
                 case ArrayType(_):
                     raise LoweringError("array-typed constants?")
         case CBinOp(op, lhs, rhs):
             # Parentheses: better safe than sorry
-            return f"(({generate_expr(lhs, bigint_config)}){op}({generate_expr(rhs, bigint_config)}))"
+            return f"(({generate_expr(lhs, field_configuration)}){op}({generate_expr(rhs, field_configuration)}))"
         case CFunctionCall(func, args):
-            chained_args = ",".join([generate_expr(e, bigint_config) for e in args])
+            chained_args = ",".join(
+                [generate_expr(e, field_configuration) for e in args]
+            )
             return f"{func}({chained_args})"
         case _:
             raise NotImplementedError(f"missing printing pass for expr {type(expr)}")
 
 
-def generate_stmt(stmt: CStatement, bigint_config: BigIntConfiguration) -> str:
+def generate_stmt(stmt: CStatement, field_configuration: FieldConfiguration) -> str:
     match stmt:
         case CDeclaration(ty, name, None):
             return f"{generate_type(ty)} {name};"
         case CDeclaration(ty, name, CExpression() as init):
-            return f"{generate_type(ty)} {name}={generate_expr(init, bigint_config)};"
+            return f"{generate_type(ty)} {name}={generate_expr(init, field_configuration)};"
         case CAssign(CIdentifier(name), rhs):
-            return f"{name}={generate_expr(rhs, bigint_config)};"
+            return f"{name}={generate_expr(rhs, field_configuration)};"
         case CAssign(CArrayAccess(CIdentifier(name)), rhs):
-            return f"{name}={generate_expr(rhs, bigint_config)};"
+            return f"{name}={generate_expr(rhs, field_configuration)};"
         case CReturn(None):
             return "return;"
         case CReturn(CExpression() as expr):
-            return f"return {generate_expr(expr, bigint_config)};"
+            return f"return {generate_expr(expr, field_configuration)};"
         case CWhile(cond, stmts):
-            body = "".join([generate_stmt(s, bigint_config) for s in stmts])
-            return f"while({generate_expr(cond, bigint_config)}){{{body}}}"
+            body = "".join([generate_stmt(s, field_configuration) for s in stmts])
+            return f"while({generate_expr(cond, field_configuration)}){{{body}}}"
         case _:
             raise NotImplementedError(f"missing printing pass for {type(stmt)} {stmt}")
 
 
-def generate_program(p: CProgram, bigint_config: BigIntConfiguration) -> str:
+def generate_program(p: CProgram, field_configuration: FieldConfiguration) -> str:
     # This and that
-    output = [
-        "#pragma once",
-        f"// Generated for "
-        f"{str(bigint_config.field)} "
-        f"({bigint_config.limbs}x{bigint_config.lambd} bits)",
-    ]
+    output = ["#pragma once", f"// Generated for {field_configuration}"]
 
     # Includes
     output.extend(
@@ -110,7 +107,7 @@ def generate_program(p: CProgram, bigint_config: BigIntConfiguration) -> str:
         # Statements
         for s in f.statements:
             assert s
-        output.extend([generate_stmt(s, bigint_config) for s in f.statements])
+        output.extend([generate_stmt(s, field_configuration) for s in f.statements])
         # Closing curly brace and empty line
         output.append("}\n")
     return "\n".join(output)
