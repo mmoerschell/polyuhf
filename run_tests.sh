@@ -1,8 +1,10 @@
 #!/bin/sh
 set -ex
 
+# Uncomment whatever applies
+
 # Build all DSL source files with appropriate fields
-mkdir -p src/cpp/generated
+# mkdir -p src/cpp/generated
 src/main.py -f programs/addition.txt prime 130 5
 src/main.py -f programs/multiplication.txt prime 130 5
 src/main.py -f programs/poly1305.txt prime 130 5
@@ -12,7 +14,6 @@ src/main.py -f programs/sqh.txt prime 130 5
 src/main.py -f programs/nmh.txt prime 130 5
 
 # Build & run test harness
-# Uncomment whatever applies
 
 # mkdir -p src/cpp/build/Debug
 # mkdir -p src/cpp/build/Release

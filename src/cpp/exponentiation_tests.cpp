@@ -1,6 +1,4 @@
-#include "generated/configuration.h"
 #include "generated/exponentiation.h"
-#include "generated/helpers.h"
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/test/data/monomorphic.hpp>

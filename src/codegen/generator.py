@@ -84,26 +84,14 @@ def generate_stmt(stmt: CStatement, field_configuration: FieldConfiguration) -> 
 
 
 def generate_program(p: CProgram, field_configuration: FieldConfiguration) -> str:
-    # This and that
-    output = ["#pragma once", f"// Generated for {field_configuration}"]
-
-    # Includes
-    output.extend(
-        [
-            f"#include {x}"
-            for x in ["<stddef.h>", "<stdint.h>", '"configuration.h"', '"helpers.h"']
-        ]
-    )
-
-    # Add a few empty lines
-    for line in [1, 3, 6, 9]:
-        output.insert(line, "")
+    # Field configuration (datastructures) and arithmetic
+    output = [field_configuration.as_code(), ""]
 
     # Functions
     for f in p.functions:
         # Params
         params = ",".join([f"{generate_type(ty)} {name}" for ty, name in f.parameters])
-        output.append(f"{generate_type(f.return_type)} {f.name}({params})" + "{")
+        output.append(f"inline {generate_type(f.return_type)} {f.name}({params})" + "{")
         # Statements
         for s in f.statements:
             assert s

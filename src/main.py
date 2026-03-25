@@ -15,7 +15,6 @@ from colorama import Fore, Style
 from codegen.formatter import tidy_and_format_c
 from codegen.generator import generate_program
 from field_configuration import BinaryField, FieldConfiguration, PrimeField
-from helpers import Helpers
 from ir.c.lower_imperative_ir import lower_imperative_program
 from ir.imperative.lower_typed_ir import lower_typed_program
 from ir.typed.lower_ast import lower_ast_program
@@ -86,23 +85,6 @@ def compile_string(text: str, flags, program_name: str):
         c_ir = lower_imperative_program(imperative_ir)
         # pprint(c_ir)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] C nodes")
-
-        # Generate settings header
-        config_header_path = "src/cpp/generated/configuration.h"
-        field_configuration.generate_header(config_header_path)
-        print(
-            f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote field configuration "
-            f'header to "{config_header_path}"'
-        )
-
-        # Generate helpers
-        helpers_path = "src/cpp/generated/helpers.h"
-        helpers = Helpers(field_configuration)
-        helpers.generate_header(helpers_path)
-        print(
-            f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote add-mul helpers "
-            f'header to "{helpers_path}"'
-        )
 
         # Codegen (pretty-printing)
         text = generate_program(c_ir, field_configuration)

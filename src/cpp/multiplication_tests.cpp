@@ -1,5 +1,4 @@
 #include "generated/multiplication.h"
-#include "generated/configuration.h"
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/test/data/monomorphic.hpp>

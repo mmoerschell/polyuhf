@@ -1,0 +1,12 @@
+#define BITWIDTH {{ config.bitwidth }}ULL
+#define LIMBS {{ config.limbs }}ULL
+#define LAMBDA {{ config.lambda_ }}ULL
+#define LAMBDA_PRIME {{ config.lambda_prime }}ULL
+#define LAMBDA_MASK {{ hex(config.lambda_mask) }}ULL
+#define LAMBDA_PRIME_MASK {{ hex(config.lambda_prime_mask) }}ULL
+#define KAPPA {{ hex(config.kappa) }}ULL
+
+typedef union {
+    alignas(64) uint64_t limbs[{{  config.limbs }}];
+    // optionally other views into the data
+} bigint_t;

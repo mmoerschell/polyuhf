@@ -15,10 +15,7 @@ namespace bdata = boost::unit_test::data;
 #include <openssl/evp.h>
 
 #include "poly1305_testcases_loader.hpp"
-#include "util.hpp"
 
-#include "generated/configuration.h"
-#include "generated/helpers.h"
 #include "generated/poly1305.h"
 
 static const std::vector<TestCase> tests =
@@ -64,9 +61,9 @@ BOOST_AUTO_TEST_CASE(TestByteLoadingUnloading) {
     // Unloading
     std::array<uint8_t, 16> data_a_prime, data_b_prime;
     std::array<uint8_t, 17> data_c_prime;
-    to_le_bytes(data_a_prime.data(), data_a_prime.size(), a);
-    to_le_bytes(data_b_prime.data(), data_b_prime.size(), b);
-    to_le_bytes(data_c_prime.data(), data_c_prime.size(), c_ref);
+    to_le_bytes(data_a_prime.data(), data_a_prime.size(), &a);
+    to_le_bytes(data_b_prime.data(), data_b_prime.size(), &b);
+    to_le_bytes(data_c_prime.data(), data_c_prime.size(), &c_ref);
     BOOST_CHECK_EQUAL_COLLECTIONS(data_a_prime.cbegin(), data_a_prime.cend(),
                                   data_a.cbegin(), data_a.cend());
     BOOST_CHECK_EQUAL_COLLECTIONS(data_b_prime.cbegin(), data_b_prime.cend(),

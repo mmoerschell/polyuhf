@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from helpers import BUILTIN_BIGINT_FUNCTIONS
+from field_configuration import BUILTIN_BIGINT_FUNCTIONS
 from ir.c.c_nodes import (
     CArrayAccess,
     CAssign,
