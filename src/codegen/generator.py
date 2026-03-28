@@ -8,6 +8,7 @@ from ir.c.c_nodes import (
     CExpression,
     CFunctionCall,
     CIdentifier,
+    CIfElse,
     CProgram,
     CReturn,
     CStatement,
@@ -79,6 +80,13 @@ def generate_stmt(stmt: CStatement, field_configuration: FieldConfiguration) -> 
         case CWhile(cond, stmts):
             body = "".join([generate_stmt(s, field_configuration) for s in stmts])
             return f"while({generate_expr(cond, field_configuration)}){{{body}}}"
+        case CIfElse(cond, then_block, else_block):
+            then = "".join([generate_stmt(s, field_configuration) for s in then_block])
+            elss = "".join([generate_stmt(s, field_configuration) for s in else_block])
+            return (
+                f"if({generate_expr(cond, field_configuration)})"
+                f"{{{then}}}else{{{elss}}}"
+            )
         case _:
             raise NotImplementedError(f"missing printing pass for {type(stmt)} {stmt}")
 

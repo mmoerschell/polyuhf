@@ -87,6 +87,12 @@ class IWhile(IStmt):
 
 
 @dataclass(frozen=True)
+class IIfElse(IStmt):
+    cond: IExpr
+    then_block: IBlock
+    else_block: IBlock
+
+@dataclass(frozen=True)
 class IParam:
     name: str
     ty: Type

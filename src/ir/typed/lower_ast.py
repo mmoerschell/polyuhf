@@ -9,6 +9,7 @@ from ir.typed.typed_nodes import (
     TConst,
     TFunction,
     TFunctionSignature,
+    TIfElse,
     TNode,
     TPower,
     TProgram,
@@ -24,6 +25,7 @@ from parsing.ast.ast_nodes import (
     Div,
     Expr,
     Function,
+    IfElse,
     Int,
     Mul,
     Neg,
@@ -36,78 +38,90 @@ from parsing.ast.ast_nodes import (
 
 
 def lower_ast_expr(ast: Expr, env: Env) -> TNode:  # noqa: C901
-    # TODO: use match-based syntax
-    if isinstance(ast, Int):
-        return TConst(ast.type, ast.value)
+    match ast:
+        case Int():
+            return TConst(ast.type, ast.value)
+        case Var():
+            # Variable should be defined
+            if ast.name not in env.vars:
+                raise LoweringError(f"Undefined variable {ast.name}")
+            return env.vars[ast.name]
 
-    if isinstance(ast, Var):
-        # Variable should be defined
-        if ast.name not in env.vars:
-            raise LoweringError(f"Undefined variable {ast.name}")
-        return env.vars[ast.name]
+        case ArrayAccess():
+            # Name should be defined
+            if ast.array not in env.vars:
+                raise LoweringError(f"Undefined array {ast.array}")
+            # Array
+            base = env.vars[ast.array]
+            # Base must be an array
+            if not isinstance(base.ty, ArrayType):
+                raise LoweringError(
+                    # TODO too strict? Do index arrays make sense?
+                    f"Bracket notation implies a mandatory array type. "
+                    f"Illegal attempt on {ast.array}"
+                )
+            # Index
+            index = lower_ast_expr(ast.index, env)
+            if index.ty != IndexType():
+                f"Array index type must be index, got {index.ty}"
+            return TArrayAccess(base.ty.elem, base, index)
 
-    if isinstance(ast, ArrayAccess):
-        # Name should be defined
-        if ast.array not in env.vars:
-            raise LoweringError(f"Undefined array {ast.array}")
-        # Array
-        base = env.vars[ast.array]
-        # Base must be an array
-        if not isinstance(base.ty, ArrayType):
-            raise LoweringError(
-                # TODO too strict? Do index arrays make sense?
-                f"Bracket notation implies a mandatory array type. "
-                f"Illegal attempt on {ast.array}"
-            )
-        # Index
-        index = lower_ast_expr(ast.index, env)
-        if index.ty != IndexType():
-            f"Array index type must be index, got {index.ty}"
-        return TArrayAccess(base.ty.elem, base, index)
+        case Add():
+            return lower_ast_binop("+", ast.left, ast.right, env)
 
-    if isinstance(ast, Add):
-        return lower_ast_binop("+", ast.left, ast.right, env)
+        case Sub():
+            return lower_ast_binop("-", ast.left, ast.right, env)
 
-    if isinstance(ast, Sub):
-        return lower_ast_binop("-", ast.left, ast.right, env)
+        case Mul():
+            return lower_ast_binop("*", ast.left, ast.right, env)
 
-    if isinstance(ast, Mul):
-        return lower_ast_binop("*", ast.left, ast.right, env)
+        case Div():
+            return lower_ast_binop("/", ast.left, ast.right, env)
 
-    if isinstance(ast, Div):
-        return lower_ast_binop("/", ast.left, ast.right, env)
+        case Power():
+            base = lower_ast_expr(ast.base, env)
+            exponent = lower_ast_expr(ast.exponent, env)
+            # Paper-specific constraints
+            if base.ty != BigIntType():
+                raise LoweringError(
+                    f"exponentiation is only permitted on {BigIntType()} type, "
+                    f"found {base.ty}"
+                )
+            if exponent.ty != IndexType():
+                raise LoweringError(
+                    f"exponents must have type {IndexType()}, found {exponent.ty}"
+                )
+            return TPower(base.ty, base, exponent)
 
-    if isinstance(ast, Power):
-        base = lower_ast_expr(ast.base, env)
-        exponent = lower_ast_expr(ast.exponent, env)
-        # Paper-specific constraints
-        if base.ty != BigIntType():
-            raise LoweringError(
-                f"exponentiation is only permitted on {BigIntType()} type, "
-                f"found {base.ty}"
-            )
-        if exponent.ty != IndexType():
-            raise LoweringError(
-                f"exponents must have type {IndexType()}, found {exponent.ty}"
-            )
-        return TPower(base.ty, base, exponent)
+        case Neg():
+            body = lower_ast_expr(ast.body, env)
+            if body.ty != IndexType():
+                raise LoweringError(
+                    f"unary minus can only be used on expressions of type {IndexType()}"
+                    f", found {body.ty}"
+                )
+            return TUnaryMinus(IndexType(), body)
 
-    if isinstance(ast, Neg):
-        body = lower_ast_expr(ast.body, env)
-        if body.ty != IndexType():
-            raise LoweringError(
-                f"unary minus can only be used on expressions of type {IndexType()}"
-                f", found {body.ty}"
-            )
-        return TUnaryMinus(IndexType(), body)
+        case Reduction():
+            return lower_ast_reduction(ast, env)
 
-    if isinstance(ast, Reduction):
-        return lower_ast_reduction(ast, env)
+        case IfElse(condition, then_branch, else_branch):
+            lo_cond, lo_then, lo_else = [
+                lower_ast_expr(x, env) for x in [condition, then_branch, else_branch]
+            ]
+            if lo_cond.ty != IndexType():
+                raise LoweringError(f"If condition must be of type {IndexType()}")
+            if lo_then.ty != lo_else.ty:
+                raise LoweringError(
+                    f"Arms of if-clause must be of identical type, "
+                    f"found {lo_then.ty} and {lo_else.ty}"
+                )
+            return TIfElse(lo_then.ty, lo_cond, lo_then, lo_else)
 
-    if isinstance(ast, Call):
-        return lower_ast_call(ast, env)
-
-    raise NotImplementedError(f"lowering of {type(ast)}")
+        case Call():
+            return lower_ast_call(ast, env)
+        case _:
+            raise NotImplementedError(f"lowering of {type(ast)}")
 
 
 def lower_ast_binop(op: str, lhs: Expr, rhs: Expr, env: Env) -> TBinOp:

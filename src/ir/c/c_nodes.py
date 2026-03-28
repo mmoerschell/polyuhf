@@ -79,6 +79,13 @@ class CWhile(CStatement):
 
 
 @dataclass(frozen=True)
+class CIfElse(CStatement):
+    condition: CExpression
+    then_block: List[CStatement]
+    else_block: List[CStatement]
+
+
+@dataclass(frozen=True)
 class CFunction:
     name: str
     parameters: List[Tuple[Type, str]]

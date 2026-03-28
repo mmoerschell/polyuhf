@@ -61,6 +61,13 @@ class Neg(Expr):
 
 
 @dataclass
+class IfElse(Expr):
+    condition: Expr
+    then_branch: Expr
+    else_branch: Expr
+
+
+@dataclass
 class Call(Expr):
     func: str  # function name. TODO make this point to IRFunction?
     args: List[Expr]  # argument expressions

@@ -12,6 +12,7 @@ from parsing.ast.ast_nodes import (
     Call,
     Div,
     Function,
+    IfElse,
     Int,
     Mul,
     Neg,
@@ -127,6 +128,13 @@ class ASTBuilder(PolyUHFVisitor):
     def visitParentheses(self, ctx: PolyUHFParser.ParenthesesContext):  # noqa: N802
         # Remove parentheses
         return self.visit(ctx.expr())
+
+    # Visit a parse tree produced by PolyUHFParser#IfElseExpr.
+    def visitIfElseExpr(self, ctx: PolyUHFParser.IfElseExprContext):  # noqa: N802
+        condition, then_branch, else_branch = [
+            self.visit(ctx.expr(i)) for i in range(3)
+        ]
+        return IfElse(condition, then_branch, else_branch)
 
     # Visit a parse tree produced by PolyUHFParser#HexBigIntExpr.
     def visitHexBigIntExpr(self, ctx: PolyUHFParser.HexBigIntExprContext):  # noqa: N802

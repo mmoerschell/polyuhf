@@ -9,6 +9,7 @@ from ir.imperative.imperative_nodes import (
     IDecl,
     IExpr,
     IFunction,
+    IIfElse,
     IParam,
     IPower,
     IProgram,
@@ -24,6 +25,7 @@ from ir.typed.typed_nodes import (
     TCall,
     TConst,
     TFunction,
+    TIfElse,
     TNode,
     TPower,
     TProgram,
@@ -72,6 +74,22 @@ def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
                     return IPower(base.ty, bb, ee), stmts_base + stmts_exp
                 case _:
                     raise NotImplementedError()
+        case TIfElse(ty, cond, if_branch, else_branch):
+            cc, stmts_cc = lower_typed_expression(cond)
+            ii, stmts_if = lower_typed_expression(if_branch)
+            ee, stmts_el = lower_typed_expression(else_branch)
+            result = IVar(ty, fresh_var_name() + "_ie")
+            stmts: List[IStmt] = []
+            stmts += stmts_cc
+            stmts.append(IDecl(result, None))
+            stmts.append(
+                IIfElse(
+                    cc,
+                    IBlock(stmts_if + [IAssign(result, ii)]),
+                    IBlock(stmts_el + [IAssign(result, ee)]),
+                )
+            )
+            return result, stmts
         case TCall():
             raise NotImplementedError()
         case TReduction(ty, op, var, start, stop, step, body):

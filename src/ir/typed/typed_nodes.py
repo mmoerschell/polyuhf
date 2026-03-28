@@ -53,6 +53,13 @@ class TPower(TNode):
 
 
 @dataclass(frozen=True)
+class TIfElse(TNode):
+    cond: TNode
+    then_branch: TNode
+    else_branch: TNode
+
+
+@dataclass(frozen=True)
 class TFunctionSignature:
     name: str
     params: list[Type]

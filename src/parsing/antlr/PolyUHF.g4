@@ -41,6 +41,7 @@ exponentExpr
 
 primary
     : '(' expr ')'                                                              # Parentheses
+    | IF expr '{' expr '}' ELSE '{' expr '}'                                    # IfElseExpr
     | HEX_BIGINT                                                                # HexBigIntExpr
     | DEC_BIGINT                                                                # DecBigIntExpr
     | HEX_INT                                                                   # HexIntExpr
@@ -54,6 +55,8 @@ primary
 // Lexer rules
 
 FUNCTION    : 'func' ;
+IF          : 'if' ;
+ELSE        : 'else' ;
 TYPE_ANNOTATION
     : '[' DEC_INT? ']' (TYPE_BIGINT | TYPE_INDEX)
     | TYPE_BIGINT

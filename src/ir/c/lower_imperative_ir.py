@@ -11,6 +11,7 @@ from ir.c.c_nodes import (
     CFunction,
     CFunctionCall,
     CIdentifier,
+    CIfElse,
     CProgram,
     CReturn,
     CStatement,
@@ -26,6 +27,7 @@ from ir.imperative.imperative_nodes import (
     IDecl,
     IExpr,
     IFunction,
+    IIfElse,
     IPower,
     IProgram,
     IReturn,
@@ -112,6 +114,11 @@ def lower_imperative_statement(stmt: IStmt) -> List[CStatement]:
             stmts_body = sum(map(lower_imperative_statement, body.stmts), [])  # type: ignore
             # recompute condition after every iteration
             return stmts_cond + [CWhile(lo_cond, stmts_body + stmts_cond)]
+        case IIfElse(cond, then_block, else_block):
+            lo_cond, stmts_cond = lower_imperative_expr(cond)
+            stmts_then = sum(map(lower_imperative_statement, then_block.stmts), []) # type: ignore
+            stmts_else = sum(map(lower_imperative_statement, else_block.stmts), []) # type: ignore
+            return stmts_cond + [CIfElse(lo_cond, stmts_then, stmts_else)]
         case _:
             raise ValueError(f"undefined statement {type(stmt)}")
     return output
