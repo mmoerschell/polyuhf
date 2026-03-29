@@ -61,6 +61,42 @@ class Neg(Expr):
 
 
 @dataclass
+class Eq(Expr):
+    lhs: Expr
+    rhs: Expr
+
+
+@dataclass
+class Neq(Expr):
+    lhs: Expr
+    rhs: Expr
+
+
+@dataclass
+class Lt(Expr):
+    lhs: Expr
+    rhs: Expr
+
+
+@dataclass
+class Le(Expr):
+    lhs: Expr
+    rhs: Expr
+
+
+@dataclass
+class Gt(Expr):
+    lhs: Expr
+    rhs: Expr
+
+
+@dataclass
+class Ge(Expr):
+    lhs: Expr
+    rhs: Expr
+
+
+@dataclass
 class IfElse(Expr):
     condition: Expr
     then_branch: Expr

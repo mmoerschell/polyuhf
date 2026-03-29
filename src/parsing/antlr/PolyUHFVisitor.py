@@ -34,6 +34,16 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by PolyUHFParser#SingleCompare.
+    def visitSingleCompare(self, ctx:PolyUHFParser.SingleCompareContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#compOp.
+    def visitCompOp(self, ctx:PolyUHFParser.CompOpContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by PolyUHFParser#AddSub.
     def visitAddSub(self, ctx:PolyUHFParser.AddSubContext):
         return self.visitChildren(ctx)

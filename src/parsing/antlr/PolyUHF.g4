@@ -19,7 +19,15 @@ param_group
     ;
 
 expr
-    : addSubExpr
+    : comparisonExpr
+    ;
+
+comparisonExpr
+    : addSubExpr (compOp addSubExpr)?                       # SingleCompare
+    ;
+
+compOp
+    : EQ | NEQ | LE | GE | LT | GT
     ;
 
 addSubExpr
@@ -64,6 +72,13 @@ TYPE_ANNOTATION
     ;
 TYPE_BIGINT : 'bigint' ;
 TYPE_INDEX  : 'index' ;
+
+EQ  : '==';
+NEQ : '!=';
+LE  : '<=';
+GE  : '>=';
+LT  : '<';
+GT  : '>';
 
 // Bigint literals
 

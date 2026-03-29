@@ -23,12 +23,18 @@ from parsing.ast.ast_nodes import (
     ArrayAccess,
     Call,
     Div,
+    Eq,
     Expr,
     Function,
+    Ge,
+    Gt,
     IfElse,
     Int,
+    Le,
+    Lt,
     Mul,
     Neg,
+    Neq,
     Power,
     Program,
     Reduction,
@@ -102,6 +108,19 @@ def lower_ast_expr(ast: Expr, env: Env) -> TNode:  # noqa: C901
                 )
             return TUnaryMinus(IndexType(), body)
 
+        case Eq(lhs, rhs):
+            return lower_ast_binop("==", lhs, rhs, env)
+        case Neq(lhs, rhs):
+            return lower_ast_binop("!=", lhs, rhs, env)
+        case Lt(lhs, rhs):
+            return lower_ast_binop("<", lhs, rhs, env)
+        case Le(lhs, rhs):
+            return lower_ast_binop("<=", lhs, rhs, env)
+        case Gt(lhs, rhs):
+            return lower_ast_binop(">", lhs, rhs, env)
+        case Ge(lhs, rhs):
+            return lower_ast_binop(">=", lhs, rhs, env)
+
         case Reduction():
             return lower_ast_reduction(ast, env)
 
@@ -122,6 +141,14 @@ def lower_ast_expr(ast: Expr, env: Env) -> TNode:  # noqa: C901
             return lower_ast_call(ast, env)
         case _:
             raise NotImplementedError(f"lowering of {type(ast)}")
+
+
+def lower_ast_comparison(op: str, lhs: Expr, rhs: Expr, env: Env) -> TBinOp:
+    left = lower_ast_expr(lhs, env)
+    right = lower_ast_expr(rhs, env)
+    if left.ty != IndexType() or right.ty != IndexType():
+        raise LoweringError(f"Comparisons are only allowed on {IndexType()}")
+    return TBinOp(IndexType(), op, left, right)
 
 
 def lower_ast_binop(op: str, lhs: Expr, rhs: Expr, env: Env) -> TBinOp:

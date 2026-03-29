@@ -11,11 +11,17 @@ from parsing.ast.ast_nodes import (
     ArrayAccess,
     Call,
     Div,
+    Eq,
     Function,
+    Ge,
+    Gt,
     IfElse,
     Int,
+    Le,
+    Lt,
     Mul,
     Neg,
+    Neq,
     Power,
     Program,
     Reduction,
@@ -73,6 +79,34 @@ class ASTBuilder(PolyUHFVisitor):
         return [(name, ty) for name in names]
 
     # visitExpr omitted, base class handles default behavior
+
+    # Visit a parse tree produced by PolyUHFParser#SingleCompare.
+    def visitSingleCompare(self, ctx:PolyUHFParser.SingleCompareContext):  # noqa: N802
+        left = self.visit(ctx.addSubExpr(0))
+        # No compOp -> single expression
+        if ctx.compOp() is None:
+            return left
+        op_token = ctx.compOp().start
+        right = self.visit(ctx.addSubExpr(1))
+        match op_token.type:
+            case PolyUHFParser.EQ:
+                return Eq(left, right)
+            case PolyUHFParser.NEQ:
+                return Neq(left, right)
+            case PolyUHFParser.LT:
+                return Lt(left, right)
+            case PolyUHFParser.LE:
+                return Le(left, right)
+            case PolyUHFParser.GT:
+                return Gt(left, right)
+            case PolyUHFParser.GE:
+                return Ge(left, right)
+            case _:
+                raise NotImplementedError()
+
+
+    # visitCompOp omitted, handled in visitSingleCompare
+
 
     # Visit a parse tree produced by PolyUHFParser#AddSub.
     def visitAddSub(self, ctx: PolyUHFParser.AddSubContext):  # noqa: N802
