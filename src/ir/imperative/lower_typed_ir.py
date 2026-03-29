@@ -5,6 +5,7 @@ from ir.imperative.imperative_nodes import (
     IAssign,
     IBinOp,
     IBlock,
+    ICall,
     IConst,
     IDecl,
     IExpr,
@@ -90,8 +91,14 @@ def lower_typed_expression(e: TNode) -> Tuple[IExpr, List[IStmt]]:
                 )
             )
             return result, stmts
-        case TCall():
-            raise NotImplementedError()
+        case TCall(ty, function, args):
+            lo_args: List[IExpr] = []
+            stmts: List[IStmt] = []
+            for a in args:
+                lo_a, stmts_a = lower_typed_expression(a)
+                lo_args.append(lo_a)
+                stmts.extend(stmts_a)
+            return ICall(ty, function, lo_args), stmts
         case TReduction(ty, op, var, start, stop, step, body):
             output: List[IStmt] = []
             # Lower start, stop, step expressions

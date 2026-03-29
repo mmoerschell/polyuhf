@@ -1,0 +1,8 @@
+
+func foo() bigint {
+    bar()
+}
+
+func bar() bigint {
+    42L
+}

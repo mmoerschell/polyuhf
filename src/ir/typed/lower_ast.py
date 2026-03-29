@@ -207,7 +207,6 @@ def lower_ast_call(ast: Call, env: Env) -> TCall:
     args: List[TNode] = []
     for arg in ast.args:
         lo = lower_ast_expr(arg, env)
-        assert isinstance(lo, TVar)
         args.append(lo)
 
     # Check number of arguments

@@ -80,8 +80,14 @@ def lower_imperative_expr(expr: IExpr) -> Tuple[CExpression, List[CStatement]]: 
                 CFunctionCall(BUILTIN_BIGINT_FUNCTIONS["^"], [bb, ee]),
                 stmts_base + stmts_exp,
             )
-        case ICall(ty):
-            raise NotImplementedError(type(expr))
+        case ICall(ty, function, args):
+            lo_args: List[CExpression] = []
+            stmts: List[CStatement] = []
+            for a in args:
+                lo_a, stmts_a = lower_imperative_expr(a)
+                lo_args.append(lo_a)
+                stmts.extend(stmts_a)
+            return CFunctionCall(function, lo_args), stmts
         case _:
             raise NotImplementedError(type(expr))
 
