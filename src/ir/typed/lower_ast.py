@@ -32,6 +32,7 @@ from parsing.ast.ast_nodes import (
     Int,
     Le,
     Lt,
+    Mod,
     Mul,
     Neg,
     Neq,
@@ -83,6 +84,9 @@ def lower_ast_expr(ast: Expr, env: Env) -> TNode:  # noqa: C901
 
         case Div():
             return lower_ast_binop("/", ast.left, ast.right, env)
+
+        case Mod(left, right):
+            return lower_ast_binop("%", left, right, env)
 
         case Power():
             base = lower_ast_expr(ast.base, env)
@@ -160,6 +164,8 @@ def lower_ast_binop(op: str, lhs: Expr, rhs: Expr, env: Env) -> TBinOp:
             raise LoweringError("field subtraction not allowed")
         if op == "/" and left.ty == BigIntType():
             raise NotImplementedError("Field division? What do we do?")
+        if op == "%" and left.ty != IndexType():
+            raise LoweringError(f"Modulo operator only allowed on {IndexType()} type")
         return TBinOp(left.ty, op, left, right)
 
     raise LoweringError(f"type mismatch on {op} operation")

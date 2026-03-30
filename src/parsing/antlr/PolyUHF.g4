@@ -35,7 +35,7 @@ addSubExpr
     ;
 
 mulDivExpr
-    : unaryMinusExpr ( op+=( '*' | '/' ) unaryMinusExpr )*  # MulDiv
+    : unaryMinusExpr ( op+=( '*' | '/' | '%' ) unaryMinusExpr )*  # MulDiv
     ;
 
 unaryMinusExpr

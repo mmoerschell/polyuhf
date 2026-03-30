@@ -19,6 +19,7 @@ from parsing.ast.ast_nodes import (
     Int,
     Le,
     Lt,
+    Mod,
     Mul,
     Neg,
     Neq,
@@ -133,13 +134,16 @@ class ASTBuilder(PolyUHFVisitor):
             return nodes[0]
         node = nodes[0]
         for op_token, rhs in zip(ctx.op, nodes[1:], strict=True):
-            if op_token.text == "*":
-                node = Mul(node, rhs)
-            elif op_token.text == "/":
-                node = Div(node, rhs)
-            else:
-                # CF reaches here -> grammar is broken
-                raise RuntimeError(f"Invalid MulDiv operator '{op_token.text}'")
+            match op_token.text:
+                case "*":
+                    node = Mul(node, rhs)
+                case "/":
+                    node = Div(node, rhs)
+                case "%":
+                    node = Mod(node, rhs)
+                case _:
+                    # CF reaches here -> grammar is broken
+                    raise RuntimeError(f"Invalid MulDiv operator '{op_token.text}'")
         return node
 
     # Visit a parse tree produced by PolyUHFParser#UnaryMinus.

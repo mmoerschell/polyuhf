@@ -50,6 +50,12 @@ class Div(Expr):
 
 
 @dataclass
+class Mod(Expr):
+    left: Expr
+    right: Expr
+
+
+@dataclass
 class Power(Expr):
     base: Expr
     exponent: Expr  # could restrict this to Int
