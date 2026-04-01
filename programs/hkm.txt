@@ -1,0 +1,14 @@
+// B is the length (number of blocks) of M
+func hkm(r, M []bigint, B index) bigint {
+    if B == 1 {
+        r[0] + M[0]
+    } else {
+        hkm(r, r, 2 * (B / 2) - 1) *
+        (r[B/2] + M[2 * (B / 2) - 1]) + // paper is 1-indexed
+        if B % 2 {
+            M[B - 1] // paper is 1-indexed
+        } else {
+            0L
+        }
+    }
+}
