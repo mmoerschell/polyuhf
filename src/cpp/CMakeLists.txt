@@ -17,6 +17,7 @@ add_executable(tests
     mmh_tests.cpp
     sqh_tests.cpp
     nmh_tests.cpp
+    hkm_tests.cpp
 )
 
 target_link_libraries(tests

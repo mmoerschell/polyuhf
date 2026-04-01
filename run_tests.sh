@@ -12,6 +12,7 @@ src/main.py -f programs/exponentiation.txt prime 130 5
 src/main.py -f programs/mmh.txt prime 130 5
 src/main.py -f programs/sqh.txt prime 130 5
 src/main.py -f programs/nmh.txt prime 130 5
+src/main.py -f programs/hkm.txt prime 130 5
 
 # Build & run test harness
 
