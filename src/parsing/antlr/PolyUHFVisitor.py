@@ -14,8 +14,13 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#function.
-    def visitFunction(self, ctx:PolyUHFParser.FunctionContext):
+    # Visit a parse tree produced by PolyUHFParser#HelperFunction.
+    def visitHelperFunction(self, ctx:PolyUHFParser.HelperFunctionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#HashFunction.
+    def visitHashFunction(self, ctx:PolyUHFParser.HashFunctionContext):
         return self.visitChildren(ctx)
 
 

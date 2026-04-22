@@ -12,9 +12,10 @@ from parsing.ast.ast_nodes import (
     Call,
     Div,
     Eq,
-    Function,
     Ge,
     Gt,
+    HashFunction,
+    HelperFunction,
     IfElse,
     Int,
     Le,
@@ -40,15 +41,21 @@ class ASTBuilder(PolyUHFVisitor):
     def visitProgram(self, ctx: PolyUHFParser.ProgramContext):  # noqa: N802
         return Program([self.visit(f) for f in ctx.function()])
 
-    # Visit a parse tree produced by PolyUHFParser#function.
-    def visitFunction(self, ctx: PolyUHFParser.FunctionContext):  # noqa: N802
+    # Visit a parse tree produced by PolyUHFParser#HelperFunction.
+    def visitHelperFunction(self, ctx: PolyUHFParser.HelperFunctionContext):  # noqa: N802
         name = ctx.IDENTIFIER().getText()
         assert isinstance(name, str)
         param_groups = [self.visit(param_group) for param_group in ctx.param_group()]
         params: List[Tuple[str, Type]] = list(chain.from_iterable(param_groups))
         return_type = self.visit(ctx.type_annotation())
         body = self.visit(ctx.expr())
-        return Function(name, params, return_type, body)
+        return HelperFunction(name, params, return_type, body)
+
+    # Visit a parse tree produced by PolyUHFParser#HashFunction.
+    def visitHashFunction(self, ctx: PolyUHFParser.HashFunctionContext):  # noqa: N802
+        name = ctx.IDENTIFIER.getText()
+        body = self.visit(ctx.expr())
+        return HashFunction(name, body)
 
     # Visit a parse tree produced by PolyUHFParser#type_annotation.
     def visitType_annotation(self, ctx: PolyUHFParser.Type_annotationContext):  # noqa: N802
@@ -82,7 +89,7 @@ class ASTBuilder(PolyUHFVisitor):
     # visitExpr omitted, base class handles default behavior
 
     # Visit a parse tree produced by PolyUHFParser#SingleCompare.
-    def visitSingleCompare(self, ctx:PolyUHFParser.SingleCompareContext):  # noqa: N802
+    def visitSingleCompare(self, ctx: PolyUHFParser.SingleCompareContext):  # noqa: N802
         left = self.visit(ctx.addSubExpr(0))
         # No compOp -> single expression
         if ctx.compOp() is None:
@@ -105,9 +112,7 @@ class ASTBuilder(PolyUHFVisitor):
             case _:
                 raise NotImplementedError()
 
-
     # visitCompOp omitted, handled in visitSingleCompare
-
 
     # Visit a parse tree produced by PolyUHFParser#AddSub.
     def visitAddSub(self, ctx: PolyUHFParser.AddSubContext):  # noqa: N802

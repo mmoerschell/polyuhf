@@ -1,0 +1,13 @@
+QUESTIONS:
+
+- Three-term multiplication by kappa easily overflows, for wide kappa. Assume kappa is small?
+=> Pick appropriate kappa
+- Who loads/unloads packed bytes into limbs? DSL/Compiler? Programmer?
+=> always assume key/message/tag, message is a sequence of bytes
+- Modular reduction: do we care to reduce say 2^130 - 6 (costing us some extra operations) or is it unlikely anyway?
+=> One finalization step
+- Using if-else, CFG: loss of generality for expression-based tree (doing op with neutral element instead of doing no op)
+=> So be it. Use ternary if-else if possible
+- Carrying around the lowest two limbs: safe to assume two is enough? Need to derive a bound?
+=> Try with all ones
+

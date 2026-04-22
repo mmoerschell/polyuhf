@@ -7,7 +7,8 @@ program
     ;
 
 function
-    : FUNCTION IDENTIFIER '(' (param_group ( ',' param_group )*)? ')' type_annotation '{' expr '}'
+    : FUNCTION IDENTIFIER '(' (param_group ( ',' param_group )*)? ')' type_annotation '{' expr '}'  # HelperFunction
+    | HASHFUNC IDENTIFIER '{' expr '}'                                                         # HashFunction
     ;
 
 type_annotation
@@ -62,6 +63,7 @@ primary
 
 // Lexer rules
 
+HASHFUNC    : 'hashfunc' ;
 FUNCTION    : 'func' ;
 IF          : 'if' ;
 ELSE        : 'else' ;

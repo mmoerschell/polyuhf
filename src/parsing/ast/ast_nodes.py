@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import List, Tuple
 
@@ -136,12 +138,20 @@ class Reduction(Expr):
 
 @dataclass
 class Program(ASTNode):
-    functions: List["Function"]
+    helper_functions: List[HelperFunction]
+    hash_functions: List[HashFunction]
 
 
 @dataclass
-class Function(ASTNode):
+class HelperFunction(ASTNode):
     name: str
     params: List[Tuple[str, Type]]
     return_type: Type
+    body: Expr
+
+
+@dataclass
+class HashFunction(ASTNode):
+    # These have builtin key, message, message_len parameters and produce a tag
+    name: str
     body: Expr

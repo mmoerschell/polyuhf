@@ -1,0 +1,8 @@
+TODO:
+
+- Parameterize fields in tests
+- Constant folding, +0 optimizations, etc. (HKM) => SymPy??
+- Fix 16-bit multiplication
+- Test different limb sizes (e.g. 5x26 for Poly1305)
+- Vectorize reductions
+- Headers for mutual recursion in any order
