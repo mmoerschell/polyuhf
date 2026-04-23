@@ -12,6 +12,7 @@ inline bigint_t _bigint_add(const bigint_t lhs, const bigint_t rhs) {
     return dst;
 }
 
+// Aliasing-safe
 void op_add(bigint_t *dst, const bigint_t *lhs, const bigint_t *rhs) {
     for (size_t i = 0; i < LIMBS; ++i)
         dst->limbs[i] = lhs->limbs[i] + rhs->limbs[i];

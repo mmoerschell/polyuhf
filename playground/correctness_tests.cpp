@@ -4,6 +4,7 @@
 
 #include <array>
 #include <iomanip>
+#include <print>
 #include <span>
 #include <stdexcept>
 
@@ -123,20 +124,28 @@ TEST(VectorTests, BasicSboxSum) {
 
     // Implementation
     alignas(64) uint64x2_t acc[LIMBS] = {0};
-    
+
     for (size_t pass = 0; pass < 9; ++pass) {
         // Load 2 bigints into current
         alignas(64) uint64x2_t current[LIMBS];
         for (size_t row = 0; row < LIMBS - 1; ++row) {
             current[row] = {
-                (static_cast<uint64_t>(SBOX[28 * pass + 3 * row])) | (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 1]) << 8ull) | (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 2]) << 16ull),
-                (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 14])) | (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 15]) << 8ull) | (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 16]) << 16ull)
-            };
+                (static_cast<uint64_t>(SBOX[28 * pass + 3 * row])) |
+                    (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 1])
+                     << 8ull) |
+                    (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 2])
+                     << 16ull),
+                (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 14])) |
+                    (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 15])
+                     << 8ull) |
+                    (static_cast<uint64_t>(SBOX[28 * pass + 3 * row + 16])
+                     << 16ull)};
         }
         current[LIMBS - 1] = {
-                (static_cast<uint64_t>(SBOX[28 * pass + 12])) | (static_cast<uint64_t>(SBOX[28 * pass + 13]) << 8ull),
-                (static_cast<uint64_t>(SBOX[28 * pass + 26])) | (static_cast<uint64_t>(SBOX[28 * pass + 27]) << 8ull)
-        };
+            (static_cast<uint64_t>(SBOX[28 * pass + 12])) |
+                (static_cast<uint64_t>(SBOX[28 * pass + 13]) << 8ull),
+            (static_cast<uint64_t>(SBOX[28 * pass + 26])) |
+                (static_cast<uint64_t>(SBOX[28 * pass + 27]) << 8ull)};
 
         // acc = limb-wise sum of acc and current
         for (size_t i = 0; i < LIMBS; ++i)
@@ -161,4 +170,29 @@ TEST(VectorTests, BasicSboxSum) {
 
     EXPECT_EQ(memcmp(tag_act.data(), tag_exp.data(), tag_act.size()), 0)
         << "\nact: " << to_hex(tag_act) << "\nexp: " << to_hex(tag_exp);
+}
+
+class LongMessageTest : public testing::Test {
+  protected:
+    LongMessageTest() : message_(16000) {
+        deterministic_sequence(message_);
+        for (size_t i = 0; i < 15; ++i)
+            std::print("{} ", message_[i]);
+        std::println("");
+    }
+
+    ~LongMessageTest() override = default;
+
+    std::vector<uint8_t> message_;
+
+  private:
+    static void deterministic_sequence(std::span<uint8_t> data) {
+        for (size_t i = 0; i < data.size(); ++i)
+            data[i] = static_cast<uint8_t>((i * 0xdeadbeefull >> 24) ^
+                                           (i & 1 ? 0xaa : 0x55));
+    }
+};
+
+TEST_F(LongMessageTest, MMHVector) {
+    EXPECT_TRUE(true);
 }
