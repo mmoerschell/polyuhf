@@ -37,6 +37,9 @@ Implement the backend that generates C/C++ code from the IR. Ideally, both ARM a
     - Generalize?
     - Heuristics?
     - Abstract platform away
+1. Unrolling (by a specific width > #lanes)
+    - Multiple accumulators to remove dependencies
+1. (arm-specific): smaller limb sizes for more lanes? better performance?
 1. Have a look at OpenSSL asm
 
 ## (d) Automatic Verification via Symbolic Execution

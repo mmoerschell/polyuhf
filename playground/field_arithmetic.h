@@ -6,6 +6,8 @@
 
 void op_add(bigint_t *dst, const bigint_t *lhs, const bigint_t *rhs);
 
+void op_mul(bigint_t *dst, const bigint_t *lhs, const bigint_t *rhs);
+
 void carry_round(bigint_t *x);
 
 void load_le_bytes(bigint_t *dst, const uint8_t *src, const size_t n_src_bytes);

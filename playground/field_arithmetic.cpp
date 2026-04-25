@@ -18,6 +18,15 @@ void op_add(bigint_t *dst, const bigint_t *lhs, const bigint_t *rhs) {
         dst->limbs[i] = lhs->limbs[i] + rhs->limbs[i];
 }
 
+void op_mul(bigint_t *dst, const bigint_t *lhs, const bigint_t *rhs) {
+    for (size_t i = 0; i < LIMBS; ++i) {
+        for (size_t j = 0; j <= i; ++j)
+            dst->limbs[i] += lhs->limbs[j] * rhs->limbs[i - j];
+        for (size_t j = i + 1; j < LIMBS; ++j)
+            dst->limbs[i] += lhs->limbs[j] * KAPPA * rhs->limbs[LIMBS + i - j];
+    }
+}
+
 void carry_round(bigint_t *x) {
     for (size_t i = 0; i < LIMBS - 1; ++i) {
         x->limbs[i + 1] += x->limbs[i] >> LAMBDA;
