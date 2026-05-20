@@ -2,20 +2,27 @@ grammar PolyUHF;
 
 // Parser rules
 
-program
+module
     : function+ EOF
     ;
 
 function
-    : FUNCTION IDENTIFIER '(' (param_group ( ',' param_group )*)? ')' type_annotation '{' expr '}'
-    ;
-
-type_annotation
-    : TYPE_ANNOTATION
+    : FUNCTION IDENTIFIER '(' (param_group ( ',' param_group )*)? ')' ttype '{' expr '}'
     ;
 
 param_group
-    : IDENTIFIER ( ',' IDENTIFIER )* type_annotation
+    : IDENTIFIER ( ',' IDENTIFIER )* ttype
+    ;
+
+ttype
+    : 'bufferview' '<' underlying=field_ttype ',' chunk_size=DECIMAL '>'    # BufferViewType
+    | field_ttype                                                           # FieldType
+    | INDEX                                                                 # IndexType
+    ;
+
+field_ttype
+    : 'prime' '<' pi=DECIMAL ',' theta=DECIMAL '>'  # PrimeFieldType
+    | 'binary' '<' DECIMAL '>'                      # BinaryFieldType
     ;
 
 expr
@@ -50,28 +57,29 @@ exponentExpr
 primary
     : '(' expr ')'                                                              # Parentheses
     | IF expr '{' expr '}' ELSE '{' expr '}'                                    # IfElseExpr
-    | HEX_BIGINT                                                                # HexBigIntExpr
-    | DEC_BIGINT                                                                # DecBigIntExpr
-    | HEX_INT                                                                   # HexIntExpr
-    | DEC_INT                                                                   # DecIntExpr
+    | HEXADECIMAL (AS ttype)?                                                   # HexadecimalExpression
+    | DECIMAL (AS ttype)?                                                       # DecimalExpr
     | IDENTIFIER '(' (expr (',' expr)*)? ')'                                    # CallExpr
-    | IDENTIFIER '[' expr ']'                                                   # ArrayExpr
+    | IDENTIFIER '[' expr ']'                                                   # BufferViewReadExpr
     | IDENTIFIER                                                                # IdentifierExpression
     | op=('*' | '+') '[' IDENTIFIER ',' expr ':' expr ':' expr ']' '{' expr '}' # ReductionExpr
     ;
 
 // Lexer rules
 
+HASHFUNC    : 'hashfunc' ;
 FUNCTION    : 'func' ;
 IF          : 'if' ;
 ELSE        : 'else' ;
-TYPE_ANNOTATION
-    : '[' DEC_INT? ']' (TYPE_BIGINT | TYPE_INDEX)
-    | TYPE_BIGINT
-    | TYPE_INDEX
+AS          : 'as' ;
+PADDING
+    : 'zero'
     ;
-TYPE_BIGINT : 'bigint' ;
-TYPE_INDEX  : 'index' ;
+ENDIANNESS
+    : 'little'
+    | 'big'
+    ;
+INDEX  : 'index' ;
 
 EQ  : '==';
 NEQ : '!=';
@@ -80,14 +88,9 @@ GE  : '>=';
 LT  : '<';
 GT  : '>';
 
-// Bigint literals
-
-HEX_BIGINT : '0x' [0-9a-fA-F]+ ('L' | 'l') ;
-DEC_BIGINT : [0-9]+ ('L' | 'l') ;
-
-// Index literals
-HEX_INT : '0x' [0-9a-fA-F]+ ;
-DEC_INT : [0-9]+ ;
+// Numeric literals
+HEXADECIMAL : '0x' [0-9a-fA-F]+ ;
+DECIMAL : [0-9]+ ;
 
 // Identifiers
 IDENTIFIER  : [a-zA-Z] [a-zA-Z0-9_]* ;

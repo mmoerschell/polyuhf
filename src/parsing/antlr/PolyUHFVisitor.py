@@ -9,8 +9,8 @@ else:
 
 class PolyUHFVisitor(ParseTreeVisitor):
 
-    # Visit a parse tree produced by PolyUHFParser#program.
-    def visitProgram(self, ctx:PolyUHFParser.ProgramContext):
+    # Visit a parse tree produced by PolyUHFParser#module.
+    def visitModule(self, ctx:PolyUHFParser.ModuleContext):
         return self.visitChildren(ctx)
 
 
@@ -19,13 +19,33 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#type_annotation.
-    def visitType_annotation(self, ctx:PolyUHFParser.Type_annotationContext):
+    # Visit a parse tree produced by PolyUHFParser#param_group.
+    def visitParam_group(self, ctx:PolyUHFParser.Param_groupContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#param_group.
-    def visitParam_group(self, ctx:PolyUHFParser.Param_groupContext):
+    # Visit a parse tree produced by PolyUHFParser#BufferViewType.
+    def visitBufferViewType(self, ctx:PolyUHFParser.BufferViewTypeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#FieldType.
+    def visitFieldType(self, ctx:PolyUHFParser.FieldTypeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#IndexType.
+    def visitIndexType(self, ctx:PolyUHFParser.IndexTypeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#PrimeFieldType.
+    def visitPrimeFieldType(self, ctx:PolyUHFParser.PrimeFieldTypeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#BinaryFieldType.
+    def visitBinaryFieldType(self, ctx:PolyUHFParser.BinaryFieldTypeContext):
         return self.visitChildren(ctx)
 
 
@@ -79,23 +99,13 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#HexBigIntExpr.
-    def visitHexBigIntExpr(self, ctx:PolyUHFParser.HexBigIntExprContext):
+    # Visit a parse tree produced by PolyUHFParser#HexadecimalExpression.
+    def visitHexadecimalExpression(self, ctx:PolyUHFParser.HexadecimalExpressionContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#DecBigIntExpr.
-    def visitDecBigIntExpr(self, ctx:PolyUHFParser.DecBigIntExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by PolyUHFParser#HexIntExpr.
-    def visitHexIntExpr(self, ctx:PolyUHFParser.HexIntExprContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by PolyUHFParser#DecIntExpr.
-    def visitDecIntExpr(self, ctx:PolyUHFParser.DecIntExprContext):
+    # Visit a parse tree produced by PolyUHFParser#DecimalExpr.
+    def visitDecimalExpr(self, ctx:PolyUHFParser.DecimalExprContext):
         return self.visitChildren(ctx)
 
 
@@ -104,8 +114,8 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#ArrayExpr.
-    def visitArrayExpr(self, ctx:PolyUHFParser.ArrayExprContext):
+    # Visit a parse tree produced by PolyUHFParser#BufferViewReadExpr.
+    def visitBufferViewReadExpr(self, ctx:PolyUHFParser.BufferViewReadExprContext):
         return self.visitChildren(ctx)
 
 

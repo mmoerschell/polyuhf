@@ -1,0 +1,11 @@
+// {{ x }} = carry {{ x }}
+{% for i in range(limbs - 1) %}
+{{ x }}.limbs[{{i + 1}}] = vaddq_u{{ mw }}({{x}}.limbs[{{i+1}}], vshrq_n_u{{mw}}({{ x }}.limbs[{{i}}], {{ lambda }}));
+{{ x }}.limbs[{{i}}] = vandq_u{{mw}}({{x}}.limbs[{{i}}], vdupq_n_u{{mw}}({{lambda_mask}}ull));
+{% endfor %}
+{{ x }}.limbs[0] = vaddq_u{{ mw }}({{ x }}.limbs[0], vmulq_u{{mw}}(vdupq_n_u{{mw}}({{theta}}ull), vshrq_n_u{{mw}}({{ x }}.limbs[{{ limbs - 1}}],{{lambda_prime}})));
+{{ x }}.limbs[{{ limbs - 1}}] = vandq_u{{mw}}({{ x }}.limbs[{{ limbs - 1}}], vdupq_n_u{{mw}}({{lambda_prime_mask}}ull));
+{% for i in range(2) %}
+{{ x }}.limbs[{{i + 1}}] = vaddq_u{{ mw }}({{x}}.limbs[{{i+1}}], vshrq_n_u{{mw}}({{ x }}.limbs[{{i}}], {{ lambda }}));
+{{ x }}.limbs[{{i}}] = vandq_u{{mw}}({{x}}.limbs[{{i}}], vdupq_n_u{{mw}}({{lambda_mask}}ull));
+{% endfor %}

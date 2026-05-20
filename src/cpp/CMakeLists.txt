@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(polyuhf_tests LANGUAGES CXX)
+project(polyuhf_tests LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -10,14 +10,13 @@ find_package(OpenSSL REQUIRED)
 
 add_executable(tests
     main.cpp
-    addition_tests.cpp
-    multiplication_tests.cpp
-    exponentiation_tests.cpp
-    poly1305_tests.cpp
-    mmh_tests.cpp
-    sqh_tests.cpp
-    nmh_tests.cpp
-    hkm_tests.cpp
+    load_store_tests.cpp
+    hashing_tests.cpp
+    # poly1305_tests.cpp
+    generated/load_store.c
+    generated/mmh.c
+    generated/sqh.c
+    generated/nmh.c
 )
 
 target_link_libraries(tests

@@ -1,7 +1,7 @@
 import subprocess
 
-CLANG_TIDY = "clang-tidy-mp-21"
-CLANG_FORMAT = "clang-format-mp-21"
+CLANG_TIDY = "/opt/homebrew/opt/llvm/bin/clang-tidy"
+CLANG_FORMAT = "/opt/homebrew/opt/llvm/bin/clang-format"
 
 
 def tidy_and_format_c(path: str) -> None:
@@ -13,11 +13,12 @@ def tidy_and_format_c(path: str) -> None:
                 path,
                 "-checks=readability-redundant-parentheses",
                 "-fix",
+                "-fix-errors",
                 "-format-style=none",
                 "--",
-                "-std=c++23",
+                "-std=c23",
                 "-x",
-                "c++",
+                "c",
             ],
             check=True,
             capture_output=True,

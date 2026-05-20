@@ -226,3 +226,4 @@ programs/debug.txt
 # Generated code
 src/cpp/generated
 src/cpp/compile_commands.json
+src/cpp/build

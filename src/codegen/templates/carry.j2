@@ -1,0 +1,7 @@
+// carry {{ x }}
+{% for i in range(limbs - 1) %}{{ x }}.limbs[{{i + 1}}] += {{ x }}.limbs[{{i}}] >> {{ lambda }};
+{{ x }}.limbs[{{i}}] &= {{lambda_mask}}ull;{% endfor %}
+{{ x }}.limbs[0] += {{ theta }} * ({{ x }}.limbs[{{ limbs - 1 }}] >> {{ lambda_prime }});
+{{ x }}.limbs[{{ limbs - 1 }}] &= {{lambda_prime_mask}}ull;
+{% for i in range(2) %}{{ x }}.limbs[{{i + 1}}] += {{ x }}.limbs[{{i}}] >> {{ lambda }};
+{{ x }}.limbs[{{i}}] &= {{ lambda_mask }}ull;{% endfor %}

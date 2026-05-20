@@ -1,0 +1,4 @@
+// {{ dst }} = mul {{ lhs }} {{ rhs }}
+{% for i in range(limbs) %}{% for j in range(i + 1) %}{{ dst }}.limbs[{{ i }}] += {{ lhs }}.limbs[{{ j }}] * {{ rhs }}.limbs[{{ i - j }}];
+{% endfor %}{% for j in range(i + 1, limbs) %}{{ dst }}.limbs[{{ i }}] += {{ lhs }}.limbs[{{ j }}] * {{ kappa }} * {{ rhs }}.limbs[{{ limbs + i - j }}];{% endfor %}
+{% endfor %}

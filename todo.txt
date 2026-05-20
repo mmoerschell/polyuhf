@@ -1,0 +1,16 @@
+TODO:
+
+- Find & remove hard-coded constants
+- Normalized loads
+- Who sets # of lanes? compile_dsl_type or programmer?
+- TODOs FIXMEs WARNs etc
+- Node sharing
+- Fix if-else, calls
+- Fix poly1305 example
+- Fix NMH, HKM, Poly1305 tests
+- Test different limb sizes (e.g. 5x26 for Poly1305)
+- Parameter selection
+  +--> Delayed carry propagation... SQH fails after a few hundred blocks
+  +--> Vectorized in-loop carries every so often?
+- Remove endianness and padding from grammar
+- Performance model & tests

@@ -1,9 +1,3 @@
-/*
-R: key
-M: message
-n (B in the paper): message size
-*/
-
-func nmh(R, M []bigint, n index) bigint {
-    +[i,0:n:2]{(M[i] + R[i]) * (M[i+1] + R[i+1])}
+func nmh(message, key bufferview<prime<116, 3>, 14>, B index) prime<116, 3> {
+    +[i,0:B:2]{(message[i] + key[i]) * (message[i+1] + key[i+1])}
 }

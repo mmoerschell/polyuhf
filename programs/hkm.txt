@@ -1,5 +1,4 @@
-// B is the length (number of blocks) of M
-func hkm(r, M []bigint, B index) bigint {
+func hkm(r, M bufferview<prime<116, 3>, 14>, B index) prime<116, 3> {
     if B == 1 {
         r[0] + M[0]
     } else {
@@ -8,7 +7,7 @@ func hkm(r, M []bigint, B index) bigint {
         if B % 2 {
             M[B - 1] // paper is 1-indexed
         } else {
-            0L
+            0 as prime<116, 3>
         }
     }
 }

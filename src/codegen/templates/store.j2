@@ -1,0 +1,6 @@
+// {{ dst_ptr }} = store {{ rhs }}
+{% for i in range(n_bytes - 1) %}{{ dst_ptr }}[{{ i }}]
+= (uint8_t)({{ rhs }}.limbs[{{ 8 * i // lambd }}] >> ({{ 8 * i % lambd }}))
+| (uint8_t)({{ rhs }}.limbs[{{ 8 * i // lambd + 1}}] << ({{ lambd - (8 * i % lambd )}}));
+{% endfor %}
+{{ dst_ptr }}[{{ n_bytes - 1 }}] = (uint8_t)({{ rhs }}.limbs[{{ 8 * (n_bytes - 1) // lambd }}] >> {{ 8 * (n_bytes - 1) % lambd }});

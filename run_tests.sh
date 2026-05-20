@@ -1,29 +1,15 @@
 #!/bin/sh
-set -ex
+set -eux
 
 # Uncomment whatever applies
 
-# Build all DSL source files with appropriate fields
+# Build all DSL source files
 # mkdir -p src/cpp/generated
-src/main.py -f programs/addition.txt prime 130 5
-src/main.py -f programs/multiplication.txt prime 130 5
-src/main.py -f programs/poly1305.txt prime 130 5
-src/main.py -f programs/exponentiation.txt prime 130 5
-src/main.py -f programs/mmh.txt prime 130 5
-src/main.py -f programs/sqh.txt prime 130 5
-src/main.py -f programs/nmh.txt prime 130 5
-src/main.py -f programs/hkm.txt prime 130 5
+find programs -iname '*.txt' -print0 |
+  xargs -0 -n1 sh -c './src/main.py -f "$1" || exit 255' sh
 
 # Build & run test harness
-
-# mkdir -p src/cpp/build/Debug
-# mkdir -p src/cpp/build/Release
-
-# cmake -S src/cpp -B src/cpp/build/Debug -G Ninja -DCMAKE_BUILD_TYPE=Debug
-# cmake -S src/cpp -B src/cpp/build/Release -G Ninja -DCMAKE_BUILD_TYPE=Release
-
-# cmake --build src/cpp/build/Debug
-cmake --build src/cpp/build/Release
-
-# ./src/cpp/build/Debug/tests $@
-./src/cpp/build/Release/tests $@
+# mkdir -p src/cpp/build
+# cmake -S src/cpp -B src/cpp/build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+cmake --build src/cpp/build
+./src/cpp/build/tests $@

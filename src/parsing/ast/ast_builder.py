@@ -1,33 +1,26 @@
-# pyright: standard
-
 from itertools import chain
-from typing import List, Tuple
 
-from ir.types import ArrayType, BigIntType, IndexType, Type
 from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.antlr.PolyUHFVisitor import PolyUHFVisitor
 from parsing.ast.ast_nodes import (
-    Add,
-    ArrayAccess,
-    Call,
-    Div,
-    Eq,
-    Function,
-    Ge,
-    Gt,
-    IfElse,
-    Int,
-    Le,
-    Lt,
-    Mod,
-    Mul,
-    Neg,
-    Neq,
-    Power,
-    Program,
-    Reduction,
-    Sub,
-    Var,
+    ASTBinaryOperation,
+    ASTBufferViewRead,
+    ASTCall,
+    ASTComparison,
+    ASTFunction,
+    ASTIfElse,
+    ASTInt,
+    ASTLocalIdentifier,
+    ASTModule,
+    ASTReduction,
+    ASTUnaryMinus,
+)
+from typesystem import (
+    BinaryField,
+    BufferView,
+    DSLType,
+    Index,
+    PrimeField,
 )
 
 
@@ -36,53 +29,64 @@ class DSLParseError(SyntaxError):
 
 
 class ASTBuilder(PolyUHFVisitor):
-    # Visit a parse tree produced by PolyUHFParser#program.
-    def visitProgram(self, ctx: PolyUHFParser.ProgramContext):  # noqa: N802
-        return Program([self.visit(f) for f in ctx.function()])
+    # Visit a parse tree produced by PolyUHFParser#module.
+    def visitModule(self, ctx: PolyUHFParser.ModuleContext):  # noqa: N802
+        return ASTModule([self.visit(f) for f in ctx.function()])
 
     # Visit a parse tree produced by PolyUHFParser#function.
     def visitFunction(self, ctx: PolyUHFParser.FunctionContext):  # noqa: N802
         name = ctx.IDENTIFIER().getText()
         assert isinstance(name, str)
         param_groups = [self.visit(param_group) for param_group in ctx.param_group()]
-        params: List[Tuple[str, Type]] = list(chain.from_iterable(param_groups))
-        return_type = self.visit(ctx.type_annotation())
+        params: list[tuple[str, DSLType]] = list(chain.from_iterable(param_groups))
+        return_type = self.visit(ctx.ttype())
         body = self.visit(ctx.expr())
-        return Function(name, params, return_type, body)
-
-    # Visit a parse tree produced by PolyUHFParser#type_annotation.
-    def visitType_annotation(self, ctx: PolyUHFParser.Type_annotationContext):  # noqa: N802
-        annotation: str = ctx.TYPE_ANNOTATION().getText()
-        if annotation == "index":
-            return IndexType()
-        elif annotation == "bigint":
-            return BigIntType()
-        elif annotation.startswith("["):
-            close = annotation.index("]")
-            size_part = annotation[1:close]
-            elem_part = annotation[close + 1 :]
-            size = int(size_part) if size_part else None
-            if elem_part == "index":
-                return ArrayType(size, IndexType())
-            elif elem_part == "bigint":
-                return ArrayType(size, BigIntType())
-            else:
-                raise DSLParseError(f"Unknown array element type '{annotation}'")
-        else:
-            raise DSLParseError(f"Unknown or missing type annotation '{annotation}'")
+        return ASTFunction(name, params, return_type, body)
 
     # Visit a parse tree produced by PolyUHFParser#param_group.
     def visitParam_group(self, ctx: PolyUHFParser.Param_groupContext):  # noqa: N802
         # Collect all identifiers
         names = [tok.getText() for tok in ctx.IDENTIFIER()]
         # The last child is the type annotation
-        ty = self.visit(ctx.type_annotation())
-        return [(name, ty) for name in names]
+        ttype = self.visit(ctx.ttype())
+        return [(name, ttype) for name in names]
+
+    # Visit a parse tree produced by PolyUHFParser#BufferViewType.
+    def visitBufferViewType(self, ctx: PolyUHFParser.BufferViewTypeContext):  # noqa: N802
+        field = self.visit(ctx.underlying)
+        match field:
+            case PrimeField(pi, _):
+                width = pi
+            case BinaryField(n):
+                width = n
+            case _:
+                raise ValueError("intenal error")
+        chunk_size = int(ctx.chunk_size.text)
+        if chunk_size * 8 > width:
+            raise ValueError(
+                f"Specificed chunk size ({chunk_size} bytes = {chunk_size * 8} bits)"
+                f" is too big for field {field} of width {width}"
+            )
+        return BufferView(field, chunk_size)
+
+    # visitFieldType omitted, base case handles default behavior
+
+    # Visit a parse tree produced by PolyUHFParser#IndexType.
+    def visitIndexType(self, ctx: PolyUHFParser.IndexTypeContext):  # noqa: N802
+        return Index()
+
+    # Visit a parse tree produced by PolyUHFParser#PrimeFieldType.
+    def visitPrimeFieldType(self, ctx: PolyUHFParser.PrimeFieldTypeContext):  # noqa: N802
+        return PrimeField(int(ctx.pi.text), int(ctx.theta.text))
+
+    # Visit a parse tree produced by PolyUHFParser#BinaryFieldType.
+    def visitBinaryFieldType(self, ctx: PolyUHFParser.BinaryFieldTypeContext):  # noqa: N802
+        return BinaryField(int(ctx.DECIMAL().getText()))
 
     # visitExpr omitted, base class handles default behavior
 
     # Visit a parse tree produced by PolyUHFParser#SingleCompare.
-    def visitSingleCompare(self, ctx:PolyUHFParser.SingleCompareContext):  # noqa: N802
+    def visitSingleCompare(self, ctx: PolyUHFParser.SingleCompareContext):  # noqa: N802
         left = self.visit(ctx.addSubExpr(0))
         # No compOp -> single expression
         if ctx.compOp() is None:
@@ -91,23 +95,21 @@ class ASTBuilder(PolyUHFVisitor):
         right = self.visit(ctx.addSubExpr(1))
         match op_token.type:
             case PolyUHFParser.EQ:
-                return Eq(left, right)
+                return ASTComparison(None, "==", left, right)
             case PolyUHFParser.NEQ:
-                return Neq(left, right)
+                return ASTComparison(None, "!=", left, right)
             case PolyUHFParser.LT:
-                return Lt(left, right)
+                return ASTComparison(None, "<", left, right)
             case PolyUHFParser.LE:
-                return Le(left, right)
+                return ASTComparison(None, "<=", left, right)
             case PolyUHFParser.GT:
-                return Gt(left, right)
+                return ASTComparison(None, ">", left, right)
             case PolyUHFParser.GE:
-                return Ge(left, right)
+                return ASTComparison(None, ">=", left, right)
             case _:
                 raise NotImplementedError()
 
-
     # visitCompOp omitted, handled in visitSingleCompare
-
 
     # Visit a parse tree produced by PolyUHFParser#AddSub.
     def visitAddSub(self, ctx: PolyUHFParser.AddSubContext):  # noqa: N802
@@ -117,10 +119,8 @@ class ASTBuilder(PolyUHFVisitor):
             return nodes[0]
         node = nodes[0]
         for op_token, rhs in zip(ctx.op, nodes[1:], strict=True):
-            if op_token.text == "+":
-                node = Add(node, rhs)
-            elif op_token.text == "-":
-                node = Sub(node, rhs)
+            if op_token.text in ["+", "-"]:
+                node = ASTBinaryOperation(None, op_token.text, node, rhs)
             else:
                 # CF reaches here -> grammar is broken
                 raise RuntimeError(f"Invalid AddSub operator '{op_token.text}'")
@@ -134,22 +134,17 @@ class ASTBuilder(PolyUHFVisitor):
             return nodes[0]
         node = nodes[0]
         for op_token, rhs in zip(ctx.op, nodes[1:], strict=True):
-            match op_token.text:
-                case "*":
-                    node = Mul(node, rhs)
-                case "/":
-                    node = Div(node, rhs)
-                case "%":
-                    node = Mod(node, rhs)
-                case _:
-                    # CF reaches here -> grammar is broken
-                    raise RuntimeError(f"Invalid MulDiv operator '{op_token.text}'")
+            if op_token.text in ["*", "/", "%"]:
+                node = ASTBinaryOperation(None, op_token.text, node, rhs)
+            else:
+                # CF reaches here -> grammar is broken
+                raise RuntimeError(f"Invalid MulDiv operator '{op_token.text}'")
         return node
 
     # Visit a parse tree produced by PolyUHFParser#UnaryMinus.
     def visitUnaryMinus(self, ctx: PolyUHFParser.UnaryMinusContext):  # noqa: N802
         payload = self.visit(ctx.unaryMinusExpr())
-        return Neg(payload)
+        return ASTUnaryMinus(None, payload)
 
     # visitUnaryAtom omitted, handled by base class
 
@@ -160,7 +155,7 @@ class ASTBuilder(PolyUHFVisitor):
         rhs = ctx.exponentExpr()
         if rhs is None:
             return base
-        return Power(base, self.visit(rhs))
+        return ASTBinaryOperation(None, "^", base, self.visit(rhs))
 
     # Visit a parse tree produced by PolyUHFParser#Parentheses.
     def visitParentheses(self, ctx: PolyUHFParser.ParenthesesContext):  # noqa: N802
@@ -172,61 +167,42 @@ class ASTBuilder(PolyUHFVisitor):
         condition, then_branch, else_branch = [
             self.visit(ctx.expr(i)) for i in range(3)
         ]
-        return IfElse(condition, then_branch, else_branch)
+        return ASTIfElse(None, condition, then_branch, else_branch)
 
-    # Visit a parse tree produced by PolyUHFParser#HexBigIntExpr.
-    def visitHexBigIntExpr(self, ctx: PolyUHFParser.HexBigIntExprContext):  # noqa: N802
-        payload = ctx.HEX_BIGINT().getText()[:-1]  # drop 'L'/'l', keep '0x'
-        try:
-            value = int(payload, 16)
-            return Int(value, BigIntType())
-        except ValueError as e:
-            raise DSLParseError(f"invalid hex literal: '{payload}'") from e
+    # Visit a parse tree produced by PolyUHFParser#HexadecimalExpression.
+    def visitHexadecimalExpression(  # noqa: N802
+        self, ctx: PolyUHFParser.HexadecimalExpressionContext
+    ):
+        ttype = self.visit(ctx.ttype()) if ctx.ttype() else None
+        return ASTInt(ttype, int(ctx.DECIMAL().getText(), 16))
 
-    # Visit a parse tree produced by PolyUHFParser#DecBigIntExpr.
-    def visitDecBigIntExpr(self, ctx: PolyUHFParser.DecBigIntExprContext):  # noqa: N802
-        payload = ctx.DEC_BIGINT().getText()[:-1]  # drop 'L'/'l'
-        value = int(payload, 10)
-        return Int(value, BigIntType())
-
-    # Visit a parse tree produced by PolyUHFParser#HexIntExpr.
-    def visitHexIntExpr(self, ctx: PolyUHFParser.HexIntExprContext):  # noqa: N802
-        payload = ctx.HEX_INT().getText()  # keep '0x'
-        try:
-            value = int(payload, 16)
-            return Int(value, IndexType())
-        except ValueError as e:
-            raise DSLParseError(f"invalid hex literal: '{payload}'") from e
-
-    # Visit a parse tree produced by PolyUHFParser#DecIntExpr.
-    def visitDecIntExpr(self, ctx: PolyUHFParser.DecIntExprContext):  # noqa: N802
-        payload = ctx.DEC_INT().getText()
-        value = int(payload, 10)
-        return Int(value, IndexType())
+    # Visit a parse tree produced by PolyUHFParser#DecimalExpr.
+    def visitDecimalExpr(self, ctx: PolyUHFParser.DecimalExprContext):  # noqa: N802
+        ttype = self.visit(ctx.ttype()) if ctx.ttype() else None
+        return ASTInt(ttype, int(ctx.DECIMAL().getText()))
 
     # Visit a parse tree produced by PolyUHFParser#CallExpr.
     def visitCallExpr(self, ctx: PolyUHFParser.CallExprContext):  # noqa: N802
         function_name = ctx.IDENTIFIER().getText()
         args = [self.visit(child) for child in ctx.expr()]
-        return Call(function_name, args)
+        return ASTCall(None, function_name, args)
 
-    # Visit a parse tree produced by PolyUHFParser#ArrayExpr.
-    def visitArrayExpr(self, ctx: PolyUHFParser.ArrayExprContext):  # noqa: N802
+    # Visit a parse tree produced by PolyUHFParser#BufferViewReadExpr.
+    def visitBufferViewReadExpr(self, ctx: PolyUHFParser.BufferViewReadExprContext):  # noqa: N802
         identifier = ctx.IDENTIFIER().getText()
         index = self.visit(ctx.expr())
-        return ArrayAccess(identifier, index)
+        return ASTBufferViewRead(None, ASTLocalIdentifier(None, identifier), index)
 
     # Visit a parse tree produced by PolyUHFParser#IdentifierExpression.
     def visitIdentifierExpression(self, ctx: PolyUHFParser.IdentifierExpressionContext):  # noqa: N802
-        return Var(ctx.IDENTIFIER().getText())
+        return ASTLocalIdentifier(None, ctx.IDENTIFIER().getText())
 
     # Visit a parse tree produced by PolyUHFParser#ReductionExpr.
     def visitReductionExpr(self, ctx: PolyUHFParser.ReductionExprContext):  # noqa: N802
-        # For bigints: '*' or '+'
         op = ctx.op.text  # type: ignore
         var = ctx.IDENTIFIER().getText()
         expressions = ctx.expr()
         if len(expressions) != 4:
             raise DSLParseError("malformed reduction expression")
         start, stop, step, body = [self.visit(e) for e in expressions]
-        return Reduction(op, var, start, stop, step, body)
+        return ASTReduction(None, op, var, start, stop, step, body)

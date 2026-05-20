@@ -1,0 +1,7 @@
+// {{ dst }} = mul {{ lhs }} {{ rhs }}
+{% for i in range(limbs) %}
+{% for j in range(i + 1) %}{{ dst }}.limbs[{{ i }}] = vaddq_u{{machine_width}}({{dst}}.limbs[{{i}}], vmulq_u{{ machine_width }}({{ lhs }}.limbs[{{ j }}], {{ rhs }}.limbs[{{ i - j }}]));
+{% endfor %}
+{% for j in range(i + 1, limbs) %}{{ dst }}.limbs[{{ i }}] = vaddq_u{{ machine_width}}({{dst}}.limbs[{{i}}], vmulq_u{{ machine_width }}(vdupq_n_u{{ machine_width }}({{ kappa }}), vmulq_u{{ machine_width }}({{ lhs }}.limbs[{{ j }}], {{ rhs }}.limbs[{{ limbs + i - j }}])));
+{% endfor %}
+{% endfor %}

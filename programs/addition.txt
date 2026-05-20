@@ -1,3 +1,0 @@
-func addition(a, b bigint) bigint {
-    a + b
-}

@@ -1,0 +1,3 @@
+// {{ dst }} = add {{ lhs }} {{ rhs }}
+{% for i in range(limbs) %}{{ dst }}.limbs[{{ i }}] = {{ lhs }}.limbs[{{ i }}] + {{ rhs }}.limbs[{{ i }}];
+{% endfor %}

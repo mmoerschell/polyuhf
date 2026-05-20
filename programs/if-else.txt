@@ -1,7 +1,0 @@
-func foo(a index) index {
-    if a {
-        0
-    } else {
-        1
-    }
-}

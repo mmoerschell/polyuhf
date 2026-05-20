@@ -1,9 +1,6 @@
-/*
-R: key
-M: message
-n (B in the paper): message size
-*/
-
-func sqh(R, M []bigint, n index) bigint {
-    +[i,0:n-1:1]{(M[i] + R[i])^2} + M[n-1]
+func sqh(message, key bufferview<prime<116, 3>, 14>, B index) prime<116, 3> {
+    +[i,0:B-1:1]{(message[i] + key[i]) * (message[i] + key[i])} + message[B - 1]
 }
+
+/* FIXME TODO use ^ operator
+*/

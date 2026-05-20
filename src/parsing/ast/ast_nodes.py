@@ -1,7 +1,9 @@
-from dataclasses import dataclass
-from typing import List, Tuple
+from __future__ import annotations
 
-from ir.types import Type
+from dataclasses import dataclass
+from typing import Literal
+
+from typesystem import DSLType
 
 # ---------- Base nodes ----------
 
@@ -10,138 +12,81 @@ class ASTNode:
     pass
 
 
-class Expr(ASTNode):
-    pass
+@dataclass
+class ASTExpr(ASTNode):
+    ttype: DSLType | None
+
+
+# ---------- Expressions ----------
 
 
 @dataclass
-class Int(Expr):
+class ASTInt(ASTExpr):
     value: int
-    type: Type  # index, bigint
 
 
 @dataclass
-class Var(Expr):
+class ASTLocalIdentifier(ASTExpr):
     name: str
 
 
 @dataclass
-class Add(Expr):
-    left: Expr
-    right: Expr
+class ASTUnaryMinus(ASTExpr):
+    operand: ASTExpr
 
 
 @dataclass
-class Sub(Expr):
-    left: Expr
-    right: Expr
+class ASTBinaryOperation(ASTExpr):
+    operator: Literal["+", "-", "*", "/", "%", "^"]
+    left: ASTExpr
+    right: ASTExpr
+
+@dataclass
+class ASTComparison(ASTExpr):
+    operator: Literal["==", "!=", "<", "<=", ">", ">="]
+    left: ASTExpr
+    right: ASTExpr
+
+@dataclass
+class ASTIfElse(ASTExpr):
+    condition: ASTExpr
+    then_branch: ASTExpr
+    else_branch: ASTExpr
 
 
 @dataclass
-class Mul(Expr):
-    left: Expr
-    right: Expr
+class ASTCall(ASTExpr):
+    func_name: str
+    args: list[ASTExpr]
 
 
 @dataclass
-class Div(Expr):
-    left: Expr
-    right: Expr
+class ASTBufferViewRead(ASTExpr):
+    buffer: ASTLocalIdentifier
+    index: ASTExpr
 
 
 @dataclass
-class Mod(Expr):
-    left: Expr
-    right: Expr
-
-
-@dataclass
-class Power(Expr):
-    base: Expr
-    exponent: Expr  # could restrict this to Int
-
-
-@dataclass
-class Neg(Expr):
-    body: Expr
-
-
-@dataclass
-class Eq(Expr):
-    lhs: Expr
-    rhs: Expr
-
-
-@dataclass
-class Neq(Expr):
-    lhs: Expr
-    rhs: Expr
-
-
-@dataclass
-class Lt(Expr):
-    lhs: Expr
-    rhs: Expr
-
-
-@dataclass
-class Le(Expr):
-    lhs: Expr
-    rhs: Expr
-
-
-@dataclass
-class Gt(Expr):
-    lhs: Expr
-    rhs: Expr
-
-
-@dataclass
-class Ge(Expr):
-    lhs: Expr
-    rhs: Expr
-
-
-@dataclass
-class IfElse(Expr):
-    condition: Expr
-    then_branch: Expr
-    else_branch: Expr
-
-
-@dataclass
-class Call(Expr):
-    func: str  # function name. TODO make this point to IRFunction?
-    args: List[Expr]  # argument expressions
-
-
-@dataclass
-class ArrayAccess(Expr):
-    array: str
-    index: Expr
-
-
-@dataclass
-class Reduction(Expr):
+class ASTReduction(ASTExpr):
     op: str
     var: str
-    start: Expr
-    stop: Expr
-    step: Expr
-    body: Expr
+    start: ASTExpr
+    stop: ASTExpr
+    step: ASTExpr
+    body: ASTExpr
 
 
-# ---------- Program structure ----------
-
-
-@dataclass
-class Program(ASTNode):
-    functions: List["Function"]
+# ---------- Functions, modules ----------
 
 
 @dataclass
-class Function(ASTNode):
+class ASTFunction(ASTNode):
     name: str
-    params: List[Tuple[str, Type]]
-    return_type: Type
-    body: Expr
+    params: list[tuple[str, DSLType]]
+    return_type: DSLType
+    body: ASTExpr
+
+
+@dataclass
+class ASTModule:
+    functions: list[ASTFunction]
