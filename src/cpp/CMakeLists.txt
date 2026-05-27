@@ -13,6 +13,7 @@ add_executable(tests
     load_store_tests.cpp
     hashing_tests.cpp
     # poly1305_tests.cpp
+    generated/datastructures.c
     generated/load_store.c
     generated/mmh.c
     generated/sqh.c

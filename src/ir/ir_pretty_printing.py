@@ -2,10 +2,10 @@ from itertools import chain
 from typing import assert_never
 
 from ir.ir_nodes import (
-    IRAssigningInstruction,
     IRBoundIdentifier,
     IRConst,
     IRFunction,
+    IRInstruction,
     IRLoop,
     IRModule,
     IROperand,
@@ -23,9 +23,7 @@ def pprint_function(func: IRFunction) -> str:
     ctx: dict[int, str] = {}
     header = (
         f"func {func.name} ("
-        + ", ".join(
-            f"{p.name}: {p.ir_type}" for p in func.params
-        )
+        + ", ".join(f"{p.name}: {p.ir_type}" for p in func.params)
         + ") {\n"
     )
     body = "\n".join(
@@ -41,7 +39,7 @@ def pprint_statement(
 ) -> list[str]:
     indentation = f"{' ' * indentation_level * 4}"
     match stmt:
-        case IRAssigningInstruction(result, name, ops):
+        case IRInstruction(_, result, name, ops):
             return [
                 f"{indentation}"
                 f"{pprint_operand(result, print_ctx)}"

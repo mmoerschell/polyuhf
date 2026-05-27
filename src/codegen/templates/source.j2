@@ -1,10 +1,4 @@
 #include "{{ module_name }}.h"
 
-#include <{{ intrinsics_header }}>
-
-{% for (d, n) in custom_types.values() %}
-typedef {{ d }} {{ n }};
-{% endfor %}
-
 {% for item in definitions %}{{ item }}{% endfor %}
 

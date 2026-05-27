@@ -1,9 +1,11 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Literal
 
 """
 DSL Types
 """
+
 
 @dataclass(frozen=True)
 class Index:
@@ -12,23 +14,43 @@ class Index:
 
 
 @dataclass(frozen=True)
-class PrimeField:
+class Field(ABC):
+    @abstractmethod
+    def bit_length(self) -> int:
+        pass
+
+    @abstractmethod
+    def chunk_size(self) -> int:
+        pass
+
+
+@dataclass(frozen=True)
+class PrimeField(Field):
     pi: int
     theta: int
 
     def __str__(self) -> str:
         return f"prime<{self.pi}, {self.theta}>"
 
+    def bit_length(self) -> int:
+        return self.pi
+
+    def chunk_size(self) -> int:
+        return self.pi // 8
+
 
 @dataclass(frozen=True)
-class BinaryField:
+class BinaryField(Field):
     n: int
 
     def __str__(self) -> str:
         return f"binary<{self.n}>"
 
+    def bit_length(self) -> int:
+        return self.n
 
-Field = PrimeField | BinaryField
+    def chunk_size(self) -> int:
+        return self.n // 8
 
 
 @dataclass(frozen=True)
@@ -41,51 +63,5 @@ class BufferView:
 
 
 DSLType = Index | Field | BufferView
-"""
-IR Types
-"""
 
-# Holds indices
-@dataclass(frozen=True)
-class IRTypeScalar:
-    machine_width: int
-
-    def __str__(self) -> str:
-        return f"i{self.machine_width}"
-
-
-# Holds one bigint
-@dataclass(frozen=True)
-class IRTypeVector:
-    machine_width: int
-    limbs: int
-    lambd: int
-    lambd_prime: int
-    lambd_mask: int
-    lambd_prime_mask: int
-
-    def __str__(self) -> str:
-        return f"i{self.machine_width}[{self.limbs}]"
-
-
-# Holds <lanes> bigints
-@dataclass(frozen=True)
-class IRTypeMatrix:
-    machine_width: int
-    lanes: int
-    limbs: int
-    lambd: int
-    lambd_prime: int
-    lambd_mask: int
-    lambd_prime_mask: int
-
-    def __str__(self) -> str:
-        return f"i{self.machine_width}x{self.lanes}[{self.limbs}]"
-
-
-IRType = IRTypeScalar | IRTypeVector | IRTypeMatrix | Literal["pod"]
-
-
-"""
-C Types
-"""
+IRType = Literal["scalar", "vector", "matrix", "pod"]

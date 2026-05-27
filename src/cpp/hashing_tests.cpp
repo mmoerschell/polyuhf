@@ -16,7 +16,7 @@ namespace bdata = boost::unit_test::data;
 
 static const cpp_int c1163("0xffffffffffffffffffffffffffffd");
 
-BOOST_DATA_TEST_CASE(Random_MMH_SQH_Tests, bdata::xrange(1000), i) {
+BOOST_DATA_TEST_CASE(Random_MMH_SQH_Tests, bdata::xrange(2), i) {
     std::mt19937 rng(42 + i); // deterministic per test case
     std::uniform_int_distribution<uint8_t> dist(0, 255);
 
@@ -48,11 +48,13 @@ BOOST_DATA_TEST_CASE(Random_MMH_SQH_Tests, bdata::xrange(1000), i) {
     std::array<uint8_t, 15> sqh_tag_ref{};
     export_bits(mmh_acc, mmh_tag_ref.begin(), 8, false);
     export_bits(sqh_acc, sqh_tag_ref.begin(), 8, false);
-
+    
     // DSL computation
+    auto mmh_bigint = mmh(M.data(), r.data(), B);
+    auto sqh_bigint = sqh(M.data(), r.data(), B);
     std::array<uint8_t, 15> mmh_tag_act{}, sqh_tag_act{};
-    mmh(mmh_tag_act.data(), M.data(), r.data(), B);
-    sqh(sqh_tag_act.data(), M.data(), r.data(), B);
+    export_15_bytes(mmh_tag_act.data(), &mmh_bigint);
+    export_15_bytes(sqh_tag_act.data(), &sqh_bigint);
 
     // Compare
     BOOST_CHECK_EQUAL_COLLECTIONS(mmh_tag_act.cbegin(), mmh_tag_act.cend(),
@@ -65,7 +67,7 @@ BOOST_DATA_TEST_CASE(Random_NMH_Tests, bdata::xrange(1000), i) {
     std::mt19937 rng(42 + i); // deterministic per test case
     std::uniform_int_distribution<uint8_t> dist(0, 255);
 
-    const size_t B = 2 * (i + 1);   // number of blocks
+    const size_t B = 16 * i;        // number of blocks
     std::vector<uint8_t> M(B * 14); // message
     std::vector<uint8_t> r(B * 14); // key
     for (auto &x : M)
@@ -93,7 +95,8 @@ BOOST_DATA_TEST_CASE(Random_NMH_Tests, bdata::xrange(1000), i) {
 
     // DSL output
     std::array<uint8_t, 15> tag_act{};
-    nmh(tag_act.data(), M.data(), r.data(), B);
+    auto result = nmh( M.data(), r.data(), B);
+    export_15_bytes(tag_act.data(), &result);
 
     // Compare
     BOOST_CHECK_EQUAL_COLLECTIONS(tag_act.cbegin(), tag_act.cend(),

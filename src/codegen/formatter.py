@@ -27,11 +27,7 @@ def tidy_and_format_c(path: str) -> None:
 
         # clang-format: layout cleanup
         subprocess.run(
-            [
-                CLANG_FORMAT,
-                "-i",
-                path
-            ],
+            [CLANG_FORMAT, "-i", path],
             check=True,
             capture_output=True,
             text=True,

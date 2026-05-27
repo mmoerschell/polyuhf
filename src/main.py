@@ -19,7 +19,9 @@ from parsing.antlr.PolyUHFLexer import PolyUHFLexer
 from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.ast.ast_builder import ASTBuilder, DSLParseError
 from parsing.ast.ast_nodes import ASTModule
+from settings import Settings
 from typechecker import TypeCheckingError, typecheck_module
+from typesystem import PrimeField
 
 
 class BailErrorListener(ErrorListener):
@@ -28,7 +30,7 @@ class BailErrorListener(ErrorListener):
         raise DSLParseError(f"line {line}:{column} {msg}")
 
 
-def compile_string(text: str, flags, module_name: str):
+def compile_string(text: str, flags, module_name: str, settings: Settings):
     input_stream = InputStream(text)
 
     lexer = PolyUHFLexer(input_stream)
@@ -63,23 +65,26 @@ def compile_string(text: str, flags, module_name: str):
         # pprint(ast)
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Type-checking")
 
-        ir_builder = IRModuleBuilder(
-            ast, module_name, signatures, 4
-        )  # TODO FIXME CONST
+        ir_builder = IRModuleBuilder(ast, module_name, signatures, settings)
         ir = ir_builder.compile()
         if flags.verbose:
             print(pprint_module(ir))
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Intermediate Representation")
 
         # Codegen (pretty-printing & algorithms)
-        gen = ModuleCodeGenerator(ir, "arm")  # TODO FIXME CONST
-        header, source = gen.compile()
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Header & source")
+        gen = ModuleCodeGenerator(ir, settings)
+        header, source, datastructures_h, datastructures_s = gen.compile()
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
 
         # Write code to files
         written_files = []
-        for ext, contents in [("h", header), ("c", source)]:
-            output_path = f"src/cpp/generated/{module_name}.{ext}"
+        for name, ext, contents in [
+            (f"{module_name}", "h", header),
+            (f"{module_name}", "c", source),
+            ("datastructures", "h", datastructures_h),
+            ("datastructures", "c", datastructures_s),
+        ]:
+            output_path = f"src/cpp/generated/{name}.{ext}"
             with open(output_path, "w") as code_output:
                 code_output.write(contents)
             written_files.append(output_path)
@@ -109,7 +114,7 @@ def compile_string(text: str, flags, module_name: str):
         exit(1)
 
 
-def compile_file(path: str, flags):
+def compile_file(path: str, flags, settings: Settings):
     # Extract progam name from path
     match = re.search(r"([^/\\]+)\.txt$", path)
     assert match, "Can't find module name in path"
@@ -121,7 +126,7 @@ def compile_file(path: str, flags):
     print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Compiling '{path}'")
 
     with open(path, mode="r", encoding="utf-8") as f:
-        return compile_string(f.read(), flags, module_name)
+        return compile_string(f.read(), flags, module_name, settings)
 
 
 if __name__ == "__main__":
@@ -136,4 +141,5 @@ if __name__ == "__main__":
     )
     flags = cli.parse_args()
 
-    module = compile_file(flags.input_file, flags)
+    settings = Settings(PrimeField(116, 3), 11, "arm", 64, 32, 4, "schoolbook", 4)
+    module = compile_file(flags.input_file, flags, settings)

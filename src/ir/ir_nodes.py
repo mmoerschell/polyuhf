@@ -10,6 +10,7 @@ class IROperand:
     dsl_type: DSLType
     ir_type: IRType
 
+
 @dataclass(frozen=True)
 class IRConst(IROperand):
     value: int
@@ -25,8 +26,10 @@ class IRBoundIdentifier(IROperand):
 class IRTemporary(IROperand):
     pass
 
+
 @dataclass(frozen=True)
-class IRAssigningInstruction:
+class IRInstruction:
+    declare: bool  # true iff result is a new temporary
     result: IRTemporary
     insn_name: str
     operands: tuple[IROperand, ...]
@@ -46,7 +49,7 @@ class IRReturn:
     value: IROperand
 
 
-IRStatement = IRAssigningInstruction | IRLoop | IRReturn
+IRStatement = IRInstruction | IRLoop | IRReturn
 
 
 @dataclass(frozen=True)
@@ -62,7 +65,8 @@ class IRFunction:
     params: list[IRBoundIdentifier]
     body: list[IRStatement]
     return_value: IROperand
-    return_type: DSLType
+    dsl_return_type: DSLType
+    ir_return_type: IRType
 
 
 @dataclass(frozen=True)

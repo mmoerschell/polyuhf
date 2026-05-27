@@ -1,14 +1,13 @@
 #pragma once
 
-#include <stdalign.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "datastructures.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 {% for item in declarations %}{{ item }}{% endfor %}
+
 #ifdef __cplusplus
 }
 #endif

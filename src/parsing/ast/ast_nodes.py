@@ -41,11 +41,13 @@ class ASTBinaryOperation(ASTExpr):
     left: ASTExpr
     right: ASTExpr
 
+
 @dataclass
 class ASTComparison(ASTExpr):
     operator: Literal["==", "!=", "<", "<=", ">", ">="]
     left: ASTExpr
     right: ASTExpr
+
 
 @dataclass
 class ASTIfElse(ASTExpr):

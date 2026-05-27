@@ -1,0 +1,29 @@
+#pragma once
+
+#include <stdalign.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include <{{ intrinsics_header }}>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct {
+{% for i in range(settings.limbs) %}    uint{{settings.scalar_mw}}_t limb{{i}};
+{%endfor%}
+} bigint_t;
+
+{% if settings.lanes %}
+typedef struct {
+{% for i in range(settings.limbs) %}    uint{{settings.vector_lw}}x{{settings.lanes}}_t limb{{i}};
+{%endfor%}
+} vbigint_t;
+{% endif %}
+
+void export_{{ n_bytes }}_bytes(uint8_t* dst, const bigint_t* src);
+
+#ifdef __cplusplus
+}
+#endif

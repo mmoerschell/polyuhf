@@ -23,11 +23,12 @@ BOOST_AUTO_TEST_CASE(TestLoadStore) {
     for (auto &x : data)
         x = dist(rng);
     for (size_t i = 0; i < n_blocks; ++i) {
-        std::array<uint8_t, 15> check{};
-        load_store(check.data(), data.data(), i);
-        BOOST_CHECK_EQUAL_COLLECTIONS(check.cbegin(), check.cbegin() + block_size,
-                                      data.begin() + i * block_size,
-                                      data.begin() + (i + 1) * block_size);
-                                      BOOST_CHECK_EQUAL(check.back(), 0ull);
+        auto check = load_store(data.data(), i);
+        std::array<uint8_t, 15> check_bytes{};
+        export_15_bytes(check_bytes.data(), &check);
+        BOOST_CHECK_EQUAL_COLLECTIONS(
+            check_bytes.cbegin(), check_bytes.cbegin() + block_size,
+            data.begin() + i * block_size, data.begin() + (i + 1) * block_size);
+        BOOST_CHECK_EQUAL(check_bytes.back(), 0ull);
     }
 }
