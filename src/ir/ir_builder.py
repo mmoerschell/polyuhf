@@ -8,6 +8,7 @@ from ir.ir_nodes import (
     IRBoundIdentifier,
     IRConst,
     IRFunction,
+    IRIfElse,
     IRInstruction,
     IRLoop,
     IRModule,
@@ -111,17 +112,8 @@ class IRFunctionBuilder:
                     (left_ter, right_ter),
                 )
                 return left_stmt + right_stmt + [comp], comp.result
-            case ASTIfElse(type_, cond, then, else_) if type_:
-                cond_stmt, cond_ter = self.compile_expr(cond)
-                then_stmt, then_ter = self.compile_expr(then)
-                else_stmt, else_ter = self.compile_expr(else_)
-                ifel_stmt = IRInstruction(
-                    True,
-                    IRTemporary(type_, compile_dsl_type(type_, False)),
-                    "ifelse",
-                    (cond_ter, then_ter, else_ter),
-                )
-                return cond_stmt + then_stmt + else_stmt + [ifel_stmt], ifel_stmt.result
+            case ASTIfElse():
+                return self.compile_if_else(ast_expression)
             case ASTCall(type_, func_name, args) if type_:
                 prepare_args = [self.compile_expr(e) for e in args]
                 call_stmt = IRInstruction(
@@ -175,6 +167,27 @@ class IRFunctionBuilder:
             (lterm, rterm),
         )
         return lstmts + rstmts + [binop], binop.result
+
+    def compile_if_else(
+        self, if_else: ASTIfElse
+    ) -> tuple[list[IRStatement], IROperand]:
+        assert if_else.ttype
+        dsl_type, ir_type = if_else.ttype, compile_dsl_type(if_else.ttype, False)
+        cond_stmts, cond_ter = self.compile_expr(if_else.condition)
+        then_stmts, then_ter = self.compile_expr(if_else.then_branch)
+        else_stmts, else_ter = self.compile_expr(if_else.else_branch)
+        declare = IRInstruction(
+            True,
+            IRTemporary(dsl_type, ir_type),
+            "const",
+            (IRConst(dsl_type, ir_type, 0),),
+        )
+        ifelse = IRIfElse(
+            cond_ter,
+            then_stmts + [IRInstruction(False, declare.result, "copy", (then_ter,))],
+            else_stmts + [IRInstruction(False, declare.result, "copy", (else_ter,))],
+        )
+        return [declare] + cond_stmts + [ifelse], declare.result
 
     def compile_reduction(
         self, reduction: ASTReduction

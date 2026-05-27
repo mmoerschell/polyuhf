@@ -45,11 +45,18 @@ class IRLoop:
 
 
 @dataclass(frozen=True)
+class IRIfElse:
+    cond: IROperand
+    then_branch: list[IRStatement]
+    else_branch: list[IRStatement]
+
+
+@dataclass(frozen=True)
 class IRReturn:
     value: IROperand
 
 
-IRStatement = IRInstruction | IRLoop | IRReturn
+IRStatement = IRInstruction | IRLoop | IRIfElse | IRReturn
 
 
 @dataclass(frozen=True)

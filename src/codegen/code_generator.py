@@ -9,6 +9,7 @@ from ir.ir_nodes import (
     IRBoundIdentifier,
     IRConst,
     IRFunction,
+    IRIfElse,
     IRInstruction,
     IRLoop,
     IRModule,
@@ -73,6 +74,14 @@ class FunctionCodeGenerator:
                 )
                 loop_text = "\n".join(self._compile_statement(s) for s in body)
                 return f"{loop_header} {'{'}\n{loop_text}\n{'}'}"
+            case IRIfElse(condition, then_branch, else_branch):
+                return (
+                    f"if ({self._compile_operand(condition)}) "
+                    f"{{{'\n'.join(self._compile_statement(s) for s in then_branch)}}}"
+                    f" else "
+                    f"{{{'\n'.join(self._compile_statement(s) for s in else_branch)}}}"
+                )
+                raise
             case IRReturn(value):
                 return f"return {self._compile_operand(value)};"
 
@@ -81,7 +90,7 @@ class FunctionCodeGenerator:
         match insn:
             # Scalar operations
             case IRInstruction(declare, result, operator, operands) if (
-                result.ir_type == "scalar"
+                result.ir_type == "scalar" and operator in utils.IR_TO_OP_TABLE.keys()
             ):
                 return (
                     (optional_ctype if declare else "")
@@ -202,11 +211,12 @@ class FunctionCodeGenerator:
                 return "\n".join(res)
             # const
             case IRInstruction(declare, result, "const", operands):
-                return (
-                    (f"{optional_ctype}" if declare else "")
-                    + f"{self._compile_operand(insn.result)} = "
-                    f"{self._compile_operand(operands[0])};"
-                )
+                res = []
+                if declare:
+                    res += optional_ctype
+                res += f"{self._compile_operand(insn.result)} = "
+                res += f"{self._compile_operand(operands[0])};"
+                return "".join(res)
             # Horizontal add (vectorization)
             case IRInstruction(declare, result, "horiz_add", (src_matrix,)):
                 assert declare, "horizontal add should create a new temporary"
@@ -229,31 +239,17 @@ class FunctionCodeGenerator:
                     )
                 )
             # Scalar if-else -> ternary
-            case IRInstruction(declare, result, "ifelse", (cond, then, else_)):
-                result_c = self._compile_operand(result)
-                cond_c = self._compile_operand(cond)
-                then_c = self._compile_operand(then)
-                else_c = self._compile_operand(else_)
-                res = [f"{result_c} = {cond_c} ? {then_c} : {else_c};"]
-                if declare:
-                    res.insert(
-                        0,
-                        f"{self.mcr.compile_ir_type(result.ir_type)} {result_c};",
-                    )
-                return "\n".join(res)
-            # Call bigint functions
+            case IRInstruction(False, dst, "copy", (src,)):
+                return f"{self._compile_operand(dst)} = {self._compile_operand(src)};"
             case IRInstruction(declare, result, "call", operands):
-                raise NotImplementedError("calls")
+                assert declare, "calls should not reuse temporaries"
                 result_c = self._compile_operand(result)
                 function = self._compile_operand(operands[0])
                 arguments = [self._compile_operand(o) for o in operands[1:]]
-                call_stmt: list[str] = []
-                if declare:
-                    call_stmt.append(
-                        f"{self.mcr.compile_ir_type(result.ir_type)} {result_c};"
-                    )
-                call_stmt.append(f"{function}({', '.join([result_c] + arguments)});")
-                return "\n".join(call_stmt)
+                return (
+                    f"{self.mcr.compile_ir_type(result.ir_type)} {result_c} = "
+                    f"{function}({', '.join(arguments)});"
+                )
             case _:
                 # return f"// {insn.insn_name}..."
                 raise NotImplementedError(f"{insn!r}")
@@ -273,11 +269,13 @@ class FunctionCodeGenerator:
                     for i in range(self.mcr.settings.limbs)
                 ]
                 if ir_type == "vector":
-                    return "{" + ",".join(f"{lv}" for lv in limb_values) + "}"
+                    return (
+                        "(bigint_t) {" + ",".join(f"{lv}" for lv in limb_values) + "}"
+                    )
                 else:
                     # TODO does this work with Intel intrinsics?
                     return (
-                        "{"
+                        "(vbigint_t) {"
                         + ",".join(
                             f"vdupq_n_u{self.mcr.settings.vector_lw}({lv})"
                             for lv in limb_values

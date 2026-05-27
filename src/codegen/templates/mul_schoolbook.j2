@@ -1,4 +1,4 @@
 // {{ dst }} = mul {{ lhs }} {{ rhs }}
 {% for i in range(settings.limbs) %}{% for j in range(i + 1) %}{{ dst }}.limb{{ i }} += {{ lhs }}.limb{{ j }} * {{ rhs }}.limb{{ i - j }};
-{% endfor %}{% for j in range(i + 1, settings.limbs) %}{{ dst }}.limb{{ i }} += {{ lhs }}.limb{{ j }} * {{ settings.field.kappa }} * {{ rhs }}.limb{{ settings.limbs + i - j }};{% endfor %}
+{% endfor %}{% for j in range(i + 1, settings.limbs) %}{{ dst }}.limb{{ i }} += {{ lhs }}.limb{{ j }} * {{ settings.kappa }} * {{ rhs }}.limb{{ settings.limbs + i - j }};{% endfor %}
 {% endfor %}
