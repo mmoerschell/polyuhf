@@ -1,3 +1,7 @@
 func load_store(buffer bufferview<prime<116, 3>, 14>, i index) prime<116, 3> {
     buffer[i]
 }
+
+func simple_sum(buffer bufferview<prime<116, 3>, 14>, n index) prime<116, 3> {
+    +[i,0:n:1]{ buffer[i] }
+}
