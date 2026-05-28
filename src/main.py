@@ -30,7 +30,7 @@ class BailErrorListener(ErrorListener):
         raise DSLParseError(f"line {line}:{column} {msg}")
 
 
-def compile_string(text: str, flags, module_name: str, settings: Settings):
+def compile_string(text: str, flags, module_name: str, settings: Settings):  # noqa: C901
     input_stream = InputStream(text)
 
     lexer = PolyUHFLexer(input_stream)
@@ -47,7 +47,8 @@ def compile_string(text: str, flags, module_name: str, settings: Settings):
         # Parse tree
         parse_tree = parser.module()  # first rule to apply
         # print(parse_tree.toStringTree(recog=parser))
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Parsing")
+        if flags.verbose:
+            print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Parsing")
 
         # Abstract Syntax tree
         builder = ASTBuilder()
@@ -55,26 +56,27 @@ def compile_string(text: str, flags, module_name: str, settings: Settings):
         assert ast, "AST generation failed"
         assert isinstance(ast, ASTModule), "AST root should be a program"
         # pprint(ast)
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] AST")
-
-        # Vectorization, unrolling
-        # TODO
+        if flags.verbose:
+            print(f"[{Fore.GREEN}+{Style.RESET_ALL}] AST")
 
         # Type-checking
         signatures = typecheck_module(ast)
         # pprint(ast)
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Type-checking")
+        if flags.verbose:
+            print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Type-checking")
 
         ir_builder = IRModuleBuilder(ast, module_name, signatures, settings)
         ir = ir_builder.compile()
         if flags.verbose:
+            print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Intermediate Representation")
+        if flags.show_ir:
             print(pprint_module(ir))
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Intermediate Representation")
 
         # Codegen (pretty-printing & algorithms)
         gen = ModuleCodeGenerator(ir, settings)
         header, source, datastructures_h, datastructures_s = gen.compile()
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
+        if flags.verbose:
+            print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
 
         # Write code to files
         written_files = []
@@ -88,19 +90,15 @@ def compile_string(text: str, flags, module_name: str, settings: Settings):
             with open(output_path, "w") as code_output:
                 code_output.write(contents)
             written_files.append(output_path)
-            print(f'[{Fore.GREEN}+{Style.RESET_ALL}] Wrote code to "{output_path}"')
+            if flags.verbose:
+                print(f'[{Fore.GREEN}+{Style.RESET_ALL}] Wrote code to "{output_path}"')
 
         # Formatter
         if flags.format:
             for output_path in written_files:
                 tidy_and_format_c(output_path)
-            print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Optional formatting")
-
-        # Verbose output
-        if flags.verbose:
-            for output_path in written_files:
-                with open(output_path) as f:
-                    print("".join(f.readlines()))
+            if flags.verbose:
+                print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Optional formatting")
 
         return f"{header}\n{source}"
     except NotImplementedError as e:
@@ -123,7 +121,8 @@ def compile_file(path: str, flags, settings: Settings):
         raise ValueError("Illegal module name")
 
     # For debugging
-    print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Compiling '{path}'")
+    if flags.verbose:
+        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Compiling '{path}'")
 
     with open(path, mode="r", encoding="utf-8") as f:
         return compile_string(f.read(), flags, module_name, settings)
@@ -135,11 +134,18 @@ if __name__ == "__main__":
     # CL arguments
     cli = argparse.ArgumentParser(description="DSL Compiler")
     cli.add_argument("input_file", type=str, help="input file")
-    cli.add_argument("--verbose", "-v", action="store_true", help="Show IR")
+    cli.add_argument("--verbose", "-v", action="store_true", help="Verbose")
+    cli.add_argument("--show-ir", "-i", action="store_true", help="Show IR")
     cli.add_argument(
         "--format", "-f", action="store_true", help="Format using clang-tidy"
     )
     flags = cli.parse_args()
 
-    settings = Settings(PrimeField(116, 3), 11, "arm", 64, 32, 4, "schoolbook", 4)
+    vectorize = True
+    if vectorize:
+        settings = Settings(PrimeField(116, 3), 11, "arm", 64, 32, 4, "schoolbook", 4)
+    else:
+        settings = Settings(
+            PrimeField(116, 3), 10, "arm", 32, None, None, "schoolbook", 4
+        )
     module = compile_file(flags.input_file, flags, settings)
