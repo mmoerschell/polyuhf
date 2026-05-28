@@ -130,7 +130,7 @@ def compile_file(path: str, flags, settings: Settings):
 
 
 if __name__ == "__main__":
-    colorama.init(autoreset=True)  # resets terminal color after each print
+    colorama.init(autoreset=True, strip=False)  # resets terminal color after each print
 
     # CL arguments
     cli = argparse.ArgumentParser(description="DSL Compiler")

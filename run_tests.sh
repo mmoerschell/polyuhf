@@ -5,8 +5,7 @@ set -eux
 
 # Build all DSL source files
 # mkdir -p src/cpp/generated
-find programs -iname '*.txt' -print0 |
-  xargs -0 -n1 sh -c './src/main.py -f "$1" || exit 255' sh
+find programs -iname '*.txt' | parallel --group --halt now,fail=1 ./src/main.py {}
 
 # Build & run test harness
 # mkdir -p src/cpp/build
