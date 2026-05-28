@@ -142,10 +142,14 @@ if __name__ == "__main__":
     flags = cli.parse_args()
 
     vectorize = True
-    if vectorize:
-        settings = Settings(PrimeField(116, 3), 11, "arm", 64, 32, 4, "schoolbook", 4)
-    else:
-        settings = Settings(
-            PrimeField(116, 3), 10, "arm", 32, None, None, "schoolbook", 4
-        )
+    settings = Settings(
+        PrimeField(116, 3),
+        18,
+        "arm",
+        64,
+        64 if vectorize else None,
+        2 if vectorize else None,
+        "schoolbook",
+        4,
+    )
     module = compile_file(flags.input_file, flags, settings)

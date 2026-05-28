@@ -1,6 +1,7 @@
+import math
 from typing import Literal
 
-from typesystem import Field, PrimeField
+from typesystem import BinaryField, Field, PrimeField
 
 
 class Settings:
@@ -31,9 +32,6 @@ class Settings:
         carry_every_n: int,
     ) -> None:
         assert lambda_ >= 8, "limbs must be at least one byte"
-        assert lambda_ <= scalar_mw // 2
-        if vector_lw:
-            assert lambda_ <= vector_lw // 2
         if lanes:
             assert lanes > 1
         self.field = field
@@ -59,8 +57,21 @@ class Settings:
         self.mul_algo = mul_algo
         self.carry_every_n = carry_every_n
 
-        # check kappa overflow
-        if self.kappa:
-            # TODO derive a bound
-            mw = self.vector_lw or self.scalar_mw
-            assert 2 * self.lambda_ + self.kappa.bit_length() < mw - 2
+        # Constraints from CHES paper
+        if isinstance(self.field, PrimeField):
+            w = self.vector_lw or self.scalar_mw
+            assert (
+                2 * self.lambda_
+                + (self.lambda_ - self.lambda_prime)
+                + math.ceil(math.log2(self.field.theta))
+                + math.ceil(math.log2(self.limbs))
+                < w  # NOTE notation differs from paper
+            ), "Inequation (9) failed"
+            assert (
+                2 * self.lambda_
+                - self.lambda_prime
+                + math.ceil(math.log2(self.field.theta))
+                < w // 2  # NOTE notation differs from paper
+            ), "Inequation (10) failed"
+        elif isinstance(self.field, BinaryField):
+            raise NotImplementedError("Limb size constraints for binary fields")

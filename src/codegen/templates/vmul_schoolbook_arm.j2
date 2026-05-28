@@ -1,7 +1,16 @@
 // {{ dst }} = mul {{ lhs }} {{ rhs }}
 {% for i in range(settings.limbs) %}
-{% for j in range(i + 1) %}{{ dst }}.limb{{ i }} = vmlaq_u{{settings.vector_lw}}({{dst}}.limb{{i}}, {{ lhs }}.limb{{ j }}, {{ rhs }}.limb{{ i - j }});
+{% for j in range(i + 1) %}{{ dst }}.limb{{ i }} = vmlal_u{{settings.vector_lw // 2}}({{dst}}.limb{{i}}, vmovn_u{{settings.vector_lw}}({{ lhs }}.limb{{ j }}), vmovn_u{{settings.vector_lw}}({{ rhs }}.limb{{ i - j }}));
 {% endfor %}
-{% for j in range(i + 1, settings.limbs) %}{{ dst }}.limb{{ i }} = vmlaq_u{{ settings.vector_lw}}({{dst}}.limb{{i}}, vdupq_n_u{{ settings.vector_lw }}({{ settings.kappa }}), vmulq_u{{ settings.vector_lw }}({{ lhs }}.limb{{ j }}, {{ rhs }}.limb{{ settings.limbs + i - j }}));
+
+{% for j in range(i + 1, settings.limbs) %}{{ dst }}.limb{{ i }} = 
+vmlal_u{{ settings.vector_lw // 2 }}(
+    {{dst}}.limb{{i}}, 
+    vmul_u{{ settings.vector_lw // 2 }}(
+        vmovn_u{{settings.vector_lw}}({{ lhs }}.limb{{ j }}),
+        vdup_n_u{{ settings.vector_lw // 2 }}({{ settings.kappa }})
+    ),
+    vmovn_u{{settings.vector_lw}}({{ rhs }}.limb{{ settings.limbs + i - j }})
+);
 {% endfor %}
 {% endfor %}
