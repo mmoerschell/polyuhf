@@ -3,7 +3,7 @@
 {{ x }}.limb{{i + 1}} = vaddq_u{{ settings.vector_lw }}({{x}}.limb{{i+1}}, vshrq_n_u{{settings.vector_lw}}({{ x }}.limb{{i}}, {{ settings.lambda_ }}));
 {{ x }}.limb{{i}} = vandq_u{{settings.vector_lw}}({{x}}.limb{{i}}, vdupq_n_u{{settings.vector_lw}}({{settings.lambda_mask}}ull));
 {% endfor %}
-{{ x }}.limb0 = vaddq_u{{ settings.vector_lw }}({{ x }}.limb0, vmulq_u{{settings.vector_lw}}(vdupq_n_u{{settings.vector_lw}}({{settings.field.theta}}ull), vshrq_n_u{{settings.vector_lw}}({{ x }}.limb{{ settings.limbs - 1}},{{settings.lambda_prime}})));
+{{ x }}.limb0 = vmlaq_u{{ settings.vector_lw }}({{ x }}.limb0, vdupq_n_u{{settings.vector_lw}}({{settings.field.theta}}ull), vshrq_n_u{{settings.vector_lw}}({{ x }}.limb{{ settings.limbs - 1}},{{settings.lambda_prime}}));
 {{ x }}.limb{{ settings.limbs - 1}} = vandq_u{{settings.vector_lw}}({{ x }}.limb{{ settings.limbs - 1}}, vdupq_n_u{{settings.vector_lw}}({{settings.lambda_prime_mask}}ull));
 {% for i in range(2) %}
 {{ x }}.limb{{i + 1}} = vaddq_u{{ settings.vector_lw }}({{x}}.limb{{i+1}}, vshrq_n_u{{settings.vector_lw}}({{ x }}.limb{{i}}, {{ settings.lambda_ }}));
