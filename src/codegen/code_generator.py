@@ -40,18 +40,21 @@ class FunctionCodeGenerator:
         for p in self.func.params:
             param_names.append(p.name)
             param_ctypes.append(self.mcr.compile_ir_type(p.ir_type))
+        args_c = (
+            ",".join(
+                f"{t} {n}"
+                for n, t in zip(
+                    param_names,
+                    param_ctypes,
+                    strict=True,
+                )
+            )
+            if len(param_names) > 0
+            else "void"
+        )
         return (
             f"{self.mcr.compile_ir_type(self.func.ir_return_type)} {self.func.name}"
-            f"({
-                ','.join(
-                    f'{t} {n}'
-                    for n, t in zip(
-                        param_names,
-                        param_ctypes,
-                        strict=True,
-                    )
-                )
-            })"
+            f"({args_c})"
         )
 
     def generate_definition(self, func: IRFunction, c_signature: str) -> str:
@@ -264,13 +267,16 @@ class FunctionCodeGenerator:
                 value,
             ):
                 limb_values = [
-                    value
-                    & (self.mcr.settings.lambda_mask << (i * self.mcr.settings.lambda_))
+                    value >> (i * self.mcr.settings.lambda_)
+                    & self.mcr.settings.lambda_mask
                     for i in range(self.mcr.settings.limbs)
                 ]
+                limb_values[-1] &= self.mcr.settings.lambda_prime_mask
                 if ir_type == "vector":
                     return (
-                        "(bigint_t) {" + ",".join(f"{lv}" for lv in limb_values) + "}"
+                        "(bigint_t) {"
+                        + ",".join(f"{lv}ull" for lv in limb_values)
+                        + "}"
                     )
                 else:
                     # TODO does this work with Intel intrinsics?
