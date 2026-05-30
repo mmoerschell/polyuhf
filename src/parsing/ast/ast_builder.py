@@ -174,7 +174,7 @@ class ASTBuilder(PolyUHFVisitor):
         self, ctx: PolyUHFParser.HexadecimalExpressionContext
     ):
         ttype = self.visit(ctx.ttype()) if ctx.ttype() else None
-        return ASTInt(ttype, int(ctx.DECIMAL().getText(), 16))
+        return ASTInt(ttype, int(ctx.HEXADECIMAL().getText(), 16))
 
     # Visit a parse tree produced by PolyUHFParser#DecimalExpr.
     def visitDecimalExpr(self, ctx: PolyUHFParser.DecimalExprContext):  # noqa: N802
