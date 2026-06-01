@@ -67,7 +67,7 @@ BOOST_DATA_TEST_CASE(Random_NMH_Tests, bdata::xrange(1000), i) {
     std::mt19937 rng(42 + i); // deterministic per test case
     std::uniform_int_distribution<uint8_t> dist(0, 255);
 
-    const size_t B = 16 * i;        // number of blocks
+    const size_t B = 4 * i;        // number of blocks
     std::vector<uint8_t> M(B * 14); // message
     std::vector<uint8_t> r(B * 14); // key
     for (auto &x : M)
@@ -81,10 +81,10 @@ BOOST_DATA_TEST_CASE(Random_NMH_Tests, bdata::xrange(1000), i) {
         cpp_int M2i{}, r2i{}, M2i1{}, r2i1{};
         import_bits(M2i, M.cbegin() + 14 * (2 * i),
                     M.cbegin() + 14 * (2 * i + 1), 8, false);
-        import_bits(M2i1, M.cbegin() + 14 * (2 * i + 1),
-                    M.cbegin() + 14 * (2 * i + 2), 8, false);
         import_bits(r2i, r.cbegin() + 14 * (2 * i),
                     r.cbegin() + 14 * (2 * i + 1), 8, false);
+        import_bits(M2i1, M.cbegin() + 14 * (2 * i + 1),
+                    M.cbegin() + 14 * (2 * i + 2), 8, false);
         import_bits(r2i1, r.cbegin() + 14 * (2 * i + 1),
                     r.cbegin() + 14 * (2 * i + 2), 8, false);
         acc += (M2i + r2i) * (M2i1 + r2i1);

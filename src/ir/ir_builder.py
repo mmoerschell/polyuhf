@@ -90,18 +90,41 @@ class IRFunctionBuilder:
             compile_dsl_type(self.function.return_type, False),
         )
 
-    def compile_expr(
-        self, ast_expression: ASTExpr, lanes: int = 1
+    def compile_expr(  # noqa: C901
+        self, ast_expression: ASTExpr, lanes: int = 1, step: int = 1
     ) -> tuple[list[IRStatement], IROperand]:
         match ast_expression:
-            case ASTInt(type_, value):
-                return [], IRConst(type_, compile_dsl_type(type_, lanes > 1), value)  # type: ignore
+            case ASTInt(Index(), value):
+                return [], IRConst(Index(), compile_dsl_type(Index(), lanes > 1), value)  # type: ignore
+            case ASTInt(type_, value) if type_:
+                ir_type = compile_dsl_type(type_, lanes > 1)
+                temporary = IRTemporary(type_, ir_type)
+                return [
+                    IRInstruction(
+                        True,
+                        temporary,
+                        "const",
+                        (IRConst(type_, ir_type, value),),  # type: ignore
+                    )
+                ], temporary
             case ASTLocalIdentifier(type_, name) if type_:
                 return [], IRBoundIdentifier(
                     type_, compile_dsl_type(type_, False), name
                 )  # type: ignore
-            case ASTBinaryOperation(type_, _):
-                return self.compile_bin_expr(ast_expression, lanes)
+            case ASTBinaryOperation(type_, operator, left, right):
+                if operator == "^":
+                    match right:
+                        case ASTInt(Index(), 0):
+                            return self.compile_expr(ASTInt(left.ttype, 1), lanes, step)
+                        case ASTInt(Index(), 1):
+                            return self.compile_expr(left, lanes, step)
+                        case ASTInt(Index(), 2):
+                            return self.compile_expr(
+                                ASTBinaryOperation(left.ttype, "*", left, left), lanes
+                            )
+                        case _:
+                            raise NotImplementedError(ast_expression)
+                return self.compile_bin_expr(ast_expression, lanes, step)
             case ASTComparison(type_, operator, left, right) if type_:
                 left_stmt, left_ter = self.compile_expr(left)
                 right_stmt, right_ter = self.compile_expr(right)
@@ -132,6 +155,10 @@ class IRFunctionBuilder:
                 ), call_stmt.result
             case ASTBufferViewRead(ttype, buffer, index) if ttype and buffer.ttype:
                 index_stmts, index_ter = self.compile_expr(index)
+                offsets = [
+                    IRConst(Index(), compile_dsl_type(Index(), False), i * (step or 1))
+                    for i in range(lanes)
+                ]
                 load = IRInstruction(
                     True,
                     IRTemporary(ttype, compile_dsl_type(ttype, lanes > 1)),
@@ -143,6 +170,7 @@ class IRFunctionBuilder:
                             buffer.name,
                         ),
                         index_ter,
+                        *offsets,
                     ),
                 )
                 return index_stmts + [load], load.result
@@ -153,11 +181,11 @@ class IRFunctionBuilder:
                 raise NotImplementedError(f"{ast_expression!r}")
 
     def compile_bin_expr(
-        self, bin_expr: ASTBinaryOperation, lanes: int = 1
+        self, bin_expr: ASTBinaryOperation, lanes: int = 1, step: int = 1
     ) -> tuple[list[IRStatement], IROperand]:
         # Recurse into children
-        lstmts, lterm = self.compile_expr(bin_expr.left, lanes)
-        rstmts, rterm = self.compile_expr(bin_expr.right, lanes)
+        lstmts, lterm = self.compile_expr(bin_expr.left, lanes, step)
+        rstmts, rterm = self.compile_expr(bin_expr.right, lanes, step)
         # Build insn/term
         assert bin_expr.ttype
         binop = IRInstruction(
@@ -194,17 +222,24 @@ class IRFunctionBuilder:
     ) -> tuple[list[IRStatement], IROperand]:
         sta_stmts, sta_term = self.compile_expr(reduction.start)
         sto_stmts, sto_term = self.compile_expr(reduction.stop)
-        if not self.module_builder.settings.lanes:
-            ste_stmts, ste_term = self.compile_expr(reduction.step)
-        else:
-            ste_stmts, ste_term = self.compile_expr(
-                ASTBinaryOperation(
-                    Index(),
-                    "*",
-                    (reduction.step),
-                    ASTInt(Index(), self.module_builder.settings.lanes),
-                )
-            )
+        # Determine total unrolling factor (effective loop step size)
+        if not isinstance(reduction.step, ASTInt):
+            raise ValueError(f"Non-constant loop step {reduction.step}")
+        loop_step = (
+            reduction.step.value * (self.module_builder.settings.lanes or 1)
+            # * self.module_builder.settings.unrolling_factor
+        )
+        # Determine tail length
+        tail_len_stmts, tail_len_ter = self.compile_expr(
+            ASTBinaryOperation(
+                Index(),
+                "%",
+                ASTBinaryOperation(Index(), "-", reduction.stop, reduction.start),
+                ASTInt(Index(), loop_step),
+            ),
+            1,
+        )
+
         # Build insn/term
         match reduction.op:
             case "+":
@@ -240,6 +275,7 @@ class IRFunctionBuilder:
             self.module_builder.settings.lanes
             if self.module_builder.settings.lanes
             else 1,
+            reduction.step.value,
         )
         # Accumulator update
         update_acc = IRInstruction(
@@ -266,14 +302,14 @@ class IRFunctionBuilder:
                 )
             ]
             final_value = horizontal_reduction[0].result
-        return sta_stmts + sto_stmts + ste_stmts + [declare_acc] + [
+        return sta_stmts + sto_stmts + [declare_acc] + [
             IRLoop(
                 IRBoundIdentifier(
                     Index(), compile_dsl_type(Index(), False), reduction.var
                 ),
                 sta_term,
                 sto_term,
-                ste_term,
+                IRConst(Index(), compile_dsl_type(Index(), False), loop_step),
                 bod_stmts
                 + [
                     update_acc,

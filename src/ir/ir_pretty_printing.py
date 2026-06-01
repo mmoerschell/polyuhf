@@ -62,6 +62,8 @@ def pprint_statement(
             return [header] + body_text + [indentation + "}"]
         case IRReturn(value):
             return [f"{indentation}ret {pprint_operand(value, print_ctx)}"]
+        case _:
+            raise NotImplementedError(stmt)
 
 
 def pprint_operand(operand: IROperand, print_ctx: dict[int, str]) -> str:

@@ -149,7 +149,7 @@ if __name__ == "__main__":
         64,
         64 if vectorize else None,
         2 if vectorize else None,
-        "schoolbook",
         4,
+        "schoolbook",
     )
     module = compile_file(flags.input_file, flags, settings)

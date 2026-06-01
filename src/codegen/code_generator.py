@@ -147,25 +147,28 @@ class FunctionCodeGenerator:
                 operands,
             ):
                 assert declare, "load temporaries should not be reassigned"
-                assert len(operands) == 2
+                assert len(operands) >= 2
                 assert isinstance(operands[0].dsl_type, BufferView), operands[0]
+                assert all(isinstance(o, IRConst) for o in operands[2:])
+                lanes = self.mcr.settings.lanes or 1
+                assert len(operands[2:]) <= lanes
                 dst = self._compile_operand(result)
                 src = self._compile_operand(operands[0])
                 position = self._compile_operand(operands[1])
+                offsets: list[int] = [o.value for o in operands[2:]]  # type: ignore
                 chunk_size = operands[0].dsl_type.chunk_size
                 res: list[str] = [
-                    f"/* {dst} = load {src} {position} */",
+                    f"/* {dst} = load {src} @ {position} w/ offsets {', '.join(map(str, offsets))} */",
                     f"{self.mcr.compile_ir_type(result.ir_type)} {dst};",
                 ]
                 # Figure out which byte affects which limb
                 # row x col x [pair(pointer offset, shift)]
-                lanes = self.mcr.settings.lanes or 1
                 distribution: list[list[list[tuple[int, int]]]] = [
                     [[] for _ in range(lanes)] for _ in range(self.mcr.settings.limbs)
                 ]
-                for j in range(lanes):
+                for j in range(len(offsets)):
                     for i in range(chunk_size):
-                        byte_n = j * chunk_size + i
+                        byte_n = offsets[j] * chunk_size + i
                         for relevant_limb in {
                             8 * i // self.mcr.settings.lambda_,
                             min(

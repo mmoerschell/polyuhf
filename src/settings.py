@@ -16,9 +16,9 @@ class Settings:
     scalar_mw: int
     vector_lw: int | None  # lane bit width
     lanes: int | None
+    unrolling_factor: int
     align: int
     mul_algo: Literal["schoolbook", "karatsuba"]
-    carry_every_n: int | None
 
     def __init__(
         self,
@@ -28,8 +28,8 @@ class Settings:
         scalar_mw: int,
         vector_lw: int | None,
         lanes: int | None,
+        unrolling_factor: int,
         mul_algo: Literal["schoolbook", "karatsuba"],
-        carry_every_n: int,
     ) -> None:
         assert lambda_ >= 8, "limbs must be at least one byte"
         if lanes:
@@ -49,13 +49,13 @@ class Settings:
         self.scalar_mw = scalar_mw
         self.vector_lw = vector_lw
         self.lanes = lanes
+        self.unrolling_factor = unrolling_factor
         self.align = (
             self.vector_lw * self.lanes
             if self.vector_lw and self.lanes
             else self.scalar_mw
         )
         self.mul_algo = mul_algo
-        self.carry_every_n = carry_every_n
 
         # Constraints from CHES paper
         if isinstance(self.field, PrimeField):
