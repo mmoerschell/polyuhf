@@ -10,11 +10,14 @@ find_package(OpenSSL REQUIRED)
 
 add_executable(tests
     main.cpp
+    little_endian_hex.cpp
     load_store_tests.cpp
+    multiplication_tests.cpp
     hashing_tests.cpp
     # poly1305_tests.cpp
     generated/datastructures.c
     generated/load_store.c
+    generated/squareto1.c
     generated/mmh.c
     generated/sqh.c
     generated/nmh.c
