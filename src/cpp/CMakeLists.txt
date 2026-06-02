@@ -5,10 +5,10 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-find_package(Boost REQUIRED COMPONENTS unit_test_framework json)
+find_package(Boost CONFIG REQUIRED COMPONENTS unit_test_framework json)
 find_package(OpenSSL REQUIRED)
 
-add_executable(tests
+add_executable(correctness
     main.cpp
     little_endian_hex.cpp
     load_store_tests.cpp
@@ -23,22 +23,39 @@ add_executable(tests
     generated/nmh.c
 )
 
-target_link_libraries(tests
+target_link_libraries(correctness
     PRIVATE
         Boost::json
         Boost::unit_test_framework
         ${OPENSSL_LIBRARIES}
 )
 
-target_compile_options(tests PRIVATE
+target_compile_options(correctness PRIVATE
     -Wall
     -Wextra
     -Wpedantic
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(tests PRIVATE -fsanitize=address,undefined)
-    target_link_options(tests PRIVATE -fsanitize=address,undefined)
+    target_compile_options(correctness PRIVATE -fsanitize=address,undefined)
+    target_link_options(correctness PRIVATE -fsanitize=address,undefined)
 endif()
 
-target_include_directories(tests PRIVATE . ${OPENSSL_INCLUDE_DIR})
+target_include_directories(correctness PRIVATE . ${OPENSSL_INCLUDE_DIR})
+
+add_executable(performance
+    performance.c
+    generated/nmh.c
+)
+
+target_compile_options(performance PRIVATE
+    -Wall
+    -Wextra
+    -Wpedantic
+    -O3
+    -mcpu=native
+    -march=armv8.2-a+simd+dotprod
+    -DNDEBUG
+    -fno-vectorize
+    -fno-slp-vectorize
+)

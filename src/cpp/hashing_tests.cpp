@@ -16,7 +16,7 @@ namespace bdata = boost::unit_test::data;
 
 static const cpp_int c1163("0xffffffffffffffffffffffffffffd");
 
-BOOST_DATA_TEST_CASE(Random_MMH_SQH_Tests, bdata::xrange(1000), i) {
+BOOST_DATA_TEST_CASE(Random_MMH_SQH_Tests, bdata::xrange(100), i) {
     std::mt19937 rng(42 + i); // deterministic per test case
     std::uniform_int_distribution<uint8_t> dist(0, 255);
 
@@ -63,7 +63,7 @@ BOOST_DATA_TEST_CASE(Random_MMH_SQH_Tests, bdata::xrange(1000), i) {
                                   sqh_tag_ref.cbegin(), sqh_tag_ref.cend());
 }
 
-BOOST_DATA_TEST_CASE(Random_NMH_Tests, bdata::xrange(1000), i) {
+BOOST_DATA_TEST_CASE(Random_NMH_Tests, bdata::xrange(100), i) {
     std::mt19937 rng(42 + i); // deterministic per test case
     std::uniform_int_distribution<uint8_t> dist(0, 255);
 

@@ -84,7 +84,6 @@ class FunctionCodeGenerator:
                     f" else "
                     f"{{{'\n'.join(self._compile_statement(s) for s in else_branch)}}}"
                 )
-                raise
             case IRReturn(value):
                 return f"return {self._compile_operand(value)};"
 
@@ -136,16 +135,17 @@ class FunctionCodeGenerator:
                     else "carry"
                 )
                 return self.mcr.get_template(te_name).render(te_ctx)
-            # Scalar & vector load
+            # Scalar load
             case IRInstruction(
                 declare,
                 IRTemporary(
                     _,
-                    "vector" | "matrix",
+                    "vector"
                 ) as result,
                 "load",
                 operands,
             ):
+                # TODO! remove matrix remnants from here, improve scalar loads
                 assert declare, "load temporaries should not be reassigned"
                 assert len(operands) >= 2
                 assert isinstance(operands[0].dsl_type, BufferView), operands[0]
@@ -215,6 +215,33 @@ class FunctionCodeGenerator:
                     else:
                         raise NotImplementedError()
                 return "\n".join(res)
+            # Vector load
+            case IRInstruction(
+                declare,
+                IRTemporary(
+                    _dsl_type,
+                    "matrix"
+                ) as result,
+                "load",
+                operands,
+            ):
+                assert declare, "load temporaries should not be reassigned"
+                assert len(operands) > 2
+                assert isinstance(operands[0].dsl_type, BufferView), operands[0]
+                assert all(isinstance(o, IRConst) for o in operands[2:])
+                assert self.mcr.settings.lanes
+                assert len(operands[2:]) <= self.mcr.settings.lanes
+                offsets: list[int] = [o.value for o in operands[2:]]  # type: ignore
+                chunk_size = operands[0].dsl_type.chunk_size
+                return self.mcr.get_template(f"vload_{self.mcr.settings.platform}").render({
+                    "var": self._compile_operand(result),
+                    "settings": self.mcr.settings,
+                    "buffer": self._compile_operand(operands[0]),
+                    "position": self._compile_operand(operands[1]),
+                    "offsets": offsets,
+                    "chunk_size": chunk_size,
+                    "min": min,
+                })
             # const
             case IRInstruction(declare, result, "const", operands):
                 res = []
