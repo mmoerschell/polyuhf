@@ -59,6 +59,13 @@ class FunctionCodeGenerator:
 
     def generate_definition(self, func: IRFunction, c_signature: str) -> str:
         lines: list[str] = []
+        if self.mcr.settings.lanes:
+            lines += [
+                f"const uint64x2_t vlambda_mask = "
+                f"vdupq_n_u64({self.mcr.settings.lambda_mask});",
+                f"const uint64x2_t vlambda_prime_mask = "
+                f"vdupq_n_u64({self.mcr.settings.lambda_prime_mask});",
+            ]
         for s in self.func.body:
             text = self._compile_statement(s)
             lines.append(text)
@@ -138,10 +145,7 @@ class FunctionCodeGenerator:
             # Scalar load
             case IRInstruction(
                 declare,
-                IRTemporary(
-                    _,
-                    "vector"
-                ) as result,
+                IRTemporary(_, "vector") as result,
                 "load",
                 operands,
             ):
@@ -218,10 +222,7 @@ class FunctionCodeGenerator:
             # Vector load
             case IRInstruction(
                 declare,
-                IRTemporary(
-                    _dsl_type,
-                    "matrix"
-                ) as result,
+                IRTemporary(_dsl_type, "matrix") as result,
                 "load",
                 operands,
             ):
@@ -233,22 +234,29 @@ class FunctionCodeGenerator:
                 assert len(operands[2:]) <= self.mcr.settings.lanes
                 offsets: list[int] = [o.value for o in operands[2:]]  # type: ignore
                 chunk_size = operands[0].dsl_type.chunk_size
-                return self.mcr.get_template(f"vload_{self.mcr.settings.platform}").render({
-                    "var": self._compile_operand(result),
-                    "settings": self.mcr.settings,
-                    "buffer": self._compile_operand(operands[0]),
-                    "position": self._compile_operand(operands[1]),
-                    "offsets": offsets,
-                    "chunk_size": chunk_size,
-                    "min": min,
-                })
+                return self.mcr.get_template(
+                    f"vload_{self.mcr.settings.platform}"
+                ).render(
+                    {
+                        "var": self._compile_operand(result),
+                        "settings": self.mcr.settings,
+                        "buffer": self._compile_operand(operands[0]),
+                        "position": self._compile_operand(operands[1]),
+                        "offsets": offsets,
+                        "chunk_size": chunk_size,
+                        "min": min,
+                    }
+                )
             # const
             case IRInstruction(declare, result, "const", operands):
                 res = []
                 if declare:
                     res += optional_ctype
                 res += f"{self._compile_operand(insn.result)} = "
-                res += f"{self._compile_operand(operands[0])};"
+                if isinstance(operands[0], IRConst) and operands[0].value == 0:
+                    res += "{ 0 };"
+                else:
+                    res += f"{self._compile_operand(operands[0])};"
                 return "".join(res)
             # Horizontal add (vectorization)
             case IRInstruction(declare, result, "horiz_add", (src_matrix,)):

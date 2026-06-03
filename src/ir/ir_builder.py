@@ -313,9 +313,9 @@ class IRFunctionBuilder:
                 bod_stmts
                 + [
                     update_acc,
-                    IRInstruction(
-                        False, declare_acc.result, "carry", (declare_acc.result,)
-                    ),
+                    # IRInstruction(
+                    #     False, declare_acc.result, "carry", (declare_acc.result,)
+                    # ),
                 ],
             ),
         ] + horizontal_reduction, final_value

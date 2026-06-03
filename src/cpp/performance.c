@@ -1,3 +1,4 @@
+#include <arm_neon.h>
 #include <math.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -8,6 +9,7 @@
 #include "generated/datastructures.h"
 #include "generated/nmh.h"
 
+#define PROC_FREQUENCY 4.05
 #define B 1000
 #define SEED 42
 #define CHUNK_SIZE 14
@@ -26,7 +28,7 @@ int compare_doubles(const void *a, const void *b) {
 uint64_t nanos(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    return (uint64_t)ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+    return (uint64_t)ts.tv_sec * 1e9 + ts.tv_nsec;
 }
 
 // int main(int argc, char **argv) {
@@ -54,7 +56,7 @@ int main(void) {
         sink ^= res.limb0;
     }
 
-    double measured_min = 10000.0;
+    double measured_min = 1ull << 50;
     double* samples = (double*) malloc(NUM_MEASUR_ROUNDS * sizeof(double));
     if (!samples) {
         fprintf(stderr, "Could not allocate samples buffer\n");
@@ -65,12 +67,12 @@ int main(void) {
         const bigint_t res = nmh(message, key, B);
         const uint64_t end = nanos();
         sink ^= res.limb0;
-        samples[i] = (double)(end - start) / 1000000;
+        samples[i] = (double)(end - start) * PROC_FREQUENCY;
         measured_min = fmin(measured_min, samples[i]);
     }
-    printf("min: %fns\n", measured_min);
+    printf("min: %.0f cycles\n", measured_min);
     qsort(samples, NUM_MEASUR_ROUNDS, sizeof(double), compare_doubles);
-    printf("mean: %fns\n", samples[NUM_MEASUR_ROUNDS / 2]);
+    printf("median: %.0f cycles\n", samples[NUM_MEASUR_ROUNDS / 2]);
 
     free(message);
     free(key);
