@@ -11,6 +11,9 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from colorama import Fore, Style
 
+from analysis.graph import graphs
+from analysis.opcount import opcount_and_traffic
+from analysis.perf_benchmark import gather_cycles
 from codegen.code_generator import ModuleCodeGenerator
 from codegen.formatter import tidy_and_format_c
 from ir.ir_builder import IRModuleBuilder
@@ -30,7 +33,9 @@ class BailErrorListener(ErrorListener):
         raise DSLParseError(f"line {line}:{column} {msg}")
 
 
-def compile_string(text: str, flags, module_name: str, settings: Settings):  # noqa: C901
+def compile_string(  # noqa: C901
+    text: str, flags: argparse.Namespace, module_name: str, settings: Settings
+) -> None:
     input_stream = InputStream(text)
 
     lexer = PolyUHFLexer(input_stream)
@@ -72,9 +77,26 @@ def compile_string(text: str, flags, module_name: str, settings: Settings):  # n
         if flags.show_ir:
             print(pprint_module(ir))
 
+        # Opcount & memory traffic
+        ops_and_traffic_per_function = opcount_and_traffic(ir, settings)
+        if not ops_and_traffic_per_function:
+            print(
+                f"[{Fore.YELLOW}x{Style.RESET_ALL}] No ops/traffic "
+                f"analysis for {module_name}"
+            )
+        else:
+            ops, traffic, _ = ops_and_traffic_per_function
+            if flags.verbose:
+                print(
+                    f"[{Fore.BLUE}i{Style.RESET_ALL}] {ir.funcs[0].name} has {ops} ops "
+                    f"and {traffic} bytes of memory traffic"
+                )
+
         # Codegen (pretty-printing & algorithms)
-        gen = ModuleCodeGenerator(ir, settings)
-        header, source, datastructures_h, datastructures_s = gen.compile()
+        gen = ModuleCodeGenerator(
+            ir, settings, ops_and_traffic_per_function is not None
+        )
+        header, source, datastructures_h, datastructures_s, perf = gen.compile()
         if flags.verbose:
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
 
@@ -85,6 +107,7 @@ def compile_string(text: str, flags, module_name: str, settings: Settings):  # n
             (f"{module_name}", "c", source),
             ("datastructures", "h", datastructures_h),
             ("datastructures", "c", datastructures_s),
+            (f"{module_name}_perf", "c", perf),
         ]:
             output_path = f"src/cpp/generated/{name}.{ext}"
             with open(output_path, "w") as code_output:
@@ -100,7 +123,15 @@ def compile_string(text: str, flags, module_name: str, settings: Settings):  # n
             if flags.verbose:
                 print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Optional formatting")
 
-        return f"{header}\n{source}"
+        # Benchmark
+        if ops_and_traffic_per_function:
+            ops_expr, traffic_expr, B_symbol = ops_and_traffic_per_function  # noqa: N806
+            data_B, data_cycles = gather_cycles(module_name, 8, 1200, 8)  # noqa: N806
+            data_ops: list[float] = [ops_expr.evalf(subs={B_symbol: b}) for b in data_B]  # type: ignore
+            # data_traffic = [traffic_expr.evalf(subs={B_symbol: b}) for b in data_B]
+            data_traffic = [b * settings.field.chunk_size() for b in data_B]
+            graphs(data_B, data_ops, data_traffic, data_cycles, settings)
+
     except NotImplementedError as e:
         raise e
     except (DSLParseError, TypeCheckingError, AssertionError, RuntimeError) as e:
@@ -112,20 +143,16 @@ def compile_string(text: str, flags, module_name: str, settings: Settings):  # n
         exit(1)
 
 
-def compile_file(path: str, flags, settings: Settings):
-    # Extract progam name from path
-    match = re.search(r"([^/\\]+)\.txt$", path)
-    assert match, "Can't find module name in path"
-    module_name = match.group(1)
-    if module_name in ["configuration", "helpers"]:
-        raise ValueError("Illegal module name")
+def compile_file(
+    path: str, module_name: str, flags: argparse.Namespace, settings: Settings
+) -> None:
 
     # For debugging
     if flags.verbose:
         print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Compiling '{path}'")
 
     with open(path, mode="r", encoding="utf-8") as f:
-        return compile_string(f.read(), flags, module_name, settings)
+        compile_string(f.read(), flags, module_name, settings)
 
 
 if __name__ == "__main__":
@@ -141,6 +168,13 @@ if __name__ == "__main__":
     )
     flags = cli.parse_args()
 
+    # Extract progam name from path
+    match = re.search(r"([^/\\]+)\.txt$", flags.input_file)
+    assert match, "Can't find module name in path"
+    module_name = match.group(1)
+    if module_name in ["configuration", "helpers"]:
+        raise ValueError("Illegal module name")
+
     vectorize = True
     settings = Settings(
         PrimeField(116, 3),
@@ -152,4 +186,6 @@ if __name__ == "__main__":
         4,
         "schoolbook",
     )
-    module = compile_file(flags.input_file, flags, settings)
+
+    # Compile
+    module = compile_file(flags.input_file, module_name, flags, settings)

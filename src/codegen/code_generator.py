@@ -363,22 +363,32 @@ class FunctionCodeGenerator:
 
 
 class ModuleCodeGenerator:
-    def __init__(self, module: IRModule, settings: Settings) -> None:
+    def __init__(self, module: IRModule, settings: Settings, perf: bool) -> None:
         self.module = module
         self.settings = settings
         self._templates_env = Environment(
             loader=FileSystemLoader("src/codegen/templates")
         )
         self._templates: dict[str, Template] = {}
+        self.perf = perf
 
-    def compile(self) -> tuple[str, str, str, str]:
+    def compile(self) -> tuple[str, str, str, str, str | None]:
         declarations: list[str] = []
         definitions: list[str] = []
+        perf_function_names: list[str] = []
         for func in self.module.funcs:
             fgen = FunctionCodeGenerator(self, func)
             signature = fgen.generate_signature()
             declarations.append(f"{signature};")
             definitions.append(fgen.generate_definition(func, signature))
+            # Check whether function can be perfed
+            if (
+                len(func.params) == 3
+                and func.params[0].ir_type == "pod"  # key
+                and func.params[1].ir_type == "pod"  # message
+                and func.params[2].ir_type == "scalar"  # n. of blocks
+            ):
+                perf_function_names.append(func.name)
 
         context = {
             "declarations": declarations,
@@ -396,7 +406,19 @@ class ModuleCodeGenerator:
         datastructures_header = self.get_template("datastructures_h").render(context)
         datastructures_source = self.get_template("datastructures_c").render(context)
 
-        return header, source, datastructures_header, datastructures_source
+        perf = (
+            self.get_template("perf.c").render(
+                {
+                    "module_name": self.module.name,
+                    "func": self.module.funcs[0].name,
+                    "settings": self.settings,
+                }
+            )
+            if self.perf
+            else None
+        )
+
+        return header, source, datastructures_header, datastructures_source, perf
 
     def compile_ir_type(self, ir_type: IRType) -> str:
         match ir_type:
@@ -407,7 +429,7 @@ class ModuleCodeGenerator:
             case "matrix":
                 return "vbigint_t"
             case "pod":
-                return "uint8_t*"
+                return "const uint8_t*"
 
     def get_template(self, template: str) -> Template:
         return self._templates.setdefault(

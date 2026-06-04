@@ -1,0 +1,78 @@
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#include "datastructures.h"
+#include "{{module_name}}.h"
+
+#define PROC_FREQUENCY 4.05
+#define SEED 42
+#define CHUNK_SIZE {{settings.field.chunk_size()}}
+#define NUM_WARMUP_ROUNDS 1000
+#define NUM_MEASUR_ROUNDS 9000
+
+int compare_doubles(const void *a, const void *b) {
+    const double da = *(const double *)a;
+    const double db = *(const double *)b;
+
+    if (da < db) return -1;
+    if (da > db) return 1;
+    return 0;
+}
+
+uint64_t nanos(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    return (uint64_t)ts.tv_sec * 1e9 + ts.tv_nsec;
+}
+
+int main(int argc, char **argv) {
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s <start> <stop> <step>\nboth ends inclusive, and where each parameter represents a number of blocks\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+    const size_t start = atoll(argv[1]);
+    const size_t stop = atoll(argv[2]);
+    const size_t step = atoll(argv[3]);
+    const size_t buffer_len = stop * CHUNK_SIZE;
+    uint8_t *message = (uint8_t *)malloc(buffer_len);
+    uint8_t *key = (uint8_t *)malloc(buffer_len);
+    if (!message || !key) {
+        fprintf(stderr, "Could not allocate message or key buffer. Arguments too large?\n");
+        return EXIT_FAILURE;
+    }
+    srand(SEED);
+    for (size_t i = 0; i < buffer_len; ++i) {
+        message[i] = rand() & 255u;
+        key[i] = rand() & 255u;
+    }
+    uint64_t sink = 0;
+    for (size_t B = start; B <= stop; B += step) {
+        if (B & 7ll) {
+            fprintf(stderr, "B must be a multiple of 8\n");
+            return EXIT_FAILURE;
+        }
+        
+        for (size_t i = 0; i < NUM_WARMUP_ROUNDS; ++i) {
+            const bigint_t res = {{func}}(message, key, B);
+            sink ^= res.limb0;
+        }
+
+        const uint64_t start = nanos();
+        for (size_t i = 0; i < NUM_MEASUR_ROUNDS; ++i) {
+            const bigint_t res = {{func}}(message, key, B);
+            sink ^= res.limb0;
+        }
+        const uint64_t end = nanos();
+        const double sample = (double)(end - start) / NUM_MEASUR_ROUNDS * PROC_FREQUENCY;
+        printf("B = %zu -> %.0f cycles\n", B, sample);
+
+    }
+
+    free(message);
+    free(key);
+    fprintf(stderr, "", sink);
+    return EXIT_SUCCESS;
+}
