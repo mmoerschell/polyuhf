@@ -1,5 +1,7 @@
 from itertools import chain
 
+import sympy as sp
+
 from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.antlr.PolyUHFVisitor import PolyUHFVisitor
 from parsing.ast.ast_nodes import (
@@ -205,4 +207,10 @@ class ASTBuilder(PolyUHFVisitor):
         if len(expressions) != 4:
             raise DSLParseError("malformed reduction expression")
         start, stop, step, body = [self.visit(e) for e in expressions]
-        return ASTReduction(None, op, var, start, stop, step, body)
+        bound = sp.simplify(
+            sp.parse_expr(
+                f"(({expressions[1].getText()})-({expressions[0].getText()}))/({expressions[2].getText()})"
+            )
+        )
+        print(f"Loop bound is {bound}")
+        return ASTReduction(None, op, var, start, stop, step, body, bound)

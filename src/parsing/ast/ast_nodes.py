@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+import sympy as sp
+
 from typesystem import DSLType
 
 # ---------- Base nodes ----------
@@ -76,6 +78,7 @@ class ASTReduction(ASTExpr):
     stop: ASTExpr
     step: ASTExpr
     body: ASTExpr
+    bound: sp.Expr
 
 
 # ---------- Functions, modules ----------

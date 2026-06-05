@@ -60,9 +60,8 @@ def per_statement(
             ops, traffic = per_instruction(stmt, settings)
             return sp.Integer(ops), sp.Integer(traffic)
         case IRLoop():
-            num_iterations = B  # TODO FIXME
             ops, traffic = per_statement_list(stmt.body, settings, B)
-            return num_iterations * ops, num_iterations * traffic
+            return stmt.bound * ops, stmt.bound * traffic
         case IRIfElse():
             # Heuristic
             # TODO change this if if-else did compute both sides, or only then branch

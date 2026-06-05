@@ -13,6 +13,7 @@ CFLAGS = [
     "-DNDEBUG",
     "-fno-vectorize",
     "-fno-slp-vectorize",
+    "-Wno-format-zero-length",
 ]
 
 GENERATED_CODE_DIR = "src/cpp/generated"

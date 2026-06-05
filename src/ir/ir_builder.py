@@ -3,6 +3,8 @@ from __future__ import annotations
 from itertools import chain
 from typing import assert_never
 
+import sympy as sp
+
 import utils
 from ir.ir_nodes import (
     IRBoundIdentifier,
@@ -229,6 +231,11 @@ class IRFunctionBuilder:
             reduction.step.value * (self.module_builder.settings.lanes or 1)
             # * self.module_builder.settings.unrolling_factor
         )
+        new_bound: sp.Expr = sp.simplify(
+            reduction.bound / (self.module_builder.settings.lanes or 1)  # type: ignore
+            # *self.module_builder.settings.unrolling_factor
+        )
+        print(f"New bound is {new_bound}")
         # Determine tail length
         tail_len_stmts, tail_len_ter = self.compile_expr(
             ASTBinaryOperation(
@@ -317,6 +324,7 @@ class IRFunctionBuilder:
                     #     False, declare_acc.result, "carry", (declare_acc.result,)
                     # ),
                 ],
+                new_bound,
             ),
         ] + horizontal_reduction, final_value
 

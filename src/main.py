@@ -107,8 +107,7 @@ def compile_string(  # noqa: C901
             (f"{module_name}", "c", source),
             ("datastructures", "h", datastructures_h),
             ("datastructures", "c", datastructures_s),
-            (f"{module_name}_perf", "c", perf),
-        ]:
+        ] + ([(f"{module_name}_perf", "c", perf)] if perf else []):
             output_path = f"src/cpp/generated/{name}.{ext}"
             with open(output_path, "w") as code_output:
                 code_output.write(contents)
@@ -130,7 +129,7 @@ def compile_string(  # noqa: C901
             data_ops: list[float] = [ops_expr.evalf(subs={B_symbol: b}) for b in data_B]  # type: ignore
             # data_traffic = [traffic_expr.evalf(subs={B_symbol: b}) for b in data_B]
             data_traffic = [b * settings.field.chunk_size() for b in data_B]
-            graphs(data_B, data_ops, data_traffic, data_cycles, settings)
+            graphs(module_name, data_B, data_ops, data_traffic, data_cycles, settings)
 
     except NotImplementedError as e:
         raise e

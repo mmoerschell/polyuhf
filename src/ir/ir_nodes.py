@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import sympy as sp
+
 from typesystem import DSLType, IRType
 
 
@@ -42,6 +44,7 @@ class IRLoop:
     end: IROperand
     increment: IROperand
     body: list[IRStatement]
+    bound: sp.Expr
 
 
 @dataclass(frozen=True)

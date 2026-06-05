@@ -1,10 +1,12 @@
 import numpy as np
-from matplotlib import pyplot as plt, ticker
+from matplotlib import pyplot as plt
+from matplotlib import ticker
 
 from settings import Settings
 
 
 def roofline_plot(
+    name: str,
     data_B: list[float],  # noqa: N803
     data_ops: list[float],
     data_traffic: list[float],
@@ -41,14 +43,12 @@ def roofline_plot(
         s=35,  # Size of points
         zorder=5,
     )
-    # plt.xlim(0, max_oi)
-    # plt.ylim(0, peak_perf * 1.1)
     plt.xscale("log", base=10)
     plt.yscale("log", base=2)
     plt.gca().yaxis.set_major_formatter(ticker.ScalarFormatter())
     plt.xlabel("Intensity [iops/byte]")
     plt.ylabel("Performance [iops/cycle]")
-    plt.title("Roofline plot")
+    plt.title(f"Roofline plot for {name}")
     # plt.grid(True, which="both", alpha=0.3)
     plt.grid(False)
     plt.tight_layout()
@@ -56,6 +56,7 @@ def roofline_plot(
 
 
 def cycles_per_byte_plot(
+    name: str,
     data_B: list[float],  # noqa: N803
     data_ops: list[float],
     data_traffic: list[float],
@@ -72,15 +73,16 @@ def cycles_per_byte_plot(
     plt.scatter(bytes_, cycles_per_byte)
     # plt.xscale("log")
     # plt.yscale("log")
-    plt.xlabel("Bytes")
+    plt.xlabel("Message length in bytes")
     plt.ylabel("Cycles / Byte")
-    plt.title("Memory Cost")
+    plt.title(f"Hashing performance for {name}")
     plt.grid(True, which="both", alpha=0.3)
     plt.tight_layout()
     plt.show()
 
 
 def graphs(
+    name: str,
     data_B: list[float],  # noqa: N803
     data_ops: list[float],
     data_traffic: list[float],
@@ -88,6 +90,7 @@ def graphs(
     settings: Settings,
 ) -> None:
     cycles_per_byte_plot(
+        name,
         data_B,
         data_ops,
         data_traffic,
@@ -95,6 +98,7 @@ def graphs(
         settings,
     )
     roofline_plot(
+        name,
         data_B,
         data_ops,
         data_traffic,
