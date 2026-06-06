@@ -13,8 +13,7 @@ BOOST_DATA_TEST_CASE(Automatic_{{function_name}}_Tests, boost::unit_test::data::
     std::mt19937 rng(42 + i); // deterministic per test case
     std::uniform_int_distribution<uint8_t> dist(0, 255);
 
-    // FIXME TODO
-    const size_t B = 4 * i + 1;     // number of blocks
+    const size_t B = i + 1;     // number of blocks
     std::vector<uint8_t> message(B * {{ settings.field.chunk_size() }}); // message
     std::vector<uint8_t> key(B * {{ settings.field.chunk_size() }}); // key
     for (auto &x : message)

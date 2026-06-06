@@ -13,7 +13,7 @@
 #define NUM_WARMUP_ROUNDS 1000
 #define NUM_MEASUR_ROUNDS 9000
 
-int compare_doubles(const void *a, const void *b) {
+static int compare_doubles(const void *a, const void *b) {
     const double da = *(const double *)a;
     const double db = *(const double *)b;
 
@@ -22,7 +22,7 @@ int compare_doubles(const void *a, const void *b) {
     return 0;
 }
 
-uint64_t nanos(void) {
+static uint64_t nanos(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
     return (uint64_t)ts.tv_sec * 1e9 + ts.tv_nsec;

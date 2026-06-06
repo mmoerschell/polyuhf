@@ -11,7 +11,7 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from colorama import Fore, Style
 
-from analysis.graph import graphs
+from analysis.graphs import graphs
 from analysis.opcount import opcount_and_traffic
 from analysis.perf_benchmark import gather_cycles
 from automatic_tests.boost_cpp_emitter import BoostCppTestEmitter
@@ -206,7 +206,7 @@ if __name__ == "__main__":
         64,
         64 if vectorize else None,
         2 if vectorize else None,
-        4,
+        2,
         "schoolbook",
     )
 

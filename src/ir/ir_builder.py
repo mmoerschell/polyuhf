@@ -93,7 +93,11 @@ class IRFunctionBuilder:
         )
 
     def compile_expr(  # noqa: C901
-        self, ast_expression: ASTExpr, lanes: int = 1, step: int = 1
+        self,
+        ast_expression: ASTExpr,
+        lanes: int = 1,
+        step: int = 1,
+        offsets: dict[str, int] | None = None,
     ) -> tuple[list[IRStatement], IROperand]:
         match ast_expression:
             case ASTInt(Index(), value):
@@ -110,26 +114,41 @@ class IRFunctionBuilder:
                     )
                 ], temporary
             case ASTLocalIdentifier(type_, name) if type_:
-                return [], IRBoundIdentifier(
-                    type_, compile_dsl_type(type_, False), name
-                )  # type: ignore
+                base_id = IRBoundIdentifier(type_, compile_dsl_type(type_, False), name)
+                # If an unroll offset exists for this variable, inject an addition
+                if offsets and name in offsets and offsets[name] != 0:
+                    ir_type = compile_dsl_type(type_, False)
+                    temp = IRTemporary(type_, ir_type)
+                    add_stmt = IRInstruction(
+                        True,
+                        temp,
+                        compile_operator("+"),
+                        (base_id, IRConst(type_, ir_type, offsets[name])),
+                    )
+                    return [add_stmt], temp
+                return [], base_id
             case ASTBinaryOperation(type_, operator, left, right):
                 if operator == "^":
                     match right:
                         case ASTInt(Index(), 0):
-                            return self.compile_expr(ASTInt(left.ttype, 1), lanes, step)
+                            return self.compile_expr(
+                                ASTInt(left.ttype, 1), lanes, step, offsets
+                            )
                         case ASTInt(Index(), 1):
-                            return self.compile_expr(left, lanes, step)
+                            return self.compile_expr(left, lanes, step, offsets)
                         case ASTInt(Index(), 2):
                             return self.compile_expr(
-                                ASTBinaryOperation(left.ttype, "*", left, left), lanes
+                                ASTBinaryOperation(left.ttype, "*", left, left),
+                                lanes,
+                                step,
+                                offsets,
                             )
                         case _:
                             raise NotImplementedError(ast_expression)
-                return self.compile_bin_expr(ast_expression, lanes, step)
+                return self.compile_bin_expr(ast_expression, lanes, step, offsets)
             case ASTComparison(type_, operator, left, right) if type_:
-                left_stmt, left_ter = self.compile_expr(left)
-                right_stmt, right_ter = self.compile_expr(right)
+                left_stmt, left_ter = self.compile_expr(left, offsets=offsets)
+                right_stmt, right_ter = self.compile_expr(right, offsets=offsets)
                 comp = IRInstruction(
                     True,
                     IRTemporary(type_, compile_dsl_type(type_, False)),
@@ -138,9 +157,9 @@ class IRFunctionBuilder:
                 )
                 return left_stmt + right_stmt + [comp], comp.result
             case ASTIfElse():
-                return self.compile_if_else(ast_expression)
+                return self.compile_if_else(ast_expression, offsets)
             case ASTCall(type_, func_name, args) if type_:
-                prepare_args = [self.compile_expr(e) for e in args]
+                prepare_args = [self.compile_expr(e, offsets=offsets) for e in args]
                 call_stmt = IRInstruction(
                     True,
                     IRTemporary(type_, compile_dsl_type(type_, False)),
@@ -156,8 +175,8 @@ class IRFunctionBuilder:
                     )
                 ), call_stmt.result
             case ASTBufferViewRead(ttype, buffer, index) if ttype and buffer.ttype:
-                index_stmts, index_ter = self.compile_expr(index)
-                offsets = [
+                index_stmts, index_ter = self.compile_expr(index, offsets=offsets)
+                ir_offsets = [
                     IRConst(Index(), compile_dsl_type(Index(), False), i * (step or 1))
                     for i in range(lanes)
                 ]
@@ -172,22 +191,26 @@ class IRFunctionBuilder:
                             buffer.name,
                         ),
                         index_ter,
-                        *offsets,
+                        *ir_offsets,
                     ),
                 )
                 return index_stmts + [load], load.result
             case ASTReduction(ttype, _):
                 assert lanes == 1, "no nested reductions please"
-                return self.compile_reduction(ast_expression)
+                return self.compile_reduction(ast_expression, offsets)
             case _:
                 raise NotImplementedError(f"{ast_expression!r}")
 
     def compile_bin_expr(
-        self, bin_expr: ASTBinaryOperation, lanes: int = 1, step: int = 1
+        self,
+        bin_expr: ASTBinaryOperation,
+        lanes: int = 1,
+        step: int = 1,
+        offsets: dict[str, int] | None = None,
     ) -> tuple[list[IRStatement], IROperand]:
         # Recurse into children
-        lstmts, lterm = self.compile_expr(bin_expr.left, lanes, step)
-        rstmts, rterm = self.compile_expr(bin_expr.right, lanes, step)
+        lstmts, lterm = self.compile_expr(bin_expr.left, lanes, step, offsets)
+        rstmts, rterm = self.compile_expr(bin_expr.right, lanes, step, offsets)
         # Build insn/term
         assert bin_expr.ttype
         binop = IRInstruction(
@@ -199,13 +222,13 @@ class IRFunctionBuilder:
         return lstmts + rstmts + [binop], binop.result
 
     def compile_if_else(
-        self, if_else: ASTIfElse
+        self, if_else: ASTIfElse, offsets: dict[str, int] | None = None
     ) -> tuple[list[IRStatement], IROperand]:
         assert if_else.ttype
         dsl_type, ir_type = if_else.ttype, compile_dsl_type(if_else.ttype, False)
-        cond_stmts, cond_ter = self.compile_expr(if_else.condition)
-        then_stmts, then_ter = self.compile_expr(if_else.then_branch)
-        else_stmts, else_ter = self.compile_expr(if_else.else_branch)
+        cond_stmts, cond_ter = self.compile_expr(if_else.condition, offsets=offsets)
+        then_stmts, then_ter = self.compile_expr(if_else.then_branch, offsets=offsets)
+        else_stmts, else_ter = self.compile_expr(if_else.else_branch, offsets=offsets)
         declare = IRInstruction(
             True,
             IRTemporary(dsl_type, ir_type),
@@ -220,34 +243,44 @@ class IRFunctionBuilder:
         return [declare] + cond_stmts + [ifelse], declare.result
 
     def compile_reduction(
-        self, reduction: ASTReduction
+        self, reduction: ASTReduction, offsets: dict[str, int] | None = None
     ) -> tuple[list[IRStatement], IROperand]:
-        sta_stmts, sta_term = self.compile_expr(reduction.start)
-        sto_stmts, sto_term = self.compile_expr(reduction.stop)
-        # Determine total unrolling factor (effective loop step size)
+        sta_stmts, sta_term = self.compile_expr(reduction.start, offsets=offsets)
+        sto_stmts, sto_term = self.compile_expr(reduction.stop, offsets=offsets)
+
         if not isinstance(reduction.step, ASTInt):
             raise ValueError(f"Non-constant loop step {reduction.step}")
-        loop_step = (
-            reduction.step.value * (self.module_builder.settings.lanes or 1)
-            # * self.module_builder.settings.unrolling_factor TODO
+
+        base_step = reduction.step.value
+        lanes = self.module_builder.settings.lanes or 1
+        unroll_factor = self.module_builder.settings.unrolling_factor or 1
+
+        # Calculate full step size across lanes and unroll slots
+        vector_step = base_step * lanes
+        unrolled_step = vector_step * unroll_factor
+
+        # Dynamic tail boundary
+        # Calculate the exact point where the main loop must stop
+        # main_loop_end = stop - ((stop - start) % unrolled_step)
+        tail_len_expr = ASTBinaryOperation(
+            Index(),
+            "%",
+            ASTBinaryOperation(Index(), "-", reduction.stop, reduction.start),
+            ASTInt(Index(), unrolled_step),
         )
-        new_bound: sp.Expr = sp.simplify(  # type: ignore
-            reduction.bound / (self.module_builder.settings.lanes or 1)  # type: ignore
-            # *self.module_builder.settings.unrolling_factor TODO
+        main_loop_end_expr = ASTBinaryOperation(
+            Index(),
+            "-",
+            reduction.stop,
+            tail_len_expr,
         )
-        # print(f"New bound is {new_bound}")
-        # Determine tail length
-        tail_len_stmts, tail_len_ter = self.compile_expr(
-            ASTBinaryOperation(
-                Index(),
-                "%",
-                ASTBinaryOperation(Index(), "-", reduction.stop, reduction.start),
-                ASTInt(Index(), loop_step),
-            ),
-            1,
+        main_end_stmts, main_end_term = self.compile_expr(
+            main_loop_end_expr, offsets=offsets
         )
 
-        # Build insn/term
+        # Update bound for codegen
+        new_bound: sp.Expr = sp.simplify(reduction.bound / (lanes * unroll_factor))  # type: ignore
+
         match reduction.op:
             case "+":
                 neutral_element = 0
@@ -256,7 +289,8 @@ class IRFunctionBuilder:
             case _:
                 raise ValueError(reduction.op)
         assert reduction.ttype
-        # Accumulator
+
+        # Initialize the vector accumulator for the main unrolled loop
         declare_acc = IRInstruction(
             True,
             IRTemporary(
@@ -276,23 +310,44 @@ class IRFunctionBuilder:
                 ),
             ),
         )
-        # Body
-        bod_stmts, bod_term = self.compile_expr(
-            reduction.body,
-            self.module_builder.settings.lanes
-            if self.module_builder.settings.lanes
-            else 1,
-            reduction.step.value,
+
+        # Build unrolled main loop body
+        unrolled_body_stmts: list[IRStatement] = []
+        for u in range(unroll_factor):
+            offset_val = u * vector_step
+
+            # Create a fresh environment for this unroll iteration
+            loop_offsets = offsets.copy() if offsets else {}
+            loop_offsets[reduction.var] = offset_val
+
+            bod_stmts, bod_term = self.compile_expr(
+                reduction.body,
+                lanes=self.module_builder.settings.lanes
+                if self.module_builder.settings.lanes
+                else 1,
+                step=base_step,
+                offsets=loop_offsets,
+            )
+            unrolled_body_stmts.extend(bod_stmts)
+
+            update_acc = IRInstruction(
+                False,
+                declare_acc.result,
+                compile_operator(reduction.op),
+                (declare_acc.result, bod_term),
+            )
+            unrolled_body_stmts.append(update_acc)
+
+        # Create the main unrolled vector loop
+        main_loop = IRLoop(
+            IRBoundIdentifier(Index(), compile_dsl_type(Index(), False), reduction.var),
+            sta_term,
+            main_end_term,
+            IRConst(Index(), compile_dsl_type(Index(), False), unrolled_step),
+            unrolled_body_stmts,
+            new_bound,  # type: ignore
         )
-        # Accumulator update
-        update_acc = IRInstruction(
-            False,
-            declare_acc.result,
-            compile_operator(reduction.op),
-            (declare_acc.result, bod_term),
-        )
-        # TODO FIXME
-        # Unprocessed data (if unrolling factor * lanes !| # of iterations)
+
         # Horizontal reduction
         if not self.module_builder.settings.lanes:
             horizontal_reduction = []
@@ -309,24 +364,47 @@ class IRFunctionBuilder:
                 )
             ]
             final_value = horizontal_reduction[0].result
-        return sta_stmts + sto_stmts + [declare_acc] + [
-            IRLoop(
-                IRBoundIdentifier(
-                    Index(), compile_dsl_type(Index(), False), reduction.var
-                ),
-                sta_term,
-                sto_term,
-                IRConst(Index(), compile_dsl_type(Index(), False), loop_step),
-                bod_stmts
-                + [
-                    update_acc,
-                    # IRInstruction(
-                    #     False, declare_acc.result, "carry", (declare_acc.result,)
-                    # ),
-                ],
-                new_bound,  # type: ignore
-            ),
-        ] + horizontal_reduction, final_value
+
+        # Scalar tail cleanup Loop
+        # Remove the unrolling offset for the tail
+        tail_offsets = offsets.copy() if offsets else {}
+        tail_offsets.pop(reduction.var, None)
+
+        tail_bod_stmts, tail_bod_term = self.compile_expr(
+            reduction.body, lanes=1, step=base_step, offsets=tail_offsets
+        )
+        update_tail_acc = IRInstruction(
+            False,
+            final_value,
+            compile_operator(reduction.op),
+            (final_value, tail_bod_term),
+        )
+
+        try:
+            tail_bound = reduction.bound % unrolled_step  # type: ignore
+        except Exception:
+            tail_bound = sp.var("tail_bound")  # type: ignore # TODO
+
+        tail_loop = IRLoop(
+            IRBoundIdentifier(Index(), compile_dsl_type(Index(), False), reduction.var),
+            main_end_term,
+            sto_term,
+            IRConst(Index(), compile_dsl_type(Index(), False), base_step),
+            tail_bod_stmts + [update_tail_acc],
+            tail_bound,  # type: ignore
+        )
+
+        # Group everything into a list of IR blocks
+        all_statements = (
+            sta_stmts
+            + sto_stmts
+            + main_end_stmts
+            + [declare_acc, main_loop]
+            + horizontal_reduction
+            + [tail_loop]
+        )
+
+        return all_statements, final_value
 
 
 class IRModuleBuilder:

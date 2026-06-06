@@ -10,6 +10,8 @@ find_package(OpenSSL REQUIRED)
 
 # Automatically grab all generated function files and autotest source files
 file(GLOB_RECURSE GENERATED_SOURCES CONFIGURE_DEPENDS "generated/*.c")
+file(GLOB_RECURSE GENERATED_PERF_SOURCES CONFIGURE_DEPENDS "generated/*_perf.c")
+list(REMOVE_ITEM GENERATED_SOURCES ${GENERATED_PERF_SOURCES})
 file(GLOB_RECURSE GENERATED_AUTOTESTS CONFIGURE_DEPENDS "generated/*autotests.cpp")
 
 add_executable(correctness
