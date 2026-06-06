@@ -38,6 +38,9 @@ class PrimeField(Field):
     def chunk_size(self) -> int:
         return self.pi // 8
 
+    def prime_as_hex(self) -> str:
+        return hex((1 << self.pi) - self.theta)
+
 
 @dataclass(frozen=True)
 class BinaryField(Field):

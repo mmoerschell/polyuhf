@@ -25,6 +25,8 @@ def per_instruction(  # noqa: C901
             return 0, 0
         case IRInstruction(_, _, "copy"):
             return 0, 0
+        case IRInstruction(_, _, "call"):
+            raise ValueError("Can't determin op-count for recursive functions")
         # Scalar
         case IRInstruction(_, IRTemporary(Index(), "scalar"), _):
             # TODO do these count?
@@ -65,12 +67,8 @@ def per_statement(
         case IRIfElse():
             # Heuristic
             # TODO change this if if-else did compute both sides, or only then branch
-            then_ops, then_traffic = per_statement_list(
-                stmt.then_branch, settings, symbols
-            )
-            else_ops, else_traffic = per_statement_list(
-                stmt.else_branch, settings, symbols
-            )
+            then_ops, then_traffic = per_statement_list(stmt.then_branch, settings, B)
+            else_ops, else_traffic = per_statement_list(stmt.else_branch, settings, B)
             return (then_ops + else_ops) / 2, (then_traffic + else_traffic) / 2
         case IRReturn():
             return 0, 0
@@ -102,5 +100,8 @@ def opcount_and_traffic(
         and module.funcs[0].params[2].ir_type == "scalar"  # n. of blocks
     ):
         B = sp.symbols("B")
-        ops, traffic = per_statement_list(module.funcs[0].body, settings, B)
+        try:
+            ops, traffic = per_statement_list(module.funcs[0].body, settings, B)
+        except ValueError as _:
+            return None
         return sp.simplify(ops), sp.simplify(traffic), B

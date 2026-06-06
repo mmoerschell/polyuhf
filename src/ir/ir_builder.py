@@ -229,13 +229,13 @@ class IRFunctionBuilder:
             raise ValueError(f"Non-constant loop step {reduction.step}")
         loop_step = (
             reduction.step.value * (self.module_builder.settings.lanes or 1)
-            # * self.module_builder.settings.unrolling_factor
+            # * self.module_builder.settings.unrolling_factor TODO
         )
-        new_bound: sp.Expr = sp.simplify(
+        new_bound: sp.Expr = sp.simplify(  # type: ignore
             reduction.bound / (self.module_builder.settings.lanes or 1)  # type: ignore
-            # *self.module_builder.settings.unrolling_factor
+            # *self.module_builder.settings.unrolling_factor TODO
         )
-        print(f"New bound is {new_bound}")
+        # print(f"New bound is {new_bound}")
         # Determine tail length
         tail_len_stmts, tail_len_ter = self.compile_expr(
             ASTBinaryOperation(
@@ -324,7 +324,7 @@ class IRFunctionBuilder:
                     #     False, declare_acc.result, "carry", (declare_acc.result,)
                     # ),
                 ],
-                new_bound,
+                new_bound,  # type: ignore
             ),
         ] + horizontal_reduction, final_value
 

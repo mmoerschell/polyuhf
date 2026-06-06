@@ -57,6 +57,12 @@ class Settings:
         )
         self.mul_algo = mul_algo
 
+        # Sanity checks
+        if self.vector_lw and self.platform == "arm":
+            assert self.vector_lw * self.lanes == 128, (  # type: ignore
+                "Number of width of lanes misconfigured"
+            )  # type: ignore
+
         # Constraints from CHES paper
         if isinstance(self.field, PrimeField):
             w = self.vector_lw or self.scalar_mw

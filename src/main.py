@@ -14,6 +14,7 @@ from colorama import Fore, Style
 from analysis.graph import graphs
 from analysis.opcount import opcount_and_traffic
 from analysis.perf_benchmark import gather_cycles
+from automatic_tests.boost_cpp_emitter import BoostCppTestEmitter
 from codegen.code_generator import ModuleCodeGenerator
 from codegen.formatter import tidy_and_format_c
 from ir.ir_builder import IRModuleBuilder
@@ -78,19 +79,22 @@ def compile_string(  # noqa: C901
             print(pprint_module(ir))
 
         # Opcount & memory traffic
-        ops_and_traffic_per_function = opcount_and_traffic(ir, settings)
-        if not ops_and_traffic_per_function:
-            print(
-                f"[{Fore.YELLOW}x{Style.RESET_ALL}] No ops/traffic "
-                f"analysis for {module_name}"
-            )
-        else:
-            ops, traffic, _ = ops_and_traffic_per_function
-            if flags.verbose:
+        if flags.analysis:
+            ops_and_traffic_per_function = opcount_and_traffic(ir, settings)
+            if not ops_and_traffic_per_function:
                 print(
-                    f"[{Fore.BLUE}i{Style.RESET_ALL}] {ir.funcs[0].name} has {ops} ops "
-                    f"and {traffic} bytes of memory traffic"
+                    f"[{Fore.YELLOW}x{Style.RESET_ALL}] Ops/traffic "
+                    f"analysis impssible for {module_name}"
                 )
+            else:
+                ops, traffic, _ = ops_and_traffic_per_function
+                if flags.verbose:
+                    print(
+                        f"[{Fore.BLUE}i{Style.RESET_ALL}] {ir.funcs[0].name} has {ops} ops "
+                        f"and {traffic} bytes of memory traffic"
+                    )
+        else:
+            ops_and_traffic_per_function = None
 
         # Codegen (pretty-printing & algorithms)
         gen = ModuleCodeGenerator(
@@ -122,8 +126,21 @@ def compile_string(  # noqa: C901
             if flags.verbose:
                 print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Optional formatting")
 
+        # Automatic tests
+        if flags.automatic_tests:
+            emitter = BoostCppTestEmitter(module_name, settings)
+            cpp_source = emitter.generate(ast)
+            tests_cpp_path = f"src/cpp/generated/{module_name}_autotests.cpp"
+            with open(tests_cpp_path, "w") as f:
+                f.write(cpp_source)
+                if flags.verbose:
+                    print(
+                        f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote autotests"
+                        f' to "{tests_cpp_path}"'
+                    )
+
         # Benchmark
-        if ops_and_traffic_per_function:
+        if flags.analysis and ops_and_traffic_per_function:
             ops_expr, traffic_expr, B_symbol = ops_and_traffic_per_function  # noqa: N806
             data_B, data_cycles = gather_cycles(module_name, 8, 1200, 8)  # noqa: N806
             data_ops: list[float] = [ops_expr.evalf(subs={B_symbol: b}) for b in data_B]  # type: ignore
@@ -148,7 +165,7 @@ def compile_file(
 
     # For debugging
     if flags.verbose:
-        print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Compiling '{path}'")
+        print(f"[{Fore.BLUE}i{Style.RESET_ALL}] Compiling '{path}'")
 
     with open(path, mode="r", encoding="utf-8") as f:
         compile_string(f.read(), flags, module_name, settings)
@@ -165,6 +182,13 @@ if __name__ == "__main__":
     cli.add_argument(
         "--format", "-f", action="store_true", help="Format using clang-tidy"
     )
+    cli.add_argument(
+        "--automatic_tests",
+        "-t",
+        action="store_true",
+        help="Automatically generate tests",
+    )
+    cli.add_argument("--analysis", "-a", action="store_true", help="Analysis & graphs")
     flags = cli.parse_args()
 
     # Extract progam name from path

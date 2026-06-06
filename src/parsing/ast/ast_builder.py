@@ -212,5 +212,5 @@ class ASTBuilder(PolyUHFVisitor):
                 f"(({expressions[1].getText()})-({expressions[0].getText()}))/({expressions[2].getText()})"
             )
         )
-        print(f"Loop bound is {bound}")
+        # print(f"Loop bound is {bound}")
         return ASTReduction(None, op, var, start, stop, step, body, bound)

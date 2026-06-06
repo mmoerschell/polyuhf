@@ -61,10 +61,10 @@ class FunctionCodeGenerator:
         lines: list[str] = []
         if self.mcr.settings.lanes:
             lines += [
-                f"const uint64x2_t vlambda_mask = "
-                f"vdupq_n_u64({self.mcr.settings.lambda_mask});",
-                f"const uint64x2_t vlambda_prime_mask = "
-                f"vdupq_n_u64({self.mcr.settings.lambda_prime_mask});",
+                f"const uint{self.mcr.settings.vector_lw}x{self.mcr.settings.lanes}_t vlambda_mask = "
+                f"vdupq_n_u{self.mcr.settings.vector_lw}({self.mcr.settings.lambda_mask});",
+                f"const uint{self.mcr.settings.vector_lw}x{self.mcr.settings.lanes}_t vlambda_prime_mask = "
+                f"vdupq_n_u{self.mcr.settings.vector_lw}({self.mcr.settings.lambda_prime_mask});",
             ]
         for s in self.func.body:
             text = self._compile_statement(s)

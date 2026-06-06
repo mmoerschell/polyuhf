@@ -39,9 +39,10 @@ vandq_u{{settings.vector_lw}}(
 {%- if shift_right > 0 -%}
 vshrq_n_u{{settings.vector_lw}}(
 {%- endif -%}
-vreinterpretq_u64_u8(vqtbl2q_u8({{var}}_data, (uint8x16_t){
-    {{range(first_byte, first_byte + num_bytes) | join(', ')}}{% for _ in range(8 - num_bytes)%}, 255{% endfor %},
-    {{range(first_byte + 16, first_byte + 16 + num_bytes) | join(', ')}}{% for _ in range(8 - num_bytes)%}, 255{% endfor %}
+vreinterpretq_u64_u8(vqtbl{{settings.lanes}}q_u8({{var}}_data, (uint8x16_t){
+    {% for lane in range(settings.lanes) -%}
+    {{range(first_byte + 16 * lane, first_byte + 16 * lane + num_bytes) | join(', ')}}{% for _ in range((settings.vector_lw // 8) - num_bytes)%}, 255{% endfor %},
+    {% endfor %}
 }))
 {%- if shift_right > 0 -%}
 , {{shift_right}})

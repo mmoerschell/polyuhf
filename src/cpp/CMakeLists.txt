@@ -8,6 +8,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 find_package(Boost CONFIG REQUIRED COMPONENTS unit_test_framework json)
 find_package(OpenSSL REQUIRED)
 
+# Automatically grab all generated function files and autotest source files
+file(GLOB_RECURSE GENERATED_SOURCES CONFIGURE_DEPENDS "generated/*.c")
+file(GLOB_RECURSE GENERATED_AUTOTESTS CONFIGURE_DEPENDS "generated/*autotests.cpp")
+
 add_executable(correctness
     main.cpp
     little_endian_hex.cpp
@@ -15,12 +19,8 @@ add_executable(correctness
     multiplication_tests.cpp
     hashing_tests.cpp
     # poly1305_tests.cpp
-    generated/datastructures.c
-    generated/load_store.c
-    generated/squareto1.c
-    generated/mmh.c
-    generated/sqh.c
-    generated/nmh.c
+    ${GENERATED_SOURCES}
+    ${GENERATED_AUTOTESTS}
 )
 
 target_link_libraries(correctness
@@ -34,6 +34,7 @@ target_compile_options(correctness PRIVATE
     -Wall
     -Wextra
     -Wpedantic
+    -Wno-unused-variable
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -42,20 +43,3 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 target_include_directories(correctness PRIVATE . ${OPENSSL_INCLUDE_DIR})
-
-add_executable(performance
-    performance.c
-    generated/nmh.c
-)
-
-target_compile_options(performance PRIVATE
-    -Wall
-    -Wextra
-    -Wpedantic
-    -O3
-    -mcpu=native
-    -march=armv8.2-a+simd+dotprod
-    -DNDEBUG
-    -fno-vectorize
-    -fno-slp-vectorize
-)

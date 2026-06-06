@@ -1,0 +1,34 @@
+{{ ret_type }} {{function_name}}_reference({{ param_str }}) {
+    const boost::multiprecision::cpp_int prime("{{ settings.field.prime_as_hex() }}");
+    auto load_from_buffer  = [&](const uint8_t* buffer, const size_t position)-> boost::multiprecision::cpp_int {
+        boost::multiprecision::cpp_int res(0);
+        boost::multiprecision::import_bits(res, &buffer[{{ settings.field.chunk_size() }} * position], &buffer[{{ settings.field.chunk_size() }} * (position + 1)], 8, false);
+        return res;
+    };
+    return ({{ body_str }}) % prime;
+}
+
+
+BOOST_DATA_TEST_CASE(Automatic_{{function_name}}_Tests, boost::unit_test::data::xrange(100), i) {
+    std::mt19937 rng(42 + i); // deterministic per test case
+    std::uniform_int_distribution<uint8_t> dist(0, 255);
+
+    // FIXME TODO
+    const size_t B = 4 * i + 1;     // number of blocks
+    std::vector<uint8_t> message(B * {{ settings.field.chunk_size() }}); // message
+    std::vector<uint8_t> key(B * {{ settings.field.chunk_size() }}); // key
+    for (auto &x : message)
+        x = dist(rng);
+    for (auto &x : key)
+        x = dist(rng);
+
+    // Computations
+    const auto act_value = {{function_name}}(message.data(), key.data(), B);
+    const auto ref_value = {{function_name}}_reference(message.data(), key.data(), B);
+    std::array<uint8_t, {{ settings.field.chunk_size() + 1 }}> act_bytes{}, ref_bytes{};
+    export_{{ settings.field.chunk_size() + 1 }}_bytes(act_bytes.data(), &act_value);
+    export_bits(ref_value, ref_bytes.begin(), 8, false);
+
+    BOOST_CHECK_EQUAL_COLLECTIONS(act_bytes.cbegin(), act_bytes.cend(),
+                                  ref_bytes.cbegin(), ref_bytes.cend());
+}
