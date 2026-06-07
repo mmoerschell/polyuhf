@@ -35,7 +35,7 @@ from parsing.ast.ast_nodes import (
 from settings import Settings
 from typechecker import DSLFunctionSignature
 from typesystem import (
-    BufferView,
+    Buffer,
     DSLType,
     Field,
     Index,
@@ -51,7 +51,7 @@ def compile_dsl_type(type_: DSLType, vectorize: bool) -> IRType:
             return "vector"
         case Field(), True:
             return "matrix"
-        case BufferView(), False:
+        case Buffer(), False:
             return "pod"
         case _:
             assert_never((type_, vectorize))  # type: ignore

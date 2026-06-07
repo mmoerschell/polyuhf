@@ -17,12 +17,11 @@ from parsing.ast.ast_nodes import (
     ASTReduction,
     ASTUnaryMinus,
 )
+from settings import Settings
 from typesystem import (
-    BinaryField,
-    BufferView,
+    Buffer,
     DSLType,
     Index,
-    PrimeField,
 )
 
 
@@ -31,6 +30,12 @@ class DSLParseError(SyntaxError):
 
 
 class ASTBuilder(PolyUHFVisitor):
+    settings: Settings
+
+    def __init__(self, settings: Settings) -> None:
+        super().__init__()
+        self.settings = settings
+
     # Visit a parse tree produced by PolyUHFParser#module.
     def visitModule(self, ctx: PolyUHFParser.ModuleContext):  # noqa: N802
         return ASTModule([self.visit(f) for f in ctx.function()])
@@ -53,37 +58,16 @@ class ASTBuilder(PolyUHFVisitor):
         ttype = self.visit(ctx.ttype())
         return [(name, ttype) for name in names]
 
-    # Visit a parse tree produced by PolyUHFParser#BufferViewType.
-    def visitBufferViewType(self, ctx: PolyUHFParser.BufferViewTypeContext):  # noqa: N802
-        field = self.visit(ctx.underlying)
-        match field:
-            case PrimeField(pi, _):
-                width = pi
-            case BinaryField(n):
-                width = n
-            case _:
-                raise ValueError("intenal error")
-        chunk_size = int(ctx.chunk_size.text)
-        if chunk_size * 8 > width:
-            raise ValueError(
-                f"Specificed chunk size ({chunk_size} bytes = {chunk_size * 8} bits)"
-                f" is too big for field {field} of width {width}"
-            )
-        return BufferView(field, chunk_size)
-
-    # visitFieldType omitted, base case handles default behavior
-
-    # Visit a parse tree produced by PolyUHFParser#IndexType.
-    def visitIndexType(self, ctx: PolyUHFParser.IndexTypeContext):  # noqa: N802
-        return Index()
-
-    # Visit a parse tree produced by PolyUHFParser#PrimeFieldType.
-    def visitPrimeFieldType(self, ctx: PolyUHFParser.PrimeFieldTypeContext):  # noqa: N802
-        return PrimeField(int(ctx.pi.text), int(ctx.theta.text))
-
-    # Visit a parse tree produced by PolyUHFParser#BinaryFieldType.
-    def visitBinaryFieldType(self, ctx: PolyUHFParser.BinaryFieldTypeContext):  # noqa: N802
-        return BinaryField(int(ctx.DECIMAL().getText()))
+    # Visit a parse tree produced by PolyUHFParser#ttype.
+    def visitTtype(self, ctx: PolyUHFParser.TtypeContext):
+        if ctx.BUFFER():
+            return Buffer()
+        elif ctx.FIELDELEMENT():
+            return self.settings.field
+        elif ctx.INDEX():
+            return Index()
+        else:
+            raise NotImplementedError(ctx)
 
     # visitExpr omitted, base class handles default behavior
 

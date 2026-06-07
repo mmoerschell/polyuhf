@@ -24,28 +24,8 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#BufferViewType.
-    def visitBufferViewType(self, ctx:PolyUHFParser.BufferViewTypeContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by PolyUHFParser#FieldType.
-    def visitFieldType(self, ctx:PolyUHFParser.FieldTypeContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by PolyUHFParser#IndexType.
-    def visitIndexType(self, ctx:PolyUHFParser.IndexTypeContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by PolyUHFParser#PrimeFieldType.
-    def visitPrimeFieldType(self, ctx:PolyUHFParser.PrimeFieldTypeContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by PolyUHFParser#BinaryFieldType.
-    def visitBinaryFieldType(self, ctx:PolyUHFParser.BinaryFieldTypeContext):
+    # Visit a parse tree produced by PolyUHFParser#ttype.
+    def visitTtype(self, ctx:PolyUHFParser.TtypeContext):
         return self.visitChildren(ctx)
 
 

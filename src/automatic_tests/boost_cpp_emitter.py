@@ -15,7 +15,7 @@ from parsing.ast.ast_builder import (
 )
 from parsing.ast.ast_nodes import ASTNode
 from settings import Settings
-from typesystem import BufferView, DSLType, Field, Index
+from typesystem import Buffer, DSLType, Field, Index
 
 
 class BoostCppTestEmitter:
@@ -38,7 +38,7 @@ class BoostCppTestEmitter:
                 return "int64_t"
             case Field():
                 return "boost::multiprecision::cpp_int"
-            case BufferView():
+            case Buffer():
                 return "const uint8_t*"
 
     def generate(self, module: ASTModule) -> str:
@@ -57,8 +57,8 @@ class BoostCppTestEmitter:
         for func in module.functions:
             if (
                 len(func.params) == 3
-                and isinstance(func.params[0][1], BufferView)
-                and isinstance(func.params[1][1], BufferView)
+                and isinstance(func.params[0][1], Buffer)
+                and isinstance(func.params[1][1], Buffer)
                 and isinstance(func.params[2][1], Index)
                 and isinstance(func.return_type, Field)
             ):

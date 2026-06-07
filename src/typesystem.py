@@ -57,14 +57,11 @@ class BinaryField(Field):
 
 
 @dataclass(frozen=True)
-class BufferView:
-    element_type: Field
-    chunk_size: int  # in bytes. could be slightly less than field's bitwidth
-
+class Buffer:
     def __str__(self) -> str:
-        return f"view {self.element_type}"
+        return "buffer"
 
 
-DSLType = Index | Field | BufferView
+DSLType = Index | Field | Buffer
 
 IRType = Literal["scalar", "vector", "matrix", "pod"]

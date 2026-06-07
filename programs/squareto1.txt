@@ -1,3 +1,4 @@
-func squareto1() prime<116,3> {
-    (0xffffffffffffffffffffffffffffc as prime<116,3>) ^ 2
+// Compile in GF(2^116-3)
+func squareto1() fieldelement {
+    (0xffffffffffffffffffffffffffffc as fieldelement) ^ 2
 }

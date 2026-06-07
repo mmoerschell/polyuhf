@@ -1,4 +1,4 @@
-func sqh(message, key bufferview<prime<116, 3>, 14>, B index) prime<116, 3> {
+func sqh(message, key buffer, B index) fieldelement {
     +[i,0:B-1:1]{(message[i] + key[i]) * (message[i] + key[i])} + message[B - 1]
 }
 

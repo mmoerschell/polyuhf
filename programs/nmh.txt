@@ -1,4 +1,4 @@
-func nmh(message, key bufferview<prime<116, 3>, 14>, B index) prime<116, 3> {
+func nmh(message, key buffer, B index) fieldelement {
     +[i,0:B:2]{(message[i] + key[i]) * (message[i+1] + key[i+1])}
 }
 

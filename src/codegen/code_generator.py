@@ -20,7 +20,7 @@ from ir.ir_nodes import (
 )
 from settings import Settings
 from typesystem import (
-    BufferView,
+    Buffer,
     IRType,
     PrimeField,
 )
@@ -154,7 +154,7 @@ class FunctionCodeGenerator:
                 # TODO! remove matrix remnants from here, improve scalar loads
                 assert declare, "load temporaries should not be reassigned"
                 assert len(operands) >= 2
-                assert isinstance(operands[0].dsl_type, BufferView), operands[0]
+                assert isinstance(operands[0].dsl_type, Buffer), operands[0]
                 assert all(isinstance(o, IRConst) for o in operands[2:])
                 lanes = self.mcr.settings.lanes or 1
                 assert len(operands[2:]) <= lanes
@@ -162,7 +162,7 @@ class FunctionCodeGenerator:
                 src = self._compile_operand(operands[0])
                 position = self._compile_operand(operands[1])
                 offsets: list[int] = [o.value for o in operands[2:]]  # type: ignore
-                chunk_size = operands[0].dsl_type.chunk_size
+                chunk_size = self.mcr.settings.field.chunk_size()
                 res: list[str] = [
                     f"/* {dst} = load {src} @ {position} w/ offsets {', '.join(map(str, offsets))} */",
                     f"{self.mcr.compile_ir_type(result.ir_type)} {dst};",
@@ -230,12 +230,11 @@ class FunctionCodeGenerator:
             ):
                 assert declare, "load temporaries should not be reassigned"
                 assert len(operands) > 2
-                assert isinstance(operands[0].dsl_type, BufferView), operands[0]
+                assert isinstance(operands[0].dsl_type, Buffer), operands[0]
                 assert all(isinstance(o, IRConst) for o in operands[2:])
                 assert self.mcr.settings.lanes
                 assert len(operands[2:]) <= self.mcr.settings.lanes
                 offsets: list[int] = [o.value for o in operands[2:]]  # type: ignore
-                chunk_size = operands[0].dsl_type.chunk_size
                 return self.mcr.get_template(
                     f"vload_{self.mcr.settings.platform}"
                 ).render(
@@ -245,7 +244,7 @@ class FunctionCodeGenerator:
                         "buffer": self._compile_operand(operands[0]),
                         "position": self._compile_operand(operands[1]),
                         "offsets": offsets,
-                        "chunk_size": chunk_size,
+                        "chunk_size": self.mcr.settings.field.chunk_size(),
                         "min": min,
                     }
                 )

@@ -15,14 +15,9 @@ param_group
     ;
 
 ttype
-    : 'bufferview' '<' underlying=field_ttype ',' chunk_size=DECIMAL '>'    # BufferViewType
-    | field_ttype                                                           # FieldType
-    | INDEX                                                                 # IndexType
-    ;
-
-field_ttype
-    : 'prime' '<' pi=DECIMAL ',' theta=DECIMAL '>'  # PrimeFieldType
-    | 'binary' '<' DECIMAL '>'                      # BinaryFieldType
+    : BUFFER
+    | FIELDELEMENT
+    | INDEX
     ;
 
 expr
@@ -67,19 +62,14 @@ primary
 
 // Lexer rules
 
-HASHFUNC    : 'hashfunc' ;
 FUNCTION    : 'func' ;
 IF          : 'if' ;
 ELSE        : 'else' ;
 AS          : 'as' ;
-PADDING
-    : 'zero'
-    ;
-ENDIANNESS
-    : 'little'
-    | 'big'
-    ;
-INDEX  : 'index' ;
+
+BUFFER       : 'buffer' ;
+FIELDELEMENT : 'fieldelement' ;
+INDEX        : 'index' ;
 
 EQ  : '==';
 NEQ : '!=';

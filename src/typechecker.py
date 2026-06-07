@@ -15,7 +15,8 @@ from parsing.ast.ast_nodes import (
     ASTModule,
     ASTReduction,
 )
-from typesystem import BufferView, DSLType, Index
+from settings import Settings
+from typesystem import Buffer, DSLType, Index
 
 
 @dataclass
@@ -45,97 +46,105 @@ class Context:
     locals: dict[str, DSLType]
 
 
-def typecheck_module(module: ASTModule) -> dict[str, DSLFunctionSignature]:
-    if any(
-        f1.name == f2.name for (f1, f2) in itertools.combinations(module.functions, 2)
-    ):
-        raise ValueError("Duplicate function names.")
-    function_signatures = {
-        f.name: DSLFunctionSignature(f.name, tuple(f.params), f.return_type)
-        for f in module.functions
-    }
-    for func in module.functions:
-        ctx = Context(function_signatures, {})
-        for name, ttype in func.params:
-            ctx.locals[name] = ttype
-        actual = typecheck_expr(func.body, ctx)
-        if actual != func.return_type:
-            raise TypeCheckingError(func, func.body, func.return_type, actual)
-    return function_signatures
+class Typechecker:
+    settings: Settings
 
+    def __init__(self, settings: Settings) -> None:
+        self.settings = settings
 
-def typecheck_expr(expr: ASTExpr, ctx: Context) -> DSLType:  # noqa: C901
-    match expr:
-        case ASTInt():
-            expr.ttype = expr.ttype or Index()  # default if not explicitly annotated
-        case ASTLocalIdentifier(_, name):
-            if name not in ctx.locals:
-                raise ValueError(f"unknown local identifier '{name}'")
-            expr.ttype = ctx.locals[name]
-        case ASTBinaryOperation(_, operator, left, right):
-            ltype = typecheck_expr(left, ctx)
-            rtype = typecheck_expr(right, ctx)
-            match operator:
-                case "+" | "-" | "*" | "/" | "%":
-                    if rtype != ltype or not ltype:
-                        raise TypeCheckingError(None, right, ltype, rtype)
-                case "^":
-                    if rtype != Index() or not ltype:
-                        raise TypeCheckingError(None, right, Index(), rtype)
-            expr.ttype = ltype
-        case ASTComparison(_, operator, left, right):
-            ltype = typecheck_expr(left, ctx)
-            rtype = typecheck_expr(right, ctx)
-            if rtype != ltype or not ltype:
-                raise TypeCheckingError(None, right, ltype, rtype)
-            expr.ttype = Index()
-        case ASTIfElse(_, condition, then_branch, else_branch):
-            cond_type = typecheck_expr(condition, ctx)
-            if cond_type != Index():
-                raise TypeCheckingError(None, condition, Index(), cond_type)
-            then_type = typecheck_expr(then_branch, ctx)
-            else_type = typecheck_expr(else_branch, ctx)
-            if else_type != then_type:
-                raise TypeCheckingError(None, else_branch, then_type, else_type)
-            expr.ttype = then_type
-        case ASTCall(_, func_name, args):
-            # Function must exist
-            if func_name not in ctx.globals:
-                raise ValueError(f"Call to undefined function {func_name}")
-            signature = ctx.globals[func_name]
-            # Check number of arguments
-            if len(args) != len(signature.params):
-                raise ValueError(
-                    f"function '{func_name}' expects {len(signature.params)} parameters"
-                    f", but {len(args)} were given."
-                )
-            # Check argument types
-            for arg, param in zip(args, signature.params, strict=True):
-                arg_type = typecheck_expr(arg, ctx)
-                if arg_type != param[1]:
+    def typecheck_module(self, module: ASTModule) -> dict[str, DSLFunctionSignature]:
+        if any(
+            f1.name == f2.name
+            for (f1, f2) in itertools.combinations(module.functions, 2)
+        ):
+            raise ValueError("Duplicate function names.")
+        function_signatures = {
+            f.name: DSLFunctionSignature(f.name, tuple(f.params), f.return_type)
+            for f in module.functions
+        }
+        for func in module.functions:
+            ctx = Context(function_signatures, {})
+            for name, ttype in func.params:
+                ctx.locals[name] = ttype
+            actual = self._typecheck_expr(func.body, ctx)
+            if actual != func.return_type:
+                raise TypeCheckingError(func, func.body, func.return_type, actual)
+        return function_signatures
+
+    def _typecheck_expr(self, expr: ASTExpr, ctx: Context) -> DSLType:  # noqa: C901
+        match expr:
+            case ASTInt():
+                expr.ttype = (
+                    expr.ttype or Index()
+                )  # default if not explicitly annotated
+            case ASTLocalIdentifier(_, name):
+                if name not in ctx.locals:
+                    raise ValueError(f"unknown local identifier '{name}'")
+                expr.ttype = ctx.locals[name]
+            case ASTBinaryOperation(_, operator, left, right):
+                ltype = self._typecheck_expr(left, ctx)
+                rtype = self._typecheck_expr(right, ctx)
+                match operator:
+                    case "+" | "-" | "*" | "/" | "%":
+                        if rtype != ltype or not ltype:
+                            raise TypeCheckingError(None, right, ltype, rtype)
+                    case "^":
+                        if rtype != Index() or not ltype:
+                            raise TypeCheckingError(None, right, Index(), rtype)
+                expr.ttype = ltype
+            case ASTComparison(_, operator, left, right):
+                ltype = self._typecheck_expr(left, ctx)
+                rtype = self._typecheck_expr(right, ctx)
+                if rtype != ltype or not ltype:
+                    raise TypeCheckingError(None, right, ltype, rtype)
+                expr.ttype = Index()
+            case ASTIfElse(_, condition, then_branch, else_branch):
+                cond_type = self._typecheck_expr(condition, ctx)
+                if cond_type != Index():
+                    raise TypeCheckingError(None, condition, Index(), cond_type)
+                then_type = self._typecheck_expr(then_branch, ctx)
+                else_type = self._typecheck_expr(else_branch, ctx)
+                if else_type != then_type:
+                    raise TypeCheckingError(None, else_branch, then_type, else_type)
+                expr.ttype = then_type
+            case ASTCall(_, func_name, args):
+                # Function must exist
+                if func_name not in ctx.globals:
+                    raise ValueError(f"Call to undefined function {func_name}")
+                signature = ctx.globals[func_name]
+                # Check number of arguments
+                if len(args) != len(signature.params):
                     raise ValueError(
-                        f"In call to '{func_name}', argument type mismatch for "
-                        f"parameter '{param[0]}': expected {param[1]}, "
-                        f"got {arg_type}"
+                        f"function '{func_name}' expects {len(signature.params)} parameters"
+                        f", but {len(args)} were given."
                     )
-            expr.ttype = signature.return_type
-        case ASTBufferViewRead(_, buffer, index):
-            btype = typecheck_expr(buffer, ctx)
-            if not isinstance(btype, BufferView):
-                raise ValueError(f"can only index into buffers, found {btype}")
-            index_type = typecheck_expr(index, ctx)
-            if index_type != Index():
-                raise TypeCheckingError(None, index, Index(), index_type)
-            expr.ttype = btype.element_type
-        case ASTReduction(_, _, var, start, stop, step, body):
-            for expr_ in [start, stop, step]:
-                ttype = typecheck_expr(expr_, ctx)
-                if ttype != Index():
-                    raise TypeCheckingError(None, expr_, Index(), ttype)
-            ctx_ = copy.copy(ctx)
-            ctx_.locals[var] = Index()  # Shadowing
-            expr.ttype = typecheck_expr(body, ctx_)
-        case _:
-            raise NotImplementedError(f"{expr!r}")
-    assert expr.ttype
-    return expr.ttype
+                # Check argument types
+                for arg, param in zip(args, signature.params, strict=True):
+                    arg_type = self._typecheck_expr(arg, ctx)
+                    if arg_type != param[1]:
+                        raise ValueError(
+                            f"In call to '{func_name}', argument type mismatch for "
+                            f"parameter '{param[0]}': expected {param[1]}, "
+                            f"got {arg_type}"
+                        )
+                expr.ttype = signature.return_type
+            case ASTBufferViewRead(_, buffer, index):
+                btype = self._typecheck_expr(buffer, ctx)
+                if not isinstance(btype, Buffer):
+                    raise ValueError(f"can only index into buffers, found {btype}")
+                index_type = self._typecheck_expr(index, ctx)
+                if index_type != Index():
+                    raise TypeCheckingError(None, index, Index(), index_type)
+                expr.ttype = self.settings.field
+            case ASTReduction(_, _, var, start, stop, step, body):
+                for expr_ in [start, stop, step]:
+                    ttype = self._typecheck_expr(expr_, ctx)
+                    if ttype != Index():
+                        raise TypeCheckingError(None, expr_, Index(), ttype)
+                ctx_ = copy.copy(ctx)
+                ctx_.locals[var] = Index()  # Shadowing
+                expr.ttype = self._typecheck_expr(body, ctx_)
+            case _:
+                raise NotImplementedError(f"{expr!r}")
+        assert expr.ttype
+        return expr.ttype

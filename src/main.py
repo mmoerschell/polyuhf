@@ -24,7 +24,7 @@ from parsing.antlr.PolyUHFParser import PolyUHFParser
 from parsing.ast.ast_builder import ASTBuilder, DSLParseError
 from parsing.ast.ast_nodes import ASTModule
 from settings import Settings
-from typechecker import TypeCheckingError, typecheck_module
+from typechecker import Typechecker, TypeCheckingError
 from typesystem import PrimeField
 
 
@@ -57,7 +57,7 @@ def compile_string(  # noqa: C901
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Parsing")
 
         # Abstract Syntax tree
-        builder = ASTBuilder()
+        builder = ASTBuilder(settings)
         ast = builder.visit(parse_tree)
         assert ast, "AST generation failed"
         assert isinstance(ast, ASTModule), "AST root should be a program"
@@ -66,7 +66,8 @@ def compile_string(  # noqa: C901
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] AST")
 
         # Type-checking
-        signatures = typecheck_module(ast)
+        tc = Typechecker(settings)
+        signatures = tc.typecheck_module(ast)
         # pprint(ast)
         if flags.verbose:
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Type-checking")
