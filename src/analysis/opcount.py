@@ -11,7 +11,7 @@ from ir.ir_nodes import (
     IRTemporary,
 )
 from settings import Settings
-from typesystem import Index
+from typesystem import Index, PrimeField
 
 
 def per_instruction(  # noqa: C901
@@ -49,6 +49,10 @@ def per_instruction(  # noqa: C901
             return settings.lanes * settings.limbs, 0
         case IRInstruction(_, IRTemporary(_, "matrix"), "mul") if settings.lanes:
             return settings.lanes * 1.5 * settings.limbs**2, 0
+        case IRInstruction(_, IRTemporary(PrimeField(_, theta), "matrix"), "carry") if (
+            settings.lanes
+        ):
+            return (settings.limbs + 2) * 3 + 2 * theta.bit_count(), 0
         case _:
             pass
     raise NotImplementedError(insn)

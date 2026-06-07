@@ -338,6 +338,11 @@ class IRFunctionBuilder:
             )
             unrolled_body_stmts.append(update_acc)
 
+        # Handle carries every 'unroll_facror' times
+        unrolled_body_stmts.append(
+            IRInstruction(False, declare_acc.result, "carry", (declare_acc.result,))
+        )
+
         # Create the main unrolled vector loop
         main_loop = IRLoop(
             IRBoundIdentifier(Index(), compile_dsl_type(Index(), False), reduction.var),

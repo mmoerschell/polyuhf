@@ -19,9 +19,10 @@ from typesystem import BufferView, DSLType, Field, Index
 
 
 class BoostCppTestEmitter:
-    def __init__(self, module_name: str, settings: Settings):
+    def __init__(self, module_name: str, settings: Settings, max_B: int):  # noqa: N803
         self.module_name = module_name
         self.settings = settings
+        self.max_B = max_B
         self.indent_level = 0
         self.template = Environment(
             loader=FileSystemLoader("src/automatic_tests")
@@ -169,5 +170,6 @@ class BoostCppTestEmitter:
                 "ret_type": self._to_cpp_type(node.return_type),
                 "body_str": self.visit(node.body),
                 "settings": self.settings,
+                "B_max": self.max_B,
             }
         )

@@ -128,7 +128,7 @@ def compile_string(  # noqa: C901
 
         # Automatic tests
         if flags.automatic_tests:
-            emitter = BoostCppTestEmitter(module_name, settings)
+            emitter = BoostCppTestEmitter(module_name, settings, 1200)
             cpp_source = emitter.generate(ast)
             tests_cpp_path = f"src/cpp/generated/{module_name}_autotests.cpp"
             with open(tests_cpp_path, "w") as f:

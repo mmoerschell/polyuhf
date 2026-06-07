@@ -130,11 +130,13 @@ class FunctionCodeGenerator:
                 ) as result,
                 "carry",
                 operands,
-            ):
+            ) if isinstance(self.mcr.settings.field, PrimeField):
                 assert not declare, "carries should reuse temporaries"
-                te_ctx = {
+                te_ctx = {  # type: ignore
                     "x": self._compile_operand(result),
                     "settings": self.mcr.settings,
+                    "shr": (lambda a, b: a >> b),  # type: ignore
+                    "bitand": (lambda a, b: a & b),  # type: ignore
                 }
                 te_name = (
                     f"vcarry_{self.mcr.settings.platform}"
