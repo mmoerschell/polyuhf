@@ -128,7 +128,7 @@ class IRFunctionBuilder:
                     return [add_stmt], temp
                 return [], base_id
             case ASTBinaryOperation(type_, operator, left, right):
-                if operator == "^":
+                if operator == "**":
                     match right:
                         case ASTInt(Index(), 0):
                             return self.compile_expr(

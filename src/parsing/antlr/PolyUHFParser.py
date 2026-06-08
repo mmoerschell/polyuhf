@@ -76,7 +76,7 @@ class PolyUHFParser ( Parser ):
     sharedContextCache = PredictionContextCache()
 
     literalNames = [ "<INVALID>", "'('", "','", "')'", "'{'", "'}'", "'+'", 
-                     "'-'", "'*'", "'/'", "'%'", "'^'", "'['", "']'", "':'", 
+                     "'-'", "'*'", "'/'", "'%'", "'**'", "'['", "']'", "':'", 
                      "'func'", "'if'", "'else'", "'as'", "'buffer'", "'fieldelement'", 
                      "'index'", "'=='", "'!='", "'<='", "'>='", "'<'", "'>'" ]
 

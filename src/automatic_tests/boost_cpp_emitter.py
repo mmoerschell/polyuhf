@@ -92,7 +92,7 @@ class BoostCppTestEmitter:
         left = self.visit(node.left)
         right = self.visit(node.right)
 
-        if node.operator == "^":
+        if node.operator == "**":
             if isinstance(node.ttype, Field):
                 return f"boost::multiprecision::powm({left}, {right}, prime)"
             else:

@@ -46,7 +46,7 @@ unaryMinusExpr
     ;
 
 exponentExpr
-    : primary ('^' exponentExpr)?                           # Exponent
+    : primary ('**' exponentExpr)?                           # Exponent
     ;
 
 primary

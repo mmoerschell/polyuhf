@@ -2,5 +2,6 @@ func sqh(message, key buffer, B index) fieldelement {
     +[i,0:B-1:1]{(message[i] + key[i]) * (message[i] + key[i])} + message[B - 1]
 }
 
-/* FIXME TODO use ^ operator
+/* 
+FIXME TODO use ** operator
 */

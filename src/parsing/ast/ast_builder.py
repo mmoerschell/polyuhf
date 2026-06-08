@@ -136,12 +136,12 @@ class ASTBuilder(PolyUHFVisitor):
 
     # Visit a parse tree produced by PolyUHFParser#Exponent.
     def visitExponent(self, ctx: PolyUHFParser.ExponentContext):  # noqa: N802
-        # Recall rule: base (^ exponent)?
+        # Recall rule: base (** exponent)?
         base = self.visit(ctx.primary())
         rhs = ctx.exponentExpr()
         if rhs is None:
             return base
-        return ASTBinaryOperation(None, "^", base, self.visit(rhs))
+        return ASTBinaryOperation(None, "**", base, self.visit(rhs))
 
     # Visit a parse tree produced by PolyUHFParser#Parentheses.
     def visitParentheses(self, ctx: PolyUHFParser.ParenthesesContext):  # noqa: N802

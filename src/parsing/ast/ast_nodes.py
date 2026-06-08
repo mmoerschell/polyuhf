@@ -39,7 +39,7 @@ class ASTUnaryMinus(ASTExpr):
 
 @dataclass
 class ASTBinaryOperation(ASTExpr):
-    operator: Literal["+", "-", "*", "/", "%", "^"]
+    operator: Literal["+", "-", "*", "/", "%", "**"]
     left: ASTExpr
     right: ASTExpr
 

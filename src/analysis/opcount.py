@@ -96,16 +96,21 @@ def opcount_and_traffic(
     number of integer operations, and amount of memory traffic in bytes
     if and only iff the module has one function,
     """
-    if (
-        len(module.funcs) == 1
-        and len(module.funcs[0].params) == 3
-        and module.funcs[0].params[0].ir_type == "pod"  # key
-        and module.funcs[0].params[1].ir_type == "pod"  # message
-        and module.funcs[0].params[2].ir_type == "scalar"  # n. of blocks
-    ):
+    candidate_functions = list(
+        filter(
+            lambda f: (
+                len(f.params) == 3
+                and f.params[0].ir_type == "pod"  # key
+                and f.params[1].ir_type == "pod"  # message
+                and f.params[2].ir_type == "scalar"  # n. of blocks
+            ),
+            module.funcs,
+        )
+    )
+    if len(candidate_functions) == 1:
         B = sp.symbols("B")
         try:
-            ops, traffic = per_statement_list(module.funcs[0].body, settings, B)
+            ops, traffic = per_statement_list(candidate_functions[0].body, settings, B)
         except ValueError as _:
             return None
         return sp.simplify(ops), sp.simplify(traffic), B

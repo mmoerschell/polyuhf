@@ -1,4 +1,4 @@
 // Compile in GF(2^116-3)
 func squareto1() fieldelement {
-    (0xffffffffffffffffffffffffffffc as fieldelement) ^ 2
+    (0xffffffffffffffffffffffffffffc as fieldelement) ** 2
 }

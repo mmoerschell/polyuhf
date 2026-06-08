@@ -88,7 +88,7 @@ class Typechecker:
                     case "+" | "-" | "*" | "/" | "%":
                         if rtype != ltype or not ltype:
                             raise TypeCheckingError(None, right, ltype, rtype)
-                    case "^":
+                    case "**":
                         if rtype != Index() or not ltype:
                             raise TypeCheckingError(None, right, Index(), rtype)
                 expr.ttype = ltype
