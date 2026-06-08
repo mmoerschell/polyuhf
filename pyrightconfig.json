@@ -12,8 +12,6 @@
     "ignore": [
         "src/parsing/antlr/PolyUHF*.py",
         "src/parsing/ast/ast_builder.py",
-        "playground",
-        "tests",
     ],
     "typeCheckingMode": "strict",
     "reportMissingTypeStubs": false

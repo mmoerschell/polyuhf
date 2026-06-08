@@ -1,0 +1,11 @@
+[tests]
+max_B = 1200
+
+[bench]
+start = 8
+stop = 1200
+step = 8
+
+[modules]
+directory = "modules"
+extension = ".txt"

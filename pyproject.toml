@@ -6,7 +6,6 @@ exclude = [
     "src/parsing/antlr/PolyUHFLexer.py",
     "src/parsing/antlr/PolyUHFParser.py",
     "src/parsing/antlr/PolyUHFVisitor.py",
-    "playground",
     "tests",
 ]
 

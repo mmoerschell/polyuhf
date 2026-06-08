@@ -399,7 +399,7 @@ class ModuleCodeGenerator:
             "intrinsics_header": "arm_neon.h"
             if self.settings.platform == "arm"
             else "UNIMPLEMENTED",
-            "n_bytes": (self.settings.field.bit_length() + 7) // 8,
+            "n_bytes": (self.settings.field.pi + 7) // 8,
             "definitions": definitions,
         }
 

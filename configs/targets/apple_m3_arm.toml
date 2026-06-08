@@ -1,0 +1,10 @@
+[target]
+name = "apple_m3_arm"
+platform = "arm"
+frequency_ghz = 4.05
+memory_bandwidth_gbs = 150
+peak_iops_per_cycle = 8
+perf_seed = 42
+perf_warmup_rounds = 1000
+perf_measure_rounds = 9000
+roofline_points = 1000

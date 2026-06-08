@@ -6,34 +6,22 @@
 #include <boost/test/data/monomorphic.hpp>
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>
-#include <boost/range/irange.hpp>
-#include <print>
 
-#include "generated/datastructures.h"
-#include "little_endian_hex.h"
-#include "generated/squareto1.h"
+#include "field_config.h"
+#include "squareto1.h"
 
 using namespace boost::multiprecision;
 
-static const cpp_int c1163("0xffffffffffffffffffffffffffffd");
-static const cpp_int max_field(c1163 - 1);
+static const cpp_int prime(FIELD_PRIME_HEX);
+static const cpp_int squareto1_input("0xffffffffffffffffffffffffffffc");
 
-// BOOST_DATA_TEST_CASE(MultiplicationMaxTests, boost::irange<size_t>(5), i) {
 BOOST_AUTO_TEST_CASE(MultiplicationMaxTest) {
-    // Reference computation
-    size_t i = 2;
-    // std::println("i = {}", i);
-    cpp_int ref(1);
-    for (size_t j = 0; j <i; ++j)
-        ref = (ref * max_field) % c1163;
-    // std::println("{}", to_little_endian_hex(ref));
-
-
+    cpp_int ref = (squareto1_input * squareto1_input) % prime;
     auto act = squareto1();
-    std::array<uint8_t, 15> ref_bytes{}, act_bytes{};
+    std::array<uint8_t, FIELD_EXPORT_BYTES> ref_bytes{}, act_bytes{};
     export_bits(ref, ref_bytes.begin(), 8, false);
-    export_15_bytes(act_bytes.data(), &act);
+    export_field_bytes(act_bytes.data(), &act);
 
-    // BOOST_CHECK_EQUAL_COLLECTIONS(ref_bytes.cbegin(), ref_bytes.cend(), act_bytes.cbegin(), act_bytes.cend());
-
+    // BOOST_CHECK_EQUAL_COLLECTIONS(ref_bytes.cbegin(), ref_bytes.cend(),
+    //                               act_bytes.cbegin(), act_bytes.cend());
 }

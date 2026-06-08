@@ -37,9 +37,9 @@ from typechecker import DSLFunctionSignature
 from typesystem import (
     Buffer,
     DSLType,
-    Field,
     Index,
     IRType,
+    PrimeField,
 )
 
 
@@ -47,9 +47,9 @@ def compile_dsl_type(type_: DSLType, vectorize: bool) -> IRType:
     match type_, vectorize:
         case Index(), False:
             return "scalar"
-        case Field(), False:
+        case PrimeField(), False:
             return "vector"
-        case Field(), True:
+        case PrimeField(), True:
             return "matrix"
         case Buffer(), False:
             return "pod"

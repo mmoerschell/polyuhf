@@ -15,7 +15,7 @@ from parsing.ast.ast_builder import (
 )
 from parsing.ast.ast_nodes import ASTNode
 from settings import Settings
-from typesystem import Buffer, DSLType, Field, Index
+from typesystem import Buffer, DSLType, Index, PrimeField
 
 
 class BoostCppTestEmitter:
@@ -36,7 +36,7 @@ class BoostCppTestEmitter:
         match ttype:
             case Index():
                 return "int64_t"
-            case Field():
+            case PrimeField():
                 return "boost::multiprecision::cpp_int"
             case Buffer():
                 return "const uint8_t*"
@@ -60,7 +60,7 @@ class BoostCppTestEmitter:
                 and isinstance(func.params[0][1], Buffer)
                 and isinstance(func.params[1][1], Buffer)
                 and isinstance(func.params[2][1], Index)
-                and isinstance(func.return_type, Field)
+                and isinstance(func.return_type, PrimeField)
             ):
                 # only test functions that have signature message, key, B -> FE
                 code.append(self.visit(func))
@@ -93,7 +93,7 @@ class BoostCppTestEmitter:
         right = self.visit(node.right)
 
         if node.operator == "**":
-            if isinstance(node.ttype, Field):
+            if isinstance(node.ttype, PrimeField):
                 return f"boost::multiprecision::powm({left}, {right}, prime)"
             else:
                 raise NotImplementedError("C integer pow")

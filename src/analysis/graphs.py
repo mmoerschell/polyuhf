@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import ticker
@@ -12,6 +14,8 @@ def roofline_plot(
     data_traffic: list[float],
     data_cycles: list[float],
     settings: Settings,
+    output_path: Path | None = None,
+    show: bool = False,
 ) -> None:
     """
     Roofline plot
@@ -19,13 +23,12 @@ def roofline_plot(
     """
     bytes_ = settings.field.chunk_size() * np.array(data_B)
 
-    # https://en.wikipedia.org/wiki/Apple_M3
-    GBsec = 150
-    GHz = 4.05
-    bandwidth = GBsec / GHz  # bytes per cycle
-    peak_perf = 8
+    bandwidth = (
+        settings.target.memory_bandwidth_gbs / settings.target.frequency_ghz
+    )  # bytes per cycle
+    peak_perf = settings.target.peak_iops_per_cycle
 
-    oi = np.logspace(-3, 3, 1000)  # operational intensity
+    oi = np.logspace(-3, 3, settings.target.roofline_points)
     roof = np.minimum(peak_perf, bandwidth * oi)
 
     performance = np.array(data_ops) / np.array(data_cycles)
@@ -52,7 +55,12 @@ def roofline_plot(
     # plt.grid(True, which="both", alpha=0.3)
     plt.grid(False)
     plt.tight_layout()
-    plt.show()
+    if output_path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path)
+    if show:
+        plt.show()
+    plt.close()
 
 
 def cycles_per_byte_plot(
@@ -62,6 +70,8 @@ def cycles_per_byte_plot(
     data_traffic: list[float],
     data_cycles: list[float],
     settings: Settings,
+    output_path: Path | None = None,
+    show: bool = False,
 ) -> None:
     """
     CHES Figure 7-style plot
@@ -78,7 +88,12 @@ def cycles_per_byte_plot(
     plt.title(f"Hashing performance for {name}")
     plt.grid(True, which="both", alpha=0.3)
     plt.tight_layout()
-    plt.show()
+    if output_path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path)
+    if show:
+        plt.show()
+    plt.close()
 
 
 def graphs(
@@ -88,7 +103,10 @@ def graphs(
     data_traffic: list[float],
     data_cycles: list[float],
     settings: Settings,
+    output_dir: str | Path | None = None,
+    show: bool = False,
 ) -> None:
+    output_dir = Path(output_dir) if output_dir else None
     cycles_per_byte_plot(
         name,
         data_B,
@@ -96,6 +114,8 @@ def graphs(
         data_traffic,
         data_cycles,
         settings,
+        output_dir / f"{name}_cycles_per_byte.png" if output_dir else None,
+        show,
     )
     roofline_plot(
         name,
@@ -104,4 +124,6 @@ def graphs(
         data_traffic,
         data_cycles,
         settings,
+        output_dir / f"{name}_roofline.png" if output_dir else None,
+        show,
     )

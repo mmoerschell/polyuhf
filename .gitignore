@@ -228,3 +228,6 @@ src/cpp/generated
 src/cpp/compile_commands.json
 src/cpp/build
 src/cpp/doctor.h
+
+# Graphs
+graphs/*.png
