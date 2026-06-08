@@ -246,6 +246,7 @@ class FunctionCodeGenerator:
                         "offsets": offsets,
                         "chunk_size": self.mcr.settings.field.chunk_size(),
                         "min": min,
+                        "max": max,
                     }
                 )
             # const

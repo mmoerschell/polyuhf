@@ -201,7 +201,7 @@ if __name__ == "__main__":
 
     vectorize = True
     settings = Settings(
-        PrimeField(116, 3),
+        PrimeField(226, 5),
         18,
         "arm",
         64,

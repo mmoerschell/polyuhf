@@ -5,7 +5,7 @@
 {% endfor %}
 {# Ok to declare a variable because there typically only is one carry operation in scope. #}
 const uint{{ settings.vector_lw }}x{{ settings.lanes }}_t {{ x }}_high_bits = vshrq_n_u{{settings.vector_lw}}({{ x }}.limb{{ settings.limbs - 1}},{{settings.lambda_prime}});
-{% for shift in range (settings.field.theta.bit_count()) -%}
+{% for shift in range (settings.field.theta.bit_length()) -%}
 {%- if bitand(shr(settings.field.theta, shift), 1) -%}
 {{ x }}.limb0 = vaddq_u{{ settings.vector_lw }}({{x}}.limb0,
 {%- if shift > 0 -%}
