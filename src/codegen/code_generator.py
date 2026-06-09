@@ -397,6 +397,11 @@ class FunctionCodeGenerator:
             "lhs": self._compile_operand(insn.operands[0]),
             "rhs": self._compile_operand(insn.operands[1]),
             "settings": self.mcr.settings,
+            "kappa_shifts": [
+                shift
+                for shift in range(self.mcr.settings.kappa.bit_length())
+                if (self.mcr.settings.kappa >> shift) & 1
+            ],
         }
         match insn.insn_name, insn.result.ir_type:
             case ("add", "vector"):

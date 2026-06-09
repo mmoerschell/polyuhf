@@ -1,0 +1,65 @@
+// {{ dst }} += karatsuba mul {{ lhs }} {{ rhs }}
+{% set low = (settings.limbs + 1) // 2 -%}
+{% set high = settings.limbs // 2 -%}
+{% set z0_len = 2 * low - 1 -%}
+{% set z2_len = 2 * high - 1 -%}
+{% set z1_len = z0_len -%}
+uint{{ settings.scalar_mw }}_t {{ dst }}_z0[{{ z0_len }}] = {0};
+uint{{ settings.scalar_mw }}_t {{ dst }}_z2[{{ z2_len }}] = {0};
+uint{{ settings.scalar_mw }}_t {{ dst }}_z1[{{ z1_len }}] = {0};
+
+{% for k in range(z0_len) -%}
+{% for i in range(low) -%}
+{% set j = k - i -%}
+{% if 0 <= j < low -%}
+{{ dst }}_z0[{{ k }}] += {{ lhs }}.limb{{ i }} * {{ rhs }}.limb{{ j }};
+{% endif -%}
+{% endfor -%}
+{% endfor %}
+{% for k in range(z2_len) -%}
+{% for i in range(high) -%}
+{% set j = k - i -%}
+{% if 0 <= j < high -%}
+{{ dst }}_z2[{{ k }}] += {{ lhs }}.limb{{ low + i }} * {{ rhs }}.limb{{ low + j }};
+{% endif -%}
+{% endfor -%}
+{% endfor %}
+{% for k in range(z1_len) -%}
+{% for i in range(low) -%}
+{% set j = k - i -%}
+{% if 0 <= j < low -%}
+{{ dst }}_z1[{{ k }}] += (
+    {% if i < high -%}
+    {{ lhs }}.limb{{ i }} + {{ lhs }}.limb{{ low + i }}
+    {%- else -%}
+    {{ lhs }}.limb{{ i }}
+    {%- endif %}
+) * (
+    {% if j < high -%}
+    {{ rhs }}.limb{{ j }} + {{ rhs }}.limb{{ low + j }}
+    {%- else -%}
+    {{ rhs }}.limb{{ j }}
+    {%- endif %}
+);
+{% endif -%}
+{% endfor -%}
+{% endfor %}
+{% for i in range(z1_len) -%}
+{{ dst }}_z1[{{ i }}] -= {{ dst }}_z0[{{ i }}];
+{% if i < z2_len -%}
+{{ dst }}_z1[{{ i }}] -= {{ dst }}_z2[{{ i }}];
+{% endif -%}
+{% endfor %}
+{% for k in range(2 * settings.limbs - 1) -%}
+{% set folded = k >= settings.limbs -%}
+{% set out_limb = k - settings.limbs if folded else k -%}
+{% if k < z0_len -%}
+{{ dst }}.limb{{ out_limb }} += {% if folded %}{{ settings.kappa }} * {% endif %}{{ dst }}_z0[{{ k }}];
+{% endif -%}
+{% if low <= k < low + z1_len -%}
+{{ dst }}.limb{{ out_limb }} += {% if folded %}{{ settings.kappa }} * {% endif %}{{ dst }}_z1[{{ k - low }}];
+{% endif -%}
+{% if 2 * low <= k < 2 * low + z2_len -%}
+{{ dst }}.limb{{ out_limb }} += {% if folded %}{{ settings.kappa }} * {% endif %}{{ dst }}_z2[{{ k - 2 * low }}];
+{% endif -%}
+{% endfor %}

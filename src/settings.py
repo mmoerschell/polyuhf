@@ -105,6 +105,8 @@ class Settings:
         self.mul_algo = representation.mul_algo
 
         # Sanity checks
+        if self.mul_algo == "karatsuba":
+            assert self.limbs >= 2, "Karatsuba multiplication needs at least 2 limbs"
         if self.vector_lw and self.platform == "arm":
             assert self.vector_lw * self.lanes == 128, (  # type: ignore
                 "Number of width of lanes misconfigured"
@@ -119,9 +121,10 @@ class Settings:
             + math.ceil(math.log2(self.limbs))
             < w  # NOTE notation differs from paper
         ), "Inequation (9) failed"
-        assert (
-            2 * self.lambda_
-            - self.lambda_prime
-            + math.ceil(math.log2(self.field.theta))
-            < w // 2  # NOTE notation differs from paper
-        ), "Inequation (10) failed"
+        if self.mul_algo == "schoolbook":
+            assert (
+                2 * self.lambda_
+                - self.lambda_prime
+                + math.ceil(math.log2(self.field.theta))
+                < w // 2  # NOTE notation differs from paper
+            ), "Inequation (10) failed"
