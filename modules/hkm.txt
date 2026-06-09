@@ -1,13 +1,11 @@
 func hkm(r, M buffer, B index) fieldelement {
-    if B == 1 {
+    nctif B == 1 {
         r[0] + M[0]
     } else {
         hkm(r, r, 2 * (B / 2) - 1) *
         (r[B/2] + M[2 * (B / 2) - 1]) + // paper is 1-indexed
-        if B % 2 {
+        nctif B % 2 {
             M[B - 1] // paper is 1-indexed
-        } else {
-            0 as fieldelement
         }
     }
 }

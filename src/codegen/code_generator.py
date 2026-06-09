@@ -84,12 +84,26 @@ class FunctionCodeGenerator:
                 )
                 loop_text = "\n".join(self._compile_statement(s) for s in body)
                 return f"{loop_header} {'{'}\n{loop_text}\n{'}'}"
-            case IRIfElse(condition, then_branch, else_branch):
+            case IRIfElse(condition, then_branch, else_branch, constant_time):
+                then_text = "\n".join(self._compile_statement(s) for s in then_branch)
+                if constant_time:
+                    assert else_branch is not None
+                    else_text = "\n".join(
+                        self._compile_statement(s) for s in else_branch
+                    )
+                    cond = self._compile_operand(condition)
+                    return (
+                        f"/* constant-time if ({cond}) then */\n"
+                        f"{then_text}\n"
+                        f"/* constant-time if ({cond}) else */\n"
+                        f"{else_text}"
+                    )
+                if else_branch is None:
+                    return f"if ({self._compile_operand(condition)}) {{{then_text}}}"
+                else_text = "\n".join(self._compile_statement(s) for s in else_branch)
                 return (
-                    f"if ({self._compile_operand(condition)}) "
-                    f"{{{'\n'.join(self._compile_statement(s) for s in then_branch)}}}"
-                    f" else "
-                    f"{{{'\n'.join(self._compile_statement(s) for s in else_branch)}}}"
+                    f"if ({self._compile_operand(condition)}) {{{then_text}}} "
+                    f"else {{{else_text}}}"
                 )
             case IRReturn(value):
                 return f"return {self._compile_operand(value)};"
@@ -97,6 +111,8 @@ class FunctionCodeGenerator:
     def _compile_instruction(self, insn: IRInstruction) -> str:  # noqa: C901
         optional_ctype = f"{self.mcr.compile_ir_type(insn.result.ir_type)} "
         match insn:
+            case IRInstruction(declare, result, "select", (condition, then_, else_)):
+                return self._compile_select(declare, result, condition, then_, else_)
             # Scalar operations
             case IRInstruction(declare, result, operator, operands) if (
                 result.ir_type == "scalar" and operator in utils.IR_TO_OP_TABLE.keys()
@@ -296,6 +312,40 @@ class FunctionCodeGenerator:
             case _:
                 # return f"// {insn.insn_name}..."
                 raise NotImplementedError(f"{insn!r}")
+
+    def _compile_select(
+        self,
+        declare: bool,
+        result: IRTemporary,
+        condition: IROperand,
+        then_: IROperand,
+        else_: IROperand,
+    ) -> str:
+        dst = self._compile_operand(result)
+        cond = self._compile_operand(condition)
+        then_c = self._compile_operand(then_)
+        else_c = self._compile_operand(else_)
+        ctype = self.mcr.compile_ir_type(result.ir_type)
+        declaration = f"{ctype} {dst};\n" if declare else ""
+        mask = f"{dst}_mask"
+        lines = [
+            declaration,
+            "{",
+            # Oldest trick in the book
+            f"uint64_t {mask} = (uint64_t)0 - (uint64_t)(({cond}) != 0);",
+        ]
+        if result.ir_type == "scalar":
+            lines.append(f"{dst} = (({then_c}) & {mask}) | (({else_c}) & ~{mask});")
+        elif result.ir_type == "vector":
+            for i in range(self.mcr.settings.limbs):
+                lines.append(
+                    f"{dst}.limb{i} = ((({then_c}).limb{i}) & {mask}) | "
+                    f"((({else_c}).limb{i}) & ~{mask});"
+                )
+        else:
+            raise NotImplementedError("select for matrix temporaries")
+        lines.append("}")
+        return "\n".join(line for line in lines if line)
 
     def _compile_operand(self, operand: IROperand) -> str:
         match operand:

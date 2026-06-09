@@ -27,6 +27,10 @@ def per_instruction(  # noqa: C901
             return 0, 0
         case IRInstruction(_, _, "call"):
             raise ValueError("Can't determin op-count for recursive functions")
+        case IRInstruction(_, IRTemporary(Index(), "scalar"), "select"):
+            return 4, 0
+        case IRInstruction(_, IRTemporary(_, "vector"), "select"):
+            return 4 * settings.limbs, 0
         # Scalar
         case IRInstruction(_, IRTemporary(Index(), "scalar"), _):
             # TODO do these count?
@@ -68,11 +72,14 @@ def per_statement(
         case IRLoop():
             ops, traffic = per_statement_list(stmt.body, settings, B)
             return stmt.bound * ops, stmt.bound * traffic
-        case IRIfElse():
-            # Heuristic
-            # TODO change this if if-else did compute both sides, or only then branch
-            then_ops, then_traffic = per_statement_list(stmt.then_branch, settings, B)
-            else_ops, else_traffic = per_statement_list(stmt.else_branch, settings, B)
+        case IRIfElse(_, then_branch, else_branch, constant_time):
+            then_ops, then_traffic = per_statement_list(then_branch, settings, B)
+            if else_branch is None:
+                return then_ops / 2, then_traffic / 2
+            else_ops, else_traffic = per_statement_list(else_branch, settings, B)
+            if constant_time:
+                return then_ops + else_ops, then_traffic + else_traffic
+            # Heuristic for non-constant-time branches.
             return (then_ops + else_ops) / 2, (then_traffic + else_traffic) / 2
         case IRReturn():
             return 0, 0

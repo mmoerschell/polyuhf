@@ -228,17 +228,45 @@ class IRFunctionBuilder:
         dsl_type, ir_type = if_else.ttype, compile_dsl_type(if_else.ttype, False)
         cond_stmts, cond_ter = self.compile_expr(if_else.condition, offsets=offsets)
         then_stmts, then_ter = self.compile_expr(if_else.then_branch, offsets=offsets)
-        else_stmts, else_ter = self.compile_expr(if_else.else_branch, offsets=offsets)
+
+        if if_else.constant_time:
+            assert if_else.else_branch is not None, "constant-time if requires else"
+            else_stmts, else_ter = self.compile_expr(
+                if_else.else_branch, offsets=offsets
+            )
+            ifelse = IRIfElse(
+                cond_ter,
+                then_stmts,
+                else_stmts,
+                True,
+            )
+            select = IRInstruction(
+                True,
+                IRTemporary(dsl_type, ir_type),
+                "select",
+                (cond_ter, then_ter, else_ter),
+            )
+            return cond_stmts + [ifelse, select], select.result
+
         declare = IRInstruction(
             True,
             IRTemporary(dsl_type, ir_type),
             "const",
             (IRConst(dsl_type, ir_type, 0),),
         )
+        else_branch = None
+        if if_else.else_branch is not None:
+            else_stmts, else_ter = self.compile_expr(
+                if_else.else_branch, offsets=offsets
+            )
+            else_branch = else_stmts + [
+                IRInstruction(False, declare.result, "copy", (else_ter,))
+            ]
         ifelse = IRIfElse(
             cond_ter,
             then_stmts + [IRInstruction(False, declare.result, "copy", (then_ter,))],
-            else_stmts + [IRInstruction(False, declare.result, "copy", (else_ter,))],
+            else_branch,
+            False,
         )
         return [declare] + cond_stmts + [ifelse], declare.result
 

@@ -41,6 +41,15 @@ class BoostCppTestEmitter:
             case Buffer():
                 return "const uint8_t*"
 
+    def _zero_literal(self, ttype: DSLType) -> str:
+        match ttype:
+            case Index():
+                return "0"
+            case PrimeField():
+                return 'boost::multiprecision::cpp_int("0")'
+            case Buffer():
+                raise NotImplementedError("zero literal for buffer")
+
     def generate(self, module: ASTModule) -> str:
         code = [
             "#include <cstdint>",
@@ -106,9 +115,14 @@ class BoostCppTestEmitter:
         return f"({left} {node.operator} {right})"
 
     def visit_ASTIfElse(self, node: ASTIfElse) -> str:
+        assert node.ttype
         cond = self.visit(node.condition)
         then_b = self.visit(node.then_branch)
-        else_b = self.visit(node.else_branch)
+        else_b = (
+            self.visit(node.else_branch)
+            if node.else_branch is not None
+            else self._zero_literal(node.ttype)
+        )
         return f"(({cond}) ? ({then_b}) : ({else_b}))"
 
     def visit_ASTCall(self, node: ASTCall) -> str:

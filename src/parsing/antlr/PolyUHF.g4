@@ -51,7 +51,8 @@ exponentExpr
 
 primary
     : '(' expr ')'                                                              # Parentheses
-    | IF expr '{' expr '}' ELSE '{' expr '}'                                    # IfElseExpr
+    | IF expr '{' expr '}' ELSE '{' expr '}'                                    # CtIfElseExpr
+    | NCTIF expr '{' expr '}' (ELSE '{' expr '}')?                              # NctIfExpr
     | HEXADECIMAL (AS ttype)?                                                   # HexadecimalExpression
     | DECIMAL (AS ttype)?                                                       # DecimalExpr
     | IDENTIFIER '(' (expr (',' expr)*)? ')'                                    # CallExpr
@@ -64,6 +65,7 @@ primary
 
 FUNCTION    : 'func' ;
 IF          : 'if' ;
+NCTIF       : 'nctif' ;
 ELSE        : 'else' ;
 AS          : 'as' ;
 

@@ -55,7 +55,8 @@ class ASTComparison(ASTExpr):
 class ASTIfElse(ASTExpr):
     condition: ASTExpr
     then_branch: ASTExpr
-    else_branch: ASTExpr
+    else_branch: ASTExpr | None
+    constant_time: bool
 
 
 @dataclass

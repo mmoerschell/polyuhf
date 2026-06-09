@@ -1,0 +1,5 @@
+func foo (k, m buffer, x index) fieldelement {
+    nctif (x) {
+        k[0]
+    }
+}

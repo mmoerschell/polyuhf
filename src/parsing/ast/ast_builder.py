@@ -148,12 +148,20 @@ class ASTBuilder(PolyUHFVisitor):
         # Remove parentheses
         return self.visit(ctx.expr())
 
-    # Visit a parse tree produced by PolyUHFParser#IfElseExpr.
-    def visitIfElseExpr(self, ctx: PolyUHFParser.IfElseExprContext):  # noqa: N802
+    # Visit a parse tree produced by PolyUHFParser#CtIfElseExpr.
+    def visitCtIfElseExpr(self, ctx):  # noqa: N802
         condition, then_branch, else_branch = [
             self.visit(ctx.expr(i)) for i in range(3)
         ]
-        return ASTIfElse(None, condition, then_branch, else_branch)
+        return ASTIfElse(None, condition, then_branch, else_branch, True)
+
+    # Visit a parse tree produced by PolyUHFParser#NctIfExpr.
+    def visitNctIfExpr(self, ctx):  # noqa: N802
+        expressions = ctx.expr()
+        condition = self.visit(expressions[0])
+        then_branch = self.visit(expressions[1])
+        else_branch = self.visit(expressions[2]) if len(expressions) > 2 else None
+        return ASTIfElse(None, condition, then_branch, else_branch, False)
 
     # Visit a parse tree produced by PolyUHFParser#HexadecimalExpression.
     def visitHexadecimalExpression(  # noqa: N802

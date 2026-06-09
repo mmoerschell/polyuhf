@@ -1,5 +1,5 @@
 func fact(a index) index {
-    if a > 2 {
+    nctif a > 2 {
         fact(a - 1) * a
     }
     else {

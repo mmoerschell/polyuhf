@@ -74,8 +74,13 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by PolyUHFParser#IfElseExpr.
-    def visitIfElseExpr(self, ctx:PolyUHFParser.IfElseExprContext):
+    # Visit a parse tree produced by PolyUHFParser#CtIfElseExpr.
+    def visitCtIfElseExpr(self, ctx:PolyUHFParser.CtIfElseExprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#NctIfExpr.
+    def visitNctIfExpr(self, ctx:PolyUHFParser.NctIfExprContext):
         return self.visitChildren(ctx)
 
 

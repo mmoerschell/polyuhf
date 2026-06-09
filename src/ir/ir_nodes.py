@@ -51,7 +51,8 @@ class IRLoop:
 class IRIfElse:
     cond: IROperand
     then_branch: list[IRStatement]
-    else_branch: list[IRStatement]
+    else_branch: list[IRStatement] | None
+    constant_time: bool
 
 
 @dataclass(frozen=True)

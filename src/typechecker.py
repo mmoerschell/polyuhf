@@ -103,9 +103,10 @@ class Typechecker:
                 if cond_type != Index():
                     raise TypeCheckingError(None, condition, Index(), cond_type)
                 then_type = self._typecheck_expr(then_branch, ctx)
-                else_type = self._typecheck_expr(else_branch, ctx)
-                if else_type != then_type:
-                    raise TypeCheckingError(None, else_branch, then_type, else_type)
+                if else_branch is not None:
+                    else_type = self._typecheck_expr(else_branch, ctx)
+                    if else_type != then_type:
+                        raise TypeCheckingError(None, else_branch, then_type, else_type)
                 expr.ttype = then_type
             case ASTCall(_, func_name, args):
                 # Function must exist
