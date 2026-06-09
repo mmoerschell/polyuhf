@@ -14,6 +14,18 @@ from settings import Settings
 from typesystem import Index, PrimeField
 
 
+def field_mul_ops(settings: Settings) -> float:
+    if settings.mul_algo == "karatsuba":
+        low = (settings.limbs + 1) // 2
+        high = settings.limbs // 2
+        return 1.5 * (2 * low**2 + high**2)
+    return 1.5 * settings.limbs**2
+
+
+def field_square_ops(settings: Settings) -> float:
+    return 1.5 * settings.limbs * (settings.limbs + 1) / 2
+
+
 def per_instruction(  # noqa: C901
     insn: IRInstruction, settings: Settings
 ) -> tuple[float, float]:
@@ -41,7 +53,9 @@ def per_instruction(  # noqa: C901
         case IRInstruction(_, IRTemporary(_, "vector"), "add"):
             return settings.limbs, 0
         case IRInstruction(_, IRTemporary(_, "vector"), "mul"):
-            return 1.5 * settings.limbs**2, 0
+            return field_mul_ops(settings), 0
+        case IRInstruction(_, IRTemporary(_, "vector"), "square"):
+            return field_square_ops(settings), 0
         case IRInstruction(_, IRTemporary(_, "vector"), "carry"):
             return (settings.limbs + 2) * 3 + 1, 0
         case IRInstruction(_, IRTemporary(_, "vector"), "horiz_add") if settings.lanes:
@@ -52,7 +66,9 @@ def per_instruction(  # noqa: C901
         case IRInstruction(_, IRTemporary(_, "matrix"), "add") if settings.lanes:
             return settings.lanes * settings.limbs, 0
         case IRInstruction(_, IRTemporary(_, "matrix"), "mul") if settings.lanes:
-            return settings.lanes * 1.5 * settings.limbs**2, 0
+            return settings.lanes * field_mul_ops(settings), 0
+        case IRInstruction(_, IRTemporary(_, "matrix"), "vsquare") if settings.lanes:
+            return settings.lanes * field_square_ops(settings), 0
         case IRInstruction(_, IRTemporary(PrimeField(_, theta), "matrix"), "carry") if (
             settings.lanes
         ):

@@ -125,18 +125,18 @@ class FunctionCodeGenerator:
                     )
                     + ";"
                 )
-            # Prime field add/mul
-            case IRInstruction(declare, result, "add" | "mul", operands) if isinstance(
-                result.dsl_type, PrimeField
-            ):
+            # Prime field add/mul/square
+            case IRInstruction(
+                declare, result, "add" | "mul" | "square" | "vsquare", operands
+            ) if isinstance(result.dsl_type, PrimeField):
                 if declare:
                     return (
                         f"{optional_ctype}{self._compile_operand(result)} = "
                         + "{0};"
-                        + self._compile_pf_add_mul(insn)
+                        + self._compile_pf_arithmetic(insn)
                     )
                 else:
-                    return self._compile_pf_add_mul(insn)
+                    return self._compile_pf_arithmetic(insn)
             # Prime field carry
             case IRInstruction(
                 declare,
@@ -387,15 +387,17 @@ class FunctionCodeGenerator:
             case _:
                 assert_never(operand)  # type: ignore
 
-    def _compile_pf_add_mul(self, insn: IRInstruction) -> str:
+    def _compile_pf_arithmetic(self, insn: IRInstruction) -> str:
         # TODO is mul aliasing-safe?
-        assert len(insn.operands) == 2
+        assert len(insn.operands) in {1, 2}
         assert isinstance(insn.result.dsl_type, PrimeField)
         assert insn.result.ir_type, "vector" or insn.result.ir_type == "matrix"
         te_ctx = {
             "dst": self._compile_operand(insn.result),
             "lhs": self._compile_operand(insn.operands[0]),
-            "rhs": self._compile_operand(insn.operands[1]),
+            "rhs": self._compile_operand(insn.operands[1])
+            if len(insn.operands) > 1
+            else None,
             "settings": self.mcr.settings,
             "kappa_shifts": [
                 shift
@@ -414,6 +416,10 @@ class FunctionCodeGenerator:
                 te_name = (
                     f"vmul_{self.mcr.settings.mul_algo}_{self.mcr.settings.platform}"
                 )
+            case ("square", "vector"):
+                te_name = "square_schoolbook"
+            case ("vsquare", "matrix"):
+                te_name = f"vsquare_schoolbook_{self.mcr.settings.platform}"
             case _:
                 assert_never(insn)  # type: ignore
         return self.mcr.get_template(te_name).render(te_ctx)

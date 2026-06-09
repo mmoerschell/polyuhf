@@ -1,0 +1,19 @@
+// {{ dst }} += square {{ lhs }}
+{% macro square_coeff(out_limb, h, multiplier) -%}
+{% if h < 2 * settings.limbs - 1 -%}
+{% for j in range((h // 2) + 1) -%}
+{% set k = h - j -%}
+{% if j < settings.limbs and k < settings.limbs -%}
+{% if j < k -%}
+{{ dst }}.limb{{ out_limb }} += {{ 2 * multiplier }} * {{ lhs }}.limb{{ j }} * {{ lhs }}.limb{{ k }};
+{% elif j == k -%}
+{{ dst }}.limb{{ out_limb }} += {% if multiplier != 1 %}{{ multiplier }} * {% endif %}{{ lhs }}.limb{{ j }} * {{ lhs }}.limb{{ j }};
+{% endif -%}
+{% endif -%}
+{% endfor -%}
+{% endif -%}
+{%- endmacro %}
+{% for i in range(settings.limbs) -%}
+{{ square_coeff(i, i, 1) }}
+{{ square_coeff(i, settings.limbs + i, settings.kappa) }}
+{% endfor %}

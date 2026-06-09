@@ -1,0 +1,37 @@
+// {{ dst }} += vsquare {{ lhs }}
+{% macro madd(acc, left, right) -%}
+vmlal_u{{ settings.vector_lw // 2 }}(
+    {{ acc }},
+    vmovn_u{{ settings.vector_lw }}({{ left }}),
+    vmovn_u{{ settings.vector_lw }}({{ right }})
+)
+{%- endmacro %}
+{% macro madd_kappa(acc, left, right) -%}
+vmlal_u{{ settings.vector_lw // 2 }}(
+    {{ acc }},
+    vmul_u{{ settings.vector_lw // 2 }}(
+        vmovn_u{{ settings.vector_lw }}({{ left }}),
+        vdup_n_u{{ settings.vector_lw // 2 }}({{ settings.kappa }})
+    ),
+    vmovn_u{{ settings.vector_lw }}({{ right }})
+)
+{%- endmacro %}
+{% macro square_coeff(out_limb, h, folded) -%}
+{% if h < 2 * settings.limbs - 1 -%}
+{% for j in range((h // 2) + 1) -%}
+{% set k = h - j -%}
+{% if j < settings.limbs and k < settings.limbs -%}
+{% if j < k -%}
+{{ dst }}.limb{{ out_limb }} = {{ madd_kappa(dst ~ ".limb" ~ out_limb, lhs ~ ".limb" ~ j, lhs ~ ".limb" ~ k) if folded else madd(dst ~ ".limb" ~ out_limb, lhs ~ ".limb" ~ j, lhs ~ ".limb" ~ k) }};
+{{ dst }}.limb{{ out_limb }} = {{ madd_kappa(dst ~ ".limb" ~ out_limb, lhs ~ ".limb" ~ j, lhs ~ ".limb" ~ k) if folded else madd(dst ~ ".limb" ~ out_limb, lhs ~ ".limb" ~ j, lhs ~ ".limb" ~ k) }};
+{% elif j == k -%}
+{{ dst }}.limb{{ out_limb }} = {{ madd_kappa(dst ~ ".limb" ~ out_limb, lhs ~ ".limb" ~ j, lhs ~ ".limb" ~ j) if folded else madd(dst ~ ".limb" ~ out_limb, lhs ~ ".limb" ~ j, lhs ~ ".limb" ~ j) }};
+{% endif -%}
+{% endif -%}
+{% endfor -%}
+{% endif -%}
+{%- endmacro %}
+{% for i in range(settings.limbs) -%}
+{{ square_coeff(i, i, false) }}
+{{ square_coeff(i, settings.limbs + i, true) }}
+{% endfor %}

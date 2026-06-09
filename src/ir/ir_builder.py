@@ -137,12 +137,29 @@ class IRFunctionBuilder:
                         case ASTInt(Index(), 1):
                             return self.compile_expr(left, lanes, step, offsets)
                         case ASTInt(Index(), 2):
-                            return self.compile_expr(
-                                ASTBinaryOperation(left.ttype, "*", left, left),
-                                lanes,
-                                step,
-                                offsets,
+                            if not isinstance(left.ttype, PrimeField):
+                                return self.compile_expr(
+                                    ASTBinaryOperation(left.ttype, "*", left, left),
+                                    lanes,
+                                    step,
+                                    offsets,
+                                )
+                            base_stmts, base_term = self.compile_expr(
+                                left, lanes, step, offsets
                             )
+                            assert left.ttype
+                            square = IRInstruction(
+                                True,
+                                IRTemporary(
+                                    left.ttype,
+                                    compile_dsl_type(left.ttype, lanes > 1),
+                                ),
+                                "vsquare" if lanes > 1 else "square",
+                                (base_term,),
+                            )
+                            return base_stmts + [square], square.result
+                        case ASTInt(Index(), _):
+                            raise NotImplementedError("Exponents greater than 2")
                         case _:
                             raise NotImplementedError(ast_expression)
                 return self.compile_bin_expr(ast_expression, lanes, step, offsets)
