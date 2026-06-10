@@ -1,0 +1,16 @@
+/* {{x}} = prime_overflow {{x}} */
+{%- set y = x + "_plus_theta" -%}
+{%- set overflow_bit = x + "_overflow_bit" -%}
+{%- set mask = x + "_overflow_mask" %}
+bigint_t {{y}} = {{x}};
+{{y}}.limb0 += {{settings.field.theta}}ull;
+{% for l in range(1, settings.limbs) -%}
+{{y}}.limb{{l}} += {{y}}.limb{{l - 1}} >> {{settings.lambda_}};
+{{y}}.limb{{l - 1}} &= {{settings.lambda_mask}}ull;
+{%- endfor %}
+const uint{{settings.scalar_mw}}_t {{ overflow_bit }} = ({{y}}.limb{{ settings.limbs - 1 }} >> {{ settings.lambda_prime }}ull) & 1ull;
+const uint{{settings.scalar_mw}}_t {{ mask }} = 0 - {{ overflow_bit }};
+{%- for l in range(settings.limbs) %}
+{{ x }}.limb{{l}} = ({{ x }}.limb{{ l }} & ~{{mask}}) | ({{ y }}.limb{{ l }} & {{mask}});
+{%- endfor %}
+{{ x }}.limb{{settings.limbs - 1}} &= {{ settings.lambda_prime_mask }}ull;

@@ -22,6 +22,6 @@ BOOST_AUTO_TEST_CASE(MultiplicationMaxTest) {
     export_bits(ref, ref_bytes.begin(), 8, false);
     export_field_bytes(act_bytes.data(), &act);
 
-    // BOOST_CHECK_EQUAL_COLLECTIONS(ref_bytes.cbegin(), ref_bytes.cend(),
-    //                               act_bytes.cbegin(), act_bytes.cend());
+    BOOST_CHECK_EQUAL_COLLECTIONS(ref_bytes.cbegin(), ref_bytes.cend(),
+                                  act_bytes.cbegin(), act_bytes.cend());
 }

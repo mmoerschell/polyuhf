@@ -146,7 +146,7 @@ class FunctionCodeGenerator:
                 ) as result,
                 "carry",
                 operands,
-            ) if isinstance(self.mcr.settings.field, PrimeField):
+            ):
                 assert not declare, "carries should reuse temporaries"
                 te_ctx = {  # type: ignore
                     "x": self._compile_operand(result),
@@ -160,6 +160,25 @@ class FunctionCodeGenerator:
                     else "carry"
                 )
                 return self.mcr.get_template(te_name).render(te_ctx)
+            # Prime overflow
+            case IRInstruction(
+                False,
+                IRTemporary(
+                    PrimeField(),
+                    "vector",
+                ) as result,
+                "prime_overflow",
+                _,
+            ):
+                return self.mcr.get_template("prime_overflow").render(
+                    {
+                        "x": self._compile_operand(result),
+                        "settings": self.mcr.settings,
+                        "shr": (lambda a, b: a >> b),  # type: ignore
+                        "shl": (lambda a, b: a << b),  # type: ignore
+                        "bitand": (lambda a, b: a & b),  # type: ignore
+                    }
+                )
             # Scalar load
             case IRInstruction(
                 declare,

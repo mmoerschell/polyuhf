@@ -78,7 +78,13 @@ class IRFunctionBuilder:
     def compile(self) -> IRFunction:
         statements, ret_val = self.compile_expr(self.function.body)
         if isinstance(ret_val, IRTemporary) and ret_val.ir_type == "vector":
-            statements.append(IRInstruction(False, ret_val, "carry", (ret_val,)))
+            statements.extend(
+                [
+                    IRInstruction(False, ret_val, "carry", (ret_val,)),
+                    # Must handle cases where 2^pi - theta <= x < 2^pi once at the end
+                    IRInstruction(False, ret_val, "prime_overflow", (ret_val,)),
+                ]
+            )
         statements.append(IRReturn(ret_val))
         return IRFunction(
             self.function.name,
