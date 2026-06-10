@@ -64,6 +64,10 @@ def compile_operator(operator: str) -> str:
         raise NotImplementedError(operator) from ke
 
 
+def vectorized_insn_name(base_name: str, vectorize: bool) -> str:
+    return f"v{base_name}" if vectorize else base_name
+
+
 class IRFunctionBuilder:
     def __init__(
         self,
@@ -158,7 +162,7 @@ class IRFunctionBuilder:
                                     left.ttype,
                                     compile_dsl_type(left.ttype, lanes > 1),
                                 ),
-                                "vsquare" if lanes > 1 else "square",
+                                vectorized_insn_name("square", lanes > 1),
                                 (base_term,),
                             )
                             return base_stmts + [square], square.result
@@ -204,7 +208,9 @@ class IRFunctionBuilder:
                 load = IRInstruction(
                     True,
                     IRTemporary(ttype, compile_dsl_type(ttype, lanes > 1)),
-                    "load",
+                    vectorized_insn_name(
+                        "load", lanes > 1 and isinstance(ttype, PrimeField)
+                    ),
                     (
                         IRBoundIdentifier(
                             buffer.ttype,
@@ -237,7 +243,10 @@ class IRFunctionBuilder:
         binop = IRInstruction(
             True,
             IRTemporary(bin_expr.ttype, compile_dsl_type(bin_expr.ttype, lanes > 1)),
-            compile_operator(bin_expr.operator),
+            vectorized_insn_name(
+                compile_operator(bin_expr.operator),
+                lanes > 1 and isinstance(bin_expr.ttype, PrimeField),
+            ),
             (lterm, rterm),
         )
         return lstmts + rstmts + [binop], binop.result
@@ -382,14 +391,22 @@ class IRFunctionBuilder:
             update_acc = IRInstruction(
                 False,
                 declare_acc.result,
-                compile_operator(reduction.op),
+                vectorized_insn_name(
+                    compile_operator(reduction.op),
+                    declare_acc.result.ir_type == "matrix",
+                ),
                 (declare_acc.result, bod_term),
             )
             unrolled_body_stmts.append(update_acc)
 
         # Handle carries every 'unroll_facror' times
         unrolled_body_stmts.append(
-            IRInstruction(False, declare_acc.result, "carry", (declare_acc.result,))
+            IRInstruction(
+                False,
+                declare_acc.result,
+                vectorized_insn_name("carry", declare_acc.result.ir_type == "matrix"),
+                (declare_acc.result,),
+            )
         )
 
         # Create the main unrolled vector loop

@@ -1,5 +1,5 @@
-/* {{x}} = full_reduction {{x}} */
-/* 1) --- carry with extended propagation --- */
+/* {{ x }} = full_reduction {{ x }} */
+/* full_reduction: extended carry */
 {% for i in range(settings.limbs - 1) %}{{ x }}.limb{{i + 1}} += {{ x }}.limb{{i}} >> {{ settings.lambda_ }};
 {{ x }}.limb{{i}} &= {{settings.lambda_mask}}ull;{% endfor %}
 {{ x }}.limb0 += {{ settings.field.theta }} * ({{ x }}.limb{{ settings.limbs - 1 }} >> {{ settings.lambda_prime }});
@@ -8,7 +8,7 @@
 {{ x }}.limb{{i + 1}} += {{ x }}.limb{{i}} >> {{ settings.lambda_ }};
 {{ x }}.limb{{i}} &= {{ settings.lambda_mask }}ull;
 {%- endfor %}
-/* 2) --- edgecase 2^pi - theta <= {{x}} < 2^pi --- */
+/* full_reduction: subtract prime when {{ x }} >= 2^pi - theta */
 {%- set y = x + "_plus_theta" -%}
 {%- set overflow_bit = x + "_overflow_bit" -%}
 {%- set mask = x + "_overflow_mask" %}

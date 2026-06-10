@@ -64,17 +64,17 @@ def per_instruction(  # noqa: C901
         case IRInstruction(_, IRTemporary(_, "vector"), "horiz_add") if settings.lanes:
             return (settings.lanes - 1) * settings.limbs, 0
         # Matrix
-        case IRInstruction(_, IRTemporary(_, "matrix"), "load") if settings.lanes:
+        case IRInstruction(_, IRTemporary(_, "matrix"), "vload") if settings.lanes:
             return 2.75 * settings.limbs, 16 * settings.lanes
-        case IRInstruction(_, IRTemporary(_, "matrix"), "add") if settings.lanes:
+        case IRInstruction(_, IRTemporary(_, "matrix"), "vadd") if settings.lanes:
             return settings.lanes * settings.limbs, 0
-        case IRInstruction(_, IRTemporary(_, "matrix"), "mul") if settings.lanes:
+        case IRInstruction(_, IRTemporary(_, "matrix"), "vmul") if settings.lanes:
             return settings.lanes * field_mul_ops(settings), 0
         case IRInstruction(_, IRTemporary(_, "matrix"), "vsquare") if settings.lanes:
             return settings.lanes * field_square_ops(settings), 0
-        case IRInstruction(_, IRTemporary(PrimeField(_, theta), "matrix"), "carry") if (
-            settings.lanes
-        ):
+        case IRInstruction(
+            _, IRTemporary(PrimeField(_, theta), "matrix"), "vcarry"
+        ) if settings.lanes:
             return (settings.limbs + 2) * 3 + 2 * theta.bit_count(), 0
         case _:
             pass

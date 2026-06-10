@@ -1,4 +1,4 @@
-// {{ dst }} += square {{ lhs }}
+/* {{ dst }} = square {{ lhs }} */
 {% macro square_coeff(out_limb, h, multiplier) -%}
 {% if h < 2 * settings.limbs - 1 -%}
 {% for j in range((h // 2) + 1) -%}

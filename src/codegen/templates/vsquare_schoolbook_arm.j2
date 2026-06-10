@@ -1,4 +1,4 @@
-// {{ dst }} += vsquare {{ lhs }}
+/* {{ dst }} = vsquare {{ lhs }} */
 {% macro madd(acc, left, right) -%}
 vmlal_u{{ settings.vector_lw // 2 }}(
     {{ acc }},

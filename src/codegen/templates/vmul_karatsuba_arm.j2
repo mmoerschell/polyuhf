@@ -1,4 +1,4 @@
-// {{ dst }} += karatsuba mul {{ lhs }} {{ rhs }}
+/* {{ dst }} = vmul {{ lhs }} {{ rhs }} */
 {% set low = (settings.limbs + 1) // 2 -%}
 {% set high = settings.limbs // 2 -%}
 {% set z0_len = 2 * low - 1 -%}

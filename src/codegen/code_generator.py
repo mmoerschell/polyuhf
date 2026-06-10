@@ -60,10 +60,13 @@ class FunctionCodeGenerator:
     def generate_definition(self, func: IRFunction, c_signature: str) -> str:
         lines: list[str] = []
         if self.mcr.settings.lanes:
+            vector_type = (
+                f"uint{self.mcr.settings.vector_lw}x{self.mcr.settings.lanes}_t"
+            )
             lines += [
-                f"const uint{self.mcr.settings.vector_lw}x{self.mcr.settings.lanes}_t vlambda_mask = "
+                f"const {vector_type} vlambda_mask = "
                 f"vdupq_n_u{self.mcr.settings.vector_lw}({self.mcr.settings.lambda_mask});",
-                f"const uint{self.mcr.settings.vector_lw}x{self.mcr.settings.lanes}_t vlambda_prime_mask = "
+                f"const {vector_type} vlambda_prime_mask = "
                 f"vdupq_n_u{self.mcr.settings.vector_lw}({self.mcr.settings.lambda_prime_mask});",
             ]
         for s in self.func.body:
@@ -125,14 +128,18 @@ class FunctionCodeGenerator:
                     )
                     + ";"
                 )
-            # Prime field add/mul/square
+            # Prime field arithmetic
             case IRInstruction(
-                declare, result, "add" | "mul" | "square" | "vsquare", operands
+                declare,
+                result,
+                "add" | "vadd" | "mul" | "vmul" | "square" | "vsquare",
+                operands,
             ) if isinstance(result.dsl_type, PrimeField):
                 if declare:
                     return (
                         f"{optional_ctype}{self._compile_operand(result)} = "
                         + "{0};"
+                        + "\n"
                         + self._compile_pf_arithmetic(insn)
                     )
                 else:
@@ -144,7 +151,7 @@ class FunctionCodeGenerator:
                     PrimeField(),
                     "vector" | "matrix",
                 ) as result,
-                "carry",
+                "carry" | "vcarry",
                 operands,
             ):
                 assert not declare, "carries should reuse temporaries"
@@ -155,11 +162,9 @@ class FunctionCodeGenerator:
                     "bitand": (lambda a, b: a & b),  # type: ignore
                     "propagate_limbs": self.mcr.settings.carry_propagate_limbs,
                 }
-                te_name = (
-                    f"vcarry_{self.mcr.settings.platform}"
-                    if result.ir_type == "matrix"
-                    else "carry"
-                )
+                te_name = insn.insn_name
+                if insn.insn_name == "vcarry":
+                    te_name = f"vcarry_{self.mcr.settings.platform}"
                 return self.mcr.get_template(te_name).render(te_ctx)
             # Prime overflow
             case IRInstruction(
@@ -187,7 +192,6 @@ class FunctionCodeGenerator:
                 "load",
                 operands,
             ):
-                # TODO! remove matrix remnants from here, improve scalar loads
                 assert declare, "load temporaries should not be reassigned"
                 assert len(operands) >= 2
                 assert isinstance(operands[0].dsl_type, Buffer), operands[0]
@@ -200,7 +204,7 @@ class FunctionCodeGenerator:
                 offsets: list[int] = [o.value for o in operands[2:]]  # type: ignore
                 chunk_size = self.mcr.settings.field.chunk_size()
                 res: list[str] = [
-                    f"/* {dst} = load {src} @ {position} w/ offsets {', '.join(map(str, offsets))} */",
+                    self._comment(dst, "load", src, "@", position, "offsets", offsets),
                     f"{self.mcr.compile_ir_type(result.ir_type)} {dst};",
                 ]
                 # Figure out which byte affects which limb
@@ -231,23 +235,22 @@ class FunctionCodeGenerator:
                         else self.mcr.settings.lambda_mask
                     )
                     if result.ir_type == "vector":
-                        res.append(
-                            f"{dst}.limb{i} = "
-                            f"({
-                                '|'.join(
-                                    f'{src}[{chunk_size} * {position} + {by}] {'<<' if s >= 0 else '>>'} {abs(s)}'
-                                    for by, s in distribution[i][0]
-                                )
-                            }) & {mask}ull;"
+                        terms = "|".join(
+                            self._load_shift_expr(src, chunk_size, position, by, shift)
+                            for by, shift in distribution[i][0]
                         )
+                        res.append(f"{dst}.limb{i} = ({terms}) & {mask}ull;")
                     elif self.mcr.settings.platform == "arm":
+                        vector_type = f"uint{self.mcr.settings.vector_lw}x{lanes}_t"
                         res.append(
-                            f"{dst}.limb{i} = (uint{self.mcr.settings.vector_lw}x{lanes}_t){{"
+                            f"{dst}.limb{i} = ({vector_type}){{"
                             + ",".join(
                                 "("
                                 + "|".join(
-                                    f"{src}[{chunk_size} * {position} + {by}] {'<<' if s >= 0 else '>>'} {abs(s)}"
-                                    for by, s in distribution[i][j]
+                                    self._load_shift_expr(
+                                        src, chunk_size, position, by, shift
+                                    )
+                                    for by, shift in distribution[i][j]
                                 )
                                 + f") & {mask}ull"
                                 for j in range(lanes)
@@ -257,14 +260,14 @@ class FunctionCodeGenerator:
                     else:
                         raise NotImplementedError()
                 return "\n".join(res)
-            # Vector load
+            # Vectorized load
             case IRInstruction(
                 declare,
                 IRTemporary(_dsl_type, "matrix") as result,
-                "load",
+                "vload",
                 operands,
             ):
-                assert declare, "load temporaries should not be reassigned"
+                assert declare, "vload temporaries should not be reassigned"
                 assert len(operands) > 2
                 assert isinstance(operands[0].dsl_type, Buffer), operands[0]
                 assert all(isinstance(o, IRConst) for o in operands[2:])
@@ -309,7 +312,7 @@ class FunctionCodeGenerator:
                     else "FIXME"  # FIXME
                 )
                 return (
-                    f"// {cres} = horiz_add {csrc}\n"
+                    f"{self._comment(cres, 'horiz_add', csrc)}\n"
                     f"{self.mcr.compile_ir_type(result.ir_type)} "
                     f"{(cres)};\n"
                     + "\n".join(
@@ -366,6 +369,21 @@ class FunctionCodeGenerator:
             raise NotImplementedError("select for matrix temporaries")
         lines.append("}")
         return "\n".join(line for line in lines if line)
+
+    def _comment(self, dst: str, insn_name: str, *operands: object) -> str:
+        operand_text = " ".join(
+            ", ".join(str(x) for x in operand)
+            if isinstance(operand, list)
+            else str(operand)
+            for operand in operands
+        )
+        return f"/* {dst} = {insn_name} {operand_text} */".rstrip()
+
+    def _load_shift_expr(
+        self, src: str, chunk_size: int, position: str, byte: int, shift: int
+    ) -> str:
+        direction = "<<" if shift >= 0 else ">>"
+        return f"{src}[{chunk_size} * {position} + {byte}] {direction} {abs(shift)}"
 
     def _compile_operand(self, operand: IROperand) -> str:
         match operand:
@@ -428,11 +446,11 @@ class FunctionCodeGenerator:
         match insn.insn_name, insn.result.ir_type:
             case ("add", "vector"):
                 te_name = "add"
-            case ("add", "matrix"):
+            case ("vadd", "matrix"):
                 te_name = f"vadd_{self.mcr.settings.platform}"
             case ("mul", "vector"):
                 te_name = f"mul_{self.mcr.settings.mul_algo}"
-            case ("mul", "matrix"):
+            case ("vmul", "matrix"):
                 te_name = (
                     f"vmul_{self.mcr.settings.mul_algo}_{self.mcr.settings.platform}"
                 )

@@ -1,4 +1,4 @@
-// carry {{ x }}
+/* {{ x }} = carry {{ x }} */
 {% for i in range(settings.limbs - 1) %}{{ x }}.limb{{i + 1}} += {{ x }}.limb{{i}} >> {{ settings.lambda_ }};
 {{ x }}.limb{{i}} &= {{settings.lambda_mask}}ull;{% endfor %}
 {{ x }}.limb0 += {{ settings.field.theta }} * ({{ x }}.limb{{ settings.limbs - 1 }} >> {{ settings.lambda_prime }});

@@ -1,4 +1,4 @@
-// {{ x }} = vcarry {{ x }}
+/* {{ x }} = vcarry {{ x }} */
 {% for i in range(settings.limbs - 1) %}
 {{ x }}.limb{{i + 1}} = vaddq_u{{ settings.vector_lw }}({{x}}.limb{{i+1}}, vshrq_n_u{{settings.vector_lw}}({{ x }}.limb{{i}}, {{ settings.lambda_ }}));
 {{ x }}.limb{{i}} = vandq_u{{settings.vector_lw}}({{x}}.limb{{i}}, vlambda_mask);

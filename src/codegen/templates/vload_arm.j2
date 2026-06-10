@@ -1,4 +1,4 @@
-/* {{var}} = vload {{buffer}} @ {{position}} w/ offsets {{ offsets | join(', ')}} */
+/* {{ var }} = vload {{ buffer }} @ {{ position }} offsets {{ offsets | join(', ') }} */
 vbigint_t {{ var }};
 {% for limb in range(settings.limbs) -%}
 {%- set ls_bit_idx = limb * settings.lambda_ -%}

@@ -17,9 +17,9 @@ BOOST_DATA_TEST_CASE(Automatic_{{function_name}}_Tests, boost::unit_test::data::
     std::vector<uint8_t> message(B * {{ settings.field.chunk_size() }}); // message
     std::vector<uint8_t> key(B * {{ settings.field.chunk_size() }}); // key
     for (auto &x : message)
-        x = dist(rng);
+        x = dist(rng);{# x = 255 #}
     for (auto &x : key)
-        x = dist(rng);
+        x = dist(rng);{# x = 255 #}
 
     // Computations
     const auto act_value = {{function_name}}(message.data(), key.data(), B);

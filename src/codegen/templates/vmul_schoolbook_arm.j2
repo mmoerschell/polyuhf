@@ -1,4 +1,4 @@
-// {{ dst }} = mul {{ lhs }} {{ rhs }}
+/* {{ dst }} = vmul {{ lhs }} {{ rhs }} */
 {% for i in range(settings.limbs) %}
 {% for j in range(i + 1) %}{{ dst }}.limb{{ i }} = vmlal_u{{settings.vector_lw // 2}}({{dst}}.limb{{i}}, vmovn_u{{settings.vector_lw}}({{ lhs }}.limb{{ j }}), vmovn_u{{settings.vector_lw}}({{ rhs }}.limb{{ i - j }}));
 {% endfor %}
