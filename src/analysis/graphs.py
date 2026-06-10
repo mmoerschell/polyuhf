@@ -57,7 +57,7 @@ def roofline_plot(
     plt.tight_layout()
     if output_path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(output_path)
+        plt.savefig(output_path, dpi=600)
     if show:
         plt.show()
     plt.close()
@@ -90,7 +90,7 @@ def cycles_per_byte_plot(
     plt.tight_layout()
     if output_path:
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        plt.savefig(output_path)
+        plt.savefig(output_path, dpi=600)
     if show:
         plt.show()
     plt.close()
@@ -117,13 +117,13 @@ def graphs(
         output_dir / f"{name}_cycles_per_byte.png" if output_dir else None,
         show,
     )
-    roofline_plot(
-        name,
-        data_B,
-        data_ops,
-        data_traffic,
-        data_cycles,
-        settings,
-        output_dir / f"{name}_roofline.png" if output_dir else None,
-        show,
-    )
+    # roofline_plot(
+    #     name,
+    #     data_B,
+    #     data_ops,
+    #     data_traffic,
+    #     data_cycles,
+    #     settings,
+    #     output_dir / f"{name}_roofline.png" if output_dir else None,
+    #     show,
+    # )
