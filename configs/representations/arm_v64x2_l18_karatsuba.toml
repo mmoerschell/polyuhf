@@ -5,3 +5,4 @@ scalar_mw = 64
 # lanes = 2
 unrolling_factor = 2
 mul_algo = "karatsuba"
+carry_propagate_limbs = 2

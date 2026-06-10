@@ -21,6 +21,7 @@ class RepresentationSettings:
     lanes: int | None
     unrolling_factor: int
     mul_algo: MulAlgo
+    carry_propagate_limbs: int
 
 
 @dataclass(frozen=True)
@@ -68,6 +69,7 @@ class Settings:
     unrolling_factor: int
     align: int
     mul_algo: MulAlgo
+    carry_propagate_limbs: int
 
     def __init__(
         self,
@@ -97,6 +99,7 @@ class Settings:
         self.vector_lw = representation.vector_lw
         self.lanes = representation.lanes
         self.unrolling_factor = representation.unrolling_factor
+        self.carry_propagate_limbs = representation.carry_propagate_limbs
         self.align = (
             self.vector_lw * self.lanes
             if self.vector_lw and self.lanes
@@ -107,6 +110,9 @@ class Settings:
         # Sanity checks
         if self.mul_algo == "karatsuba":
             assert self.limbs >= 2, "Karatsuba multiplication needs at least 2 limbs"
+        assert 0 <= self.carry_propagate_limbs < self.limbs, (
+            "carry_propagate_limbs must be in [0, limbs)"
+        )
         if self.vector_lw and self.platform == "arm":
             assert self.vector_lw * self.lanes == 128, (  # type: ignore
                 "Number of width of lanes misconfigured"

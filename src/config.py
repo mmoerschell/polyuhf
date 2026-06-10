@@ -137,6 +137,7 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
             lanes=int(lanes) if lanes is not None else None,
             unrolling_factor=int(representation.get("unrolling_factor", 2)),
             mul_algo=representation.get("mul_algo", "schoolbook"),
+            carry_propagate_limbs=int(representation.get("carry_propagate_limbs", 2)),
         ),
         TargetCPU(
             name=target["name"],

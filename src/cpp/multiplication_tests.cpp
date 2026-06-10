@@ -13,6 +13,7 @@
 using namespace boost::multiprecision;
 
 static const cpp_int prime(FIELD_PRIME_HEX);
+// only interesting in GF(2^116-3)
 static const cpp_int squareto1_input("0xffffffffffffffffffffffffffffc");
 
 BOOST_AUTO_TEST_CASE(MultiplicationMaxTest) {

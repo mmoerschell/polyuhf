@@ -153,6 +153,7 @@ class FunctionCodeGenerator:
                     "settings": self.mcr.settings,
                     "shr": (lambda a, b: a >> b),  # type: ignore
                     "bitand": (lambda a, b: a & b),  # type: ignore
+                    "propagate_limbs": self.mcr.settings.carry_propagate_limbs,
                 }
                 te_name = (
                     f"vcarry_{self.mcr.settings.platform}"
@@ -167,10 +168,10 @@ class FunctionCodeGenerator:
                     PrimeField(),
                     "vector",
                 ) as result,
-                "prime_overflow",
+                "full_reduction",
                 _,
             ):
-                return self.mcr.get_template("prime_overflow").render(
+                return self.mcr.get_template("full_reduction").render(
                     {
                         "x": self._compile_operand(result),
                         "settings": self.mcr.settings,

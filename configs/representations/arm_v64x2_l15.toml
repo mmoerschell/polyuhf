@@ -5,3 +5,4 @@ vector_lw = 64
 lanes = 2
 unrolling_factor = 2
 mul_algo = "schoolbook"
+carry_propagate_limbs = 2

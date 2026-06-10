@@ -17,7 +17,7 @@ vshlq_n_u{{ settings.vector_lw}}({{ x }}_high_bits, {{shift}})
 {%- endif %}
 {% endfor %}
 {{ x }}.limb{{ settings.limbs - 1}} = vandq_u{{settings.vector_lw}}({{ x }}.limb{{ settings.limbs - 1}}, vlambda_prime_mask);
-{% for i in range(2) %}
+{% for i in range(propagate_limbs) %}
 {{ x }}.limb{{i + 1}} = vaddq_u{{ settings.vector_lw }}({{x}}.limb{{i+1}}, vshrq_n_u{{settings.vector_lw}}({{ x }}.limb{{i}}, {{ settings.lambda_ }}));
 {{ x }}.limb{{i}} = vandq_u{{settings.vector_lw}}({{x}}.limb{{i}}, vlambda_mask);
 {% endfor %}

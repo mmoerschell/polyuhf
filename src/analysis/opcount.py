@@ -58,7 +58,7 @@ def per_instruction(  # noqa: C901
             return field_square_ops(settings), 0
         case IRInstruction(_, IRTemporary(_, "vector"), "carry"):
             return (settings.limbs + 2) * 3 + 1, 0
-        case IRInstruction(_, IRTemporary(_, "vector"), "prime_overflow"):
+        case IRInstruction(_, IRTemporary(_, "vector"), "full_reduction"):
             # TODO ooo
             return (settings.limbs + 2) * 3 + 1, 0
         case IRInstruction(_, IRTemporary(_, "vector"), "horiz_add") if settings.lanes:
