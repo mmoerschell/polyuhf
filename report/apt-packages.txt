@@ -1,0 +1,2 @@
+sudo apt install gcc g++ libboost-all-dev cmake ninja-build
+
