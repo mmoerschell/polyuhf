@@ -12,7 +12,6 @@ select
 square
 square_schoolbook
 vadd
-var
 vcarry
 vector
 vload
