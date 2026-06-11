@@ -47,6 +47,11 @@ target_compile_options(correctness PRIVATE
     -Wno-unused-variable
 )
 
+file(READ "${GENERATED_DIR}/datastructures.h" GENERATED_DATASTRUCTURES_H)
+if(GENERATED_DATASTRUCTURES_H MATCHES "immintrin\\.h")
+    target_compile_options(correctness PRIVATE -mavx2)
+endif()
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     target_compile_options(correctness PRIVATE -fsanitize=address,undefined)
     target_link_options(correctness PRIVATE -fsanitize=address,undefined)
@@ -80,5 +85,8 @@ foreach(PERF_SOURCE ${GENERATED_PERF_SOURCES})
             -Wpedantic
             -Wno-format-zero-length
         )
+        if(GENERATED_DATASTRUCTURES_H MATCHES "immintrin\\.h")
+            target_compile_options("${PERF_STEM}" PRIVATE -mavx2)
+        endif()
     endif()
 endforeach()

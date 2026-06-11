@@ -4,7 +4,7 @@ from typing import Literal
 
 from typesystem import PrimeField
 
-Platform = Literal["arm", "sse", "avx", "avx512"]
+Platform = Literal["arm", "avx2"]
 MulAlgo = Literal["schoolbook", "karatsuba"]
 
 
@@ -115,7 +115,11 @@ class Settings:
         )
         if self.vector_lw and self.platform == "arm":
             assert self.vector_lw * self.lanes == 128, (  # type: ignore
-                "Number of width of lanes misconfigured"
+                "Number of width of lanes misconfigured for NEON"
+            )  # type: ignore
+        if self.vector_lw and self.platform == "avx2":
+            assert self.vector_lw == 64 and self.lanes == 4, (  # type: ignore
+                "AVX2 backend currently expects four 64-bit lanes"
             )  # type: ignore
 
         # Constraints from CHES paper

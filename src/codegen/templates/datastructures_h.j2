@@ -17,7 +17,7 @@ typedef struct {
 
 {% if settings.lanes %}
 typedef struct {
-{% for i in range(settings.limbs) %}    uint{{settings.vector_lw}}x{{settings.lanes}}_t limb{{i}};
+{% for i in range(settings.limbs) %}    {{ vector_type }} limb{{i}};
 {%endfor%}
 } vbigint_t;
 {% endif %}

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from typing import assert_never
 
 from jinja2 import Environment, FileSystemLoader, Template
@@ -60,14 +61,11 @@ class FunctionCodeGenerator:
     def generate_definition(self, func: IRFunction, c_signature: str) -> str:
         lines: list[str] = []
         if self.mcr.settings.lanes:
-            vector_type = (
-                f"uint{self.mcr.settings.vector_lw}x{self.mcr.settings.lanes}_t"
-            )
             lines += [
-                f"const {vector_type} vlambda_mask = "
-                f"vdupq_n_u{self.mcr.settings.vector_lw}({self.mcr.settings.lambda_mask});",
-                f"const {vector_type} vlambda_prime_mask = "
-                f"vdupq_n_u{self.mcr.settings.vector_lw}({self.mcr.settings.lambda_prime_mask});",
+                f"const {self.mcr.compile_vector_type()} vlambda_mask = "
+                f"{self.mcr.compile_vector_splat(self.mcr.settings.lambda_mask)};",
+                f"const {self.mcr.compile_vector_type()} vlambda_prime_mask = "
+                f"{self.mcr.compile_vector_splat(self.mcr.settings.lambda_prime_mask)};",
             ]
         for s in self.func.body:
             text = self._compile_statement(s)
@@ -240,11 +238,10 @@ class FunctionCodeGenerator:
                             for by, shift in distribution[i][0]
                         )
                         res.append(f"{dst}.limb{i} = ({terms}) & {mask}ull;")
-                    elif self.mcr.settings.platform == "arm":
-                        vector_type = f"uint{self.mcr.settings.vector_lw}x{lanes}_t"
+                    elif self.mcr.settings.platform in {"arm", "avx2"}:
                         res.append(
-                            f"{dst}.limb{i} = ({vector_type}){{"
-                            + ",".join(
+                            f"{dst}.limb{i} = "
+                            + self.mcr.compile_vector_literal(
                                 "("
                                 + "|".join(
                                     self._load_shift_expr(
@@ -255,7 +252,7 @@ class FunctionCodeGenerator:
                                 + f") & {mask}ull"
                                 for j in range(lanes)
                             )
-                            + "};"
+                            + ";"
                         )
                     else:
                         raise NotImplementedError()
@@ -306,17 +303,21 @@ class FunctionCodeGenerator:
                 assert src_matrix.ir_type == "matrix"
                 cres = self._compile_operand(result)
                 csrc = self._compile_operand(src_matrix)
-                intrinsic = (
-                    f"vaddvq_u{self.mcr.settings.vector_lw}"
-                    if self.mcr.settings.platform == "arm"
-                    else "FIXME"  # FIXME
-                )
+                def hadd_expr(vector: str) -> str:
+                    if self.mcr.settings.platform == "arm":
+                        return f"vaddvq_u{self.mcr.settings.vector_lw}({vector})"
+                    if self.mcr.settings.platform == "avx2":
+                        return self._avx2_horiz_add(vector)
+                    raise NotImplementedError(
+                        f"horizontal add for {self.mcr.settings.platform}"
+                    )
+
                 return (
                     f"{self._comment(cres, 'horiz_add', csrc)}\n"
                     f"{self.mcr.compile_ir_type(result.ir_type)} "
                     f"{(cres)};\n"
                     + "\n".join(
-                        f"{cres}.limb{i} = {intrinsic}({csrc}.limb{i});"
+                        f"{cres}.limb{i} = {hadd_expr(f'{csrc}.limb{i}')};"
                         for i in range(self.mcr.settings.limbs)
                     )
                 )
@@ -385,6 +386,14 @@ class FunctionCodeGenerator:
         direction = "<<" if shift >= 0 else ">>"
         return f"{src}[{chunk_size} * {position} + {byte}] {direction} {abs(shift)}"
 
+    def _avx2_horiz_add(self, src: str) -> str:
+        return (
+            f"(uint64_t)_mm256_extract_epi64({src}, 0) + "
+            f"(uint64_t)_mm256_extract_epi64({src}, 1) + "
+            f"(uint64_t)_mm256_extract_epi64({src}, 2) + "
+            f"(uint64_t)_mm256_extract_epi64({src}, 3)"
+        )
+
     def _compile_operand(self, operand: IROperand) -> str:
         match operand:
             case IRConst(_, "scalar", value):
@@ -407,11 +416,10 @@ class FunctionCodeGenerator:
                         + "}"
                     )
                 else:
-                    # TODO does this work with Intel intrinsics?
                     return (
                         "(vbigint_t) {"
                         + ",".join(
-                            f"vdupq_n_u{self.mcr.settings.vector_lw}({lv})"
+                            self.mcr.compile_vector_splat(lv)
                             for lv in limb_values
                         )
                         + "}"
@@ -495,9 +503,8 @@ class ModuleCodeGenerator:
             "declarations": declarations,
             "settings": self.settings,
             "module_name": self.module.name,
-            "intrinsics_header": "arm_neon.h"
-            if self.settings.platform == "arm"
-            else "UNIMPLEMENTED",
+            "intrinsics_header": self.compile_intrinsics_header(),
+            "vector_type": self.compile_vector_type() if self.settings.lanes else None,
             "n_bytes": (self.settings.field.pi + 7) // 8,
             "definitions": definitions,
         }
@@ -531,6 +538,63 @@ class ModuleCodeGenerator:
                 return "vbigint_t"
             case "pod":
                 return "const uint8_t*"
+
+    def compile_intrinsics_header(self) -> str:
+        match self.settings.platform:
+            case "arm":
+                return "arm_neon.h"
+            case "avx2":
+                return "immintrin.h"
+            case _:
+                raise NotImplementedError(
+                    f"platform {self.settings.platform!r} has no intrinsics header"
+                )
+
+    def compile_vector_type(self) -> str:
+        match self.settings.platform:
+            case "arm":
+                return f"uint{self.settings.vector_lw}x{self.settings.lanes}_t"
+            case "avx2":
+                return "__m256i"
+            case _:
+                raise NotImplementedError(
+                    f"platform {self.settings.platform!r} has no vector type"
+                )
+
+    def compile_vector_splat(self, value: int) -> str:
+        match self.settings.platform:
+            case "arm":
+                return f"vdupq_n_u{self.settings.vector_lw}({value})"
+            case "avx2":
+                return f"_mm256_set1_epi64x((long long){value}ull)"
+            case _:
+                raise NotImplementedError(
+                    f"platform {self.settings.platform!r} has no vector splat"
+                )
+
+    def compile_vector_literal(self, lanes: Iterable[object]) -> str:
+        lane_list = list(lanes)
+        match self.settings.platform:
+            case "arm":
+                return (
+                    f"({self.compile_vector_type()}){{"
+                    + ",".join(str(lane) for lane in lane_list)
+                    + "}"
+                )
+            case "avx2":
+                if len(lane_list) != 4:
+                    raise NotImplementedError("AVX2 vector literals need four lanes")
+                return (
+                    "_mm256_set_epi64x("
+                    + ",".join(
+                        f"(long long)({lane})" for lane in reversed(lane_list)
+                    )
+                    + ")"
+                )
+            case _:
+                raise NotImplementedError(
+                    f"platform {self.settings.platform!r} has no vector literal"
+                )
 
     def get_template(self, template: str) -> Template:
         return self._templates.setdefault(

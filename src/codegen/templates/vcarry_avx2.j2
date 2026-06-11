@@ -1,0 +1,22 @@
+/* {{ x }} = vcarry {{ x }} */
+{% for i in range(settings.limbs - 1) %}
+{{ x }}.limb{{i + 1}} = _mm256_add_epi64({{x}}.limb{{i+1}}, _mm256_srli_epi64({{ x }}.limb{{i}}, {{ settings.lambda_ }}));
+{{ x }}.limb{{i}} = _mm256_and_si256({{x}}.limb{{i}}, vlambda_mask);
+{% endfor %}
+const __m256i {{ x }}_high_bits = _mm256_srli_epi64({{ x }}.limb{{ settings.limbs - 1}}, {{ settings.lambda_prime }});
+{% for shift in range (settings.field.theta.bit_length()) -%}
+{%- if bitand(shr(settings.field.theta, shift), 1) -%}
+{{ x }}.limb0 = _mm256_add_epi64({{x}}.limb0,
+{%- if shift > 0 -%}
+_mm256_slli_epi64({{ x }}_high_bits, {{shift}})
+{%- else -%}
+{{ x }}_high_bits
+{%- endif -%}
+);
+{%- endif %}
+{% endfor %}
+{{ x }}.limb{{ settings.limbs - 1}} = _mm256_and_si256({{ x }}.limb{{ settings.limbs - 1}}, vlambda_prime_mask);
+{% for i in range(propagate_limbs) %}
+{{ x }}.limb{{i + 1}} = _mm256_add_epi64({{x}}.limb{{i+1}}, _mm256_srli_epi64({{ x }}.limb{{i}}, {{ settings.lambda_ }}));
+{{ x }}.limb{{i}} = _mm256_and_si256({{x}}.limb{{i}}, vlambda_mask);
+{% endfor %}

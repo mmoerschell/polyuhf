@@ -1,0 +1,3 @@
+/* {{ dst }} = vadd {{ lhs }} {{ rhs }} */
+{% for i in range(settings.limbs) %}{{ dst }}.limb{{ i }} = _mm256_add_epi64({{ lhs }}.limb{{ i }}, {{ rhs }}.limb{{ i }});
+{% endfor %}

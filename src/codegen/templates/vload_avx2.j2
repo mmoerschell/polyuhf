@@ -1,0 +1,31 @@
+/* {{ var }} = vload {{ buffer }} @ {{ position }} offsets {{ offsets | join(', ') }} */
+vbigint_t {{ var }};
+{% macro byte_shift(offset, byte, shift) -%}
+{%- if shift >= 0 -%}
+((uint64_t){{ buffer }}[{{ chunk_size }} * ({{ position }} + {{ offset }}) + {{ byte }}] << {{ shift }})
+{%- else -%}
+((uint64_t){{ buffer }}[{{ chunk_size }} * ({{ position }} + {{ offset }}) + {{ byte }}] >> {{ -shift }})
+{%- endif -%}
+{%- endmacro %}
+{% for limb in range(settings.limbs) -%}
+{%- set mask = settings.lambda_prime_mask if limb == settings.limbs - 1 else settings.lambda_mask -%}
+{%- set lanes = [] -%}
+{%- for lane in range(settings.lanes) -%}
+{%- set ns = namespace(parts=[]) -%}
+{%- for i in range(chunk_size) -%}
+{%- set first_relevant_limb = 8 * i // settings.lambda_ -%}
+{%- set last_relevant_limb = min((8 * i + 7) // settings.lambda_, settings.limbs - 1) -%}
+{%- if first_relevant_limb == limb -%}
+{%- set shift = 8 * i - first_relevant_limb * settings.lambda_ -%}
+{%- set _ = ns.parts.append(byte_shift(offsets[lane], i, shift)) -%}
+{%- endif -%}
+{%- if last_relevant_limb != first_relevant_limb and last_relevant_limb == limb -%}
+{%- set shift = 8 * i - last_relevant_limb * settings.lambda_ -%}
+{%- set _ = ns.parts.append(byte_shift(offsets[lane], i, shift)) -%}
+{%- endif -%}
+{%- endfor -%}
+{%- set expr = "((" ~ (ns.parts | join(" | ") if ns.parts else "0") ~ ") & " ~ mask ~ "ull)" -%}
+{%- set _ = lanes.append(expr) -%}
+{%- endfor %}
+{{ var }}.limb{{ limb }} = _mm256_set_epi64x((long long){{ lanes[3] }}, (long long){{ lanes[2] }}, (long long){{ lanes[1] }}, (long long){{ lanes[0] }});
+{% endfor %}
