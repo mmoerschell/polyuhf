@@ -1,6 +1,6 @@
 [target]
-name = "apple_m3_arm"
-platform = "arm"
+name = "apple_m3_neon"
+platform = "neon"
 frequency_ghz = 4.05
 memory_bandwidth_gbs = 150
 peak_iops_per_cycle = 8

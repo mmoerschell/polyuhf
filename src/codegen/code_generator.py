@@ -238,7 +238,7 @@ class FunctionCodeGenerator:
                             for by, shift in distribution[i][0]
                         )
                         res.append(f"{dst}.limb{i} = ({terms}) & {mask}ull;")
-                    elif self.mcr.settings.platform in {"arm", "avx2"}:
+                    elif self.mcr.settings.platform in {"neon", "avx2"}:
                         res.append(
                             f"{dst}.limb{i} = "
                             + self.mcr.compile_vector_literal(
@@ -304,7 +304,7 @@ class FunctionCodeGenerator:
                 cres = self._compile_operand(result)
                 csrc = self._compile_operand(src_matrix)
                 def hadd_expr(vector: str) -> str:
-                    if self.mcr.settings.platform == "arm":
+                    if self.mcr.settings.platform == "neon":
                         return f"vaddvq_u{self.mcr.settings.vector_lw}({vector})"
                     if self.mcr.settings.platform == "avx2":
                         return self._avx2_horiz_add(vector)
@@ -541,7 +541,7 @@ class ModuleCodeGenerator:
 
     def compile_intrinsics_header(self) -> str:
         match self.settings.platform:
-            case "arm":
+            case "neon":
                 return "arm_neon.h"
             case "avx2":
                 return "immintrin.h"
@@ -552,7 +552,7 @@ class ModuleCodeGenerator:
 
     def compile_vector_type(self) -> str:
         match self.settings.platform:
-            case "arm":
+            case "neon":
                 return f"uint{self.settings.vector_lw}x{self.settings.lanes}_t"
             case "avx2":
                 return "__m256i"
@@ -563,7 +563,7 @@ class ModuleCodeGenerator:
 
     def compile_vector_splat(self, value: int) -> str:
         match self.settings.platform:
-            case "arm":
+            case "neon":
                 return f"vdupq_n_u{self.settings.vector_lw}({value})"
             case "avx2":
                 return f"_mm256_set1_epi64x((long long){value}ull)"
@@ -575,7 +575,7 @@ class ModuleCodeGenerator:
     def compile_vector_literal(self, lanes: Iterable[object]) -> str:
         lane_list = list(lanes)
         match self.settings.platform:
-            case "arm":
+            case "neon":
                 return (
                     f"({self.compile_vector_type()}){{"
                     + ",".join(str(lane) for lane in lane_list)

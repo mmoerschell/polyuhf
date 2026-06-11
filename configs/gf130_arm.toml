@@ -1,5 +1,0 @@
-[experiment]
-field = "fields/gf130.toml"
-representation = "representations/arm_v64x2_l15.toml"
-target = "targets/apple_m3_arm.toml"
-workflow = "workflows/default.toml"

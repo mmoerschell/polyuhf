@@ -1,0 +1,5 @@
+[experiment]
+field = "fields/gf116.toml"
+representation = "representations/neon_v64x2_l18_karatsuba.toml"
+target = "targets/apple_m3_neon.toml"
+workflow = "workflows/default.toml"

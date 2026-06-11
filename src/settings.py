@@ -4,7 +4,7 @@ from typing import Literal
 
 from typesystem import PrimeField
 
-Platform = Literal["arm", "avx2"]
+Platform = Literal["neon", "avx2"]
 MulAlgo = Literal["schoolbook", "karatsuba"]
 
 
@@ -113,7 +113,7 @@ class Settings:
         assert 0 <= self.carry_propagate_limbs < self.limbs, (
             "carry_propagate_limbs must be in [0, limbs)"
         )
-        if self.vector_lw and self.platform == "arm":
+        if self.vector_lw and self.platform == "neon":
             assert self.vector_lw * self.lanes == 128, (  # type: ignore
                 "Number of width of lanes misconfigured for NEON"
             )  # type: ignore
