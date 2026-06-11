@@ -1,0 +1,101 @@
+/* {{ dst }} = vmul {{ lhs }} {{ rhs }} */
+{% set low = (settings.limbs + 1) // 2 -%}
+{% set high = settings.limbs // 2 -%}
+{% set z0_len = 2 * low - 1 -%}
+{% set z2_len = 2 * high - 1 -%}
+{% set z1_len = z0_len -%}
+{% macro limb_sum(name, i) -%}
+{%- if i < high -%}
+_mm256_add_epi64({{ name }}.limb{{ i }}, {{ name }}.limb{{ low + i }})
+{%- else -%}
+{{ name }}.limb{{ i }}
+{%- endif -%}
+{%- endmacro %}
+{% macro madd(acc, left, right) -%}
+_mm256_add_epi64({{ acc }}, _mm256_mul_epu32({{ left }}, {{ right }}))
+{%- endmacro %}
+{% macro shifted(term, shift) -%}
+{%- if shift -%}_mm256_slli_epi64({{ term }}, {{ shift }}){%- else -%}{{ term }}{%- endif -%}
+{%- endmacro %}
+__m256i {{ dst }}_z0[{{ z0_len }}];
+__m256i {{ dst }}_z2[{{ z2_len }}];
+__m256i {{ dst }}_z1[{{ z1_len }}];
+{% for i in range(z0_len) -%}
+{{ dst }}_z0[{{ i }}] = _mm256_setzero_si256();
+{{ dst }}_z1[{{ i }}] = _mm256_setzero_si256();
+{% endfor -%}
+{% for i in range(z2_len) -%}
+{{ dst }}_z2[{{ i }}] = _mm256_setzero_si256();
+{% endfor %}
+{% for k in range(z0_len) -%}
+{% for i in range(low) -%}
+{% set j = k - i -%}
+{% if 0 <= j < low -%}
+{{ dst }}_z0[{{ k }}] = {{ madd(dst ~ "_z0[" ~ k ~ "]", lhs ~ ".limb" ~ i, rhs ~ ".limb" ~ j) }};
+{% endif -%}
+{% endfor -%}
+{% endfor %}
+{% for k in range(z2_len) -%}
+{% for i in range(high) -%}
+{% set j = k - i -%}
+{% if 0 <= j < high -%}
+{{ dst }}_z2[{{ k }}] = {{ madd(dst ~ "_z2[" ~ k ~ "]", lhs ~ ".limb" ~ (low + i), rhs ~ ".limb" ~ (low + j)) }};
+{% endif -%}
+{% endfor -%}
+{% endfor %}
+{% for k in range(z1_len) -%}
+{% for i in range(low) -%}
+{% set j = k - i -%}
+{% if 0 <= j < low -%}
+{{ dst }}_z1[{{ k }}] = {{ madd(dst ~ "_z1[" ~ k ~ "]", limb_sum(lhs, i), limb_sum(rhs, j)) }};
+{% endif -%}
+{% endfor -%}
+{% endfor %}
+{% for i in range(z1_len) -%}
+{{ dst }}_z1[{{ i }}] = _mm256_sub_epi64({{ dst }}_z1[{{ i }}], {{ dst }}_z0[{{ i }}]);
+{% if i < z2_len -%}
+{{ dst }}_z1[{{ i }}] = _mm256_sub_epi64({{ dst }}_z1[{{ i }}], {{ dst }}_z2[{{ i }}]);
+{% endif -%}
+{% endfor %}
+{% for k in range(2 * settings.limbs - 1) -%}
+{% set folded = k >= settings.limbs -%}
+{% set out_limb = k - settings.limbs if folded else k -%}
+{% if k < z0_len -%}
+{% set term = dst ~ "_z0[" ~ k ~ "]" -%}
+{% if folded -%}
+__m256i {{ dst }}_z0_{{ k }}_kappa = _mm256_setzero_si256();
+{% for shift in kappa_shifts -%}
+{{ dst }}_z0_{{ k }}_kappa = _mm256_add_epi64({{ dst }}_z0_{{ k }}_kappa, {{ shifted(term, shift) }});
+{% endfor -%}
+{{ dst }}.limb{{ out_limb }} = _mm256_add_epi64({{ dst }}.limb{{ out_limb }}, {{ dst }}_z0_{{ k }}_kappa);
+{% else -%}
+{{ dst }}.limb{{ out_limb }} = _mm256_add_epi64({{ dst }}.limb{{ out_limb }}, {{ term }});
+{% endif -%}
+{% endif -%}
+{% if low <= k < low + z1_len -%}
+{% set zidx = k - low -%}
+{% set term = dst ~ "_z1[" ~ zidx ~ "]" -%}
+{% if folded -%}
+__m256i {{ dst }}_z1_{{ zidx }}_kappa = _mm256_setzero_si256();
+{% for shift in kappa_shifts -%}
+{{ dst }}_z1_{{ zidx }}_kappa = _mm256_add_epi64({{ dst }}_z1_{{ zidx }}_kappa, {{ shifted(term, shift) }});
+{% endfor -%}
+{{ dst }}.limb{{ out_limb }} = _mm256_add_epi64({{ dst }}.limb{{ out_limb }}, {{ dst }}_z1_{{ zidx }}_kappa);
+{% else -%}
+{{ dst }}.limb{{ out_limb }} = _mm256_add_epi64({{ dst }}.limb{{ out_limb }}, {{ term }});
+{% endif -%}
+{% endif -%}
+{% if 2 * low <= k < 2 * low + z2_len -%}
+{% set zidx = k - 2 * low -%}
+{% set term = dst ~ "_z2[" ~ zidx ~ "]" -%}
+{% if folded -%}
+__m256i {{ dst }}_z2_{{ zidx }}_kappa = _mm256_setzero_si256();
+{% for shift in kappa_shifts -%}
+{{ dst }}_z2_{{ zidx }}_kappa = _mm256_add_epi64({{ dst }}_z2_{{ zidx }}_kappa, {{ shifted(term, shift) }});
+{% endfor -%}
+{{ dst }}.limb{{ out_limb }} = _mm256_add_epi64({{ dst }}.limb{{ out_limb }}, {{ dst }}_z2_{{ zidx }}_kappa);
+{% else -%}
+{{ dst }}.limb{{ out_limb }} = _mm256_add_epi64({{ dst }}.limb{{ out_limb }}, {{ term }});
+{% endif -%}
+{% endif -%}
+{% endfor %}
