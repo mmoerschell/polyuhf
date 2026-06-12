@@ -231,3 +231,6 @@ src/cpp/doctor.h
 
 # Graphs
 graphs/*.png
+
+# Java
+*.class

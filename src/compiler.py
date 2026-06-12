@@ -128,6 +128,7 @@ def compile_string(  # noqa: C901
             if flags.verbose:
                 print(f'[{Fore.GREEN}+{Style.RESET_ALL}] Wrote code to "{output_path}"')
 
+        # Write field config header
         field_config_path = write_field_config_header(output_dir, settings)
         written_files.append(field_config_path)
         if flags.verbose:
