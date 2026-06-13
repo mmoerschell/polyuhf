@@ -8,7 +8,6 @@ import tomllib
 
 from settings import (
     BenchSettings,
-    PrimeFieldSettings,
     RepresentationSettings,
     Settings,
     TargetCPU,
@@ -84,41 +83,12 @@ def load_toml(path: Path) -> dict[str, object]:
     return tomllib.loads(path.read_text(encoding="utf-8"))
 
 
-def resolve_component_path(config_path: Path, component_path: str) -> Path:
-    path = Path(component_path)
-    if path.is_absolute():
-        return path
-    return config_path.parent / path
-
-
-def load_experiment_data(config_path: Path) -> dict[str, object]:
-    data = load_toml(config_path)
-    if "experiment" not in data:
-        raise ValueError(f"Experiment config '{config_path}' must define [experiment]")
-
-    experiment = data["experiment"]
-    if not isinstance(experiment, dict):
-        raise ValueError("[experiment] must be a TOML table")
-
-    merged: dict[str, object] = {}
-    for key in ["field", "representation", "target", "workflow"]:
-        if key not in experiment:
-            raise ValueError(f"[experiment] is missing '{key}'")
-        component_path = resolve_component_path(config_path, str(experiment[key]))
-        component_data = load_toml(component_path)
-        for section, value in component_data.items():
-            if section in merged:
-                raise ValueError(
-                    f"Section '{section}' appears more than once while loading "
-                    f"'{config_path}'"
-                )
-            merged[section] = value
-    return merged
-
-
 def load_experiment_config(path: str | Path) -> ExperimentConfig:
     config_path = Path(path)
-    data = load_experiment_data(config_path)
+    data = load_toml(config_path)
+    for section in ["field", "representation", "target", "tests", "bench"]:
+        if section not in data:
+            raise ValueError(f"Config '{config_path}' must define [{section}]")
     field = data["field"]
     representation = data["representation"]
     target = data["target"]
@@ -129,7 +99,7 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
     lanes = representation.get("lanes")
 
     settings = Settings(
-        PrimeFieldSettings(PrimeField(int(field["pi"]), int(field["theta"]))),
+        PrimeField(int(field["pi"]), int(field["theta"])),
         RepresentationSettings(
             lambda_=int(representation["lambda"]),
             scalar_mw=int(representation.get("scalar_mw", 64)),

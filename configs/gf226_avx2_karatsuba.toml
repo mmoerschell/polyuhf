@@ -1,5 +1,35 @@
-[experiment]
-field = "fields/gf226.toml"
-representation = "representations/avx2_v64x4_l18_karatsuba.toml"
-target = "targets/x86_64_avx2.toml"
-workflow = "workflows/default.toml"
+[field]
+pi = 226
+theta = 5
+
+[representation]
+lambda = 18
+scalar_mw = 64
+vector_lw = 64
+lanes = 4
+unrolling_factor = 2
+mul_algo = "karatsuba"
+carry_propagate_limbs = 2
+
+[target]
+name = "x86_64_avx2"
+platform = "avx2"
+frequency_ghz = 3.5
+memory_bandwidth_gbs = 80
+peak_iops_per_cycle = 8
+perf_seed = 42
+perf_warmup_rounds = 1000
+perf_measure_rounds = 9000
+roofline_points = 1000
+
+[tests]
+max_B = 1200
+
+[bench]
+start = 8
+stop = 1200
+step = 8
+
+[modules]
+directory = "modules"
+extension = ".txt"

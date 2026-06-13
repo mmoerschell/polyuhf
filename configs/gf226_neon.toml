@@ -1,5 +1,35 @@
-[experiment]
-field = "fields/gf226.toml"
-representation = "representations/neon_v64x2_l18.toml"
-target = "targets/apple_m3_neon.toml"
-workflow = "workflows/default.toml"
+[field]
+pi = 226
+theta = 5
+
+[representation]
+lambda = 18
+scalar_mw = 64
+vector_lw = 64
+lanes = 2
+unrolling_factor = 2
+mul_algo = "schoolbook"
+carry_propagate_limbs = 2
+
+[target]
+name = "apple_m3_neon"
+platform = "neon"
+frequency_ghz = 4.05
+memory_bandwidth_gbs = 150
+peak_iops_per_cycle = 8
+perf_seed = 42
+perf_warmup_rounds = 1000
+perf_measure_rounds = 9000
+roofline_points = 1000
+
+[tests]
+max_B = 1200
+
+[bench]
+start = 8
+stop = 1200
+step = 8
+
+[modules]
+directory = "modules"
+extension = ".txt"

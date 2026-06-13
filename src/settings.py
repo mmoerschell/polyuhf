@@ -9,11 +9,6 @@ MulAlgo = Literal["schoolbook", "karatsuba"]
 
 
 @dataclass(frozen=True)
-class PrimeFieldSettings:
-    field: PrimeField
-
-
-@dataclass(frozen=True)
 class RepresentationSettings:
     lambda_: int
     scalar_mw: int
@@ -50,7 +45,6 @@ class BenchSettings:
 
 
 class Settings:
-    field_settings: PrimeFieldSettings
     representation: RepresentationSettings
     target: TargetCPU
     tests: TestSettings
@@ -73,7 +67,7 @@ class Settings:
 
     def __init__(
         self,
-        field_settings: PrimeFieldSettings,
+        field: PrimeField,
         representation: RepresentationSettings,
         target: TargetCPU,
         tests: TestSettings,
@@ -82,12 +76,11 @@ class Settings:
         assert representation.lambda_ >= 8, "limbs must be at least one byte"
         if representation.lanes:
             assert representation.lanes > 1
-        self.field_settings = field_settings
         self.representation = representation
         self.target = target
         self.tests = tests
         self.bench = bench
-        self.field = field_settings.field
+        self.field = field
         self.lambda_ = representation.lambda_
         self.lambda_prime = self.field.pi % self.lambda_ or self.lambda_
         self.lambda_mask = (1 << self.lambda_) - 1

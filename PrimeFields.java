@@ -7,7 +7,7 @@ public class PrimeFields {
         int fields = 0;
         for (int pi = 100; pi <= 400; ++pi) {
             final var x = BigInteger.ONE.shiftLeft(pi);
-            for (int theta = 1; theta < 25; theta += 2) {
+            for (int theta = 1; theta < 10; theta += 2) {
                 final var candidate = x.subtract(BigInteger.valueOf(theta));
                 if (candidate.isProbablePrime(80)) {
                     System.out.println(String.format("2^%d-%d", pi, theta));
