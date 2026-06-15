@@ -257,9 +257,11 @@ class FunctionCodeGenerator:
                         else self.mcr.settings.lambda_mask
                     )
                     if result.ir_type == "vector":
-                        terms = "|".join(
-                            self._load_shift_expr(src, chunk_size, position, by, shift)
-                            for by, shift in distribution[i][0]
+                        terms = self._load_terms(
+                            src,
+                            chunk_size,
+                            position,
+                            distribution[i][0],
                         )
                         res.append(f"{dst}.limb{i} = ({terms}) & {mask}ull;")
                     elif self.mcr.settings.platform in {"neon", "avx2"}:
@@ -267,11 +269,11 @@ class FunctionCodeGenerator:
                             f"{dst}.limb{i} = "
                             + self.mcr.compile_vector_literal(
                                 "("
-                                + "|".join(
-                                    self._load_shift_expr(
-                                        src, chunk_size, position, by, shift
-                                    )
-                                    for by, shift in distribution[i][j]
+                                + self._load_terms(
+                                    src,
+                                    chunk_size,
+                                    position,
+                                    distribution[i][j],
                                 )
                                 + f") & {mask}ull"
                                 for j in range(lanes)
@@ -360,6 +362,20 @@ class FunctionCodeGenerator:
             case _:
                 # return f"// {insn.insn_name}..."
                 raise NotImplementedError(f"{insn!r}")
+
+    def _load_terms(
+        self,
+        src: str,
+        chunk_size: int,
+        position: str,
+        distribution: list[tuple[int, int]],
+    ) -> str:
+        if not distribution:
+            return "0ull"
+        return "|".join(
+            self._load_shift_expr(src, chunk_size, position, by, shift)
+            for by, shift in distribution
+        )
 
     def _compile_select(
         self,
