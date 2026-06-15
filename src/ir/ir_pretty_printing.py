@@ -11,6 +11,7 @@ from ir.ir_nodes import (
     IRModule,
     IROperand,
     IRReturn,
+    IRStore,
     IRStatement,
     IRTemporary,
 )
@@ -23,8 +24,9 @@ def pprint_module(module: IRModule) -> str:
 
 def pprint_function(func: IRFunction) -> str:
     ctx: dict[int, str] = {}
+    keyword = "hash" if func.is_hash else "func"
     header = (
-        f"func {func.name}("
+        f"{keyword} {func.name}("
         + ", ".join(pprint_param(p) for p in func.params)
         + f") -> {func.dsl_return_type}/{func.ir_return_type} {'{'}\n"
     )
@@ -83,6 +85,8 @@ def pprint_statement(
             )
         case IRReturn(value):
             return [f"{indentation}ret {pprint_operand(value, print_ctx)}"]
+        case IRStore(value):
+            return [f"{indentation}store {pprint_operand(value, print_ctx)}"]
         case _:
             raise NotImplementedError(stmt)
 

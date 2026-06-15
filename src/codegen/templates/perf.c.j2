@@ -9,7 +9,6 @@
 {% endif %}
 
 #include "datastructures.h"
-#include "field_config.h"
 #include "{{module_name}}.h"
 
 {% if settings.platform != "avx2" %}
@@ -35,12 +34,10 @@ int main(int argc, char **argv) {
     const size_t start = atoll(argv[1]);
     const size_t stop = atoll(argv[2]);
     const size_t step = atoll(argv[3]);
-    const size_t buffer_len = stop * FIELD_CHUNK_SIZE;
-    const size_t logical_bytes = argc == 5 ? atoll(argv[4]) : buffer_len;
-    if (logical_bytes > buffer_len) {
-        fprintf(stderr, "logical-bytes must fit into stop * FIELD_CHUNK_SIZE\n");
-        return EXIT_FAILURE;
-    }
+    const size_t range_bytes = stop * FIELD_CHUNK_SIZE;
+    const size_t logical_bytes = argc == 5 ? atoll(argv[4]) : range_bytes;
+    const size_t logical_padded_bytes = ((logical_bytes + FIELD_CHUNK_SIZE - 1) / FIELD_CHUNK_SIZE) * FIELD_CHUNK_SIZE;
+    const size_t buffer_len = logical_padded_bytes > range_bytes ? logical_padded_bytes : range_bytes;
     uint8_t *message = (uint8_t *)malloc(buffer_len);
     uint8_t *key = (uint8_t *)malloc(buffer_len);
     if (!message || !key) {
@@ -61,10 +58,12 @@ int main(int argc, char **argv) {
         }
     }
     uint64_t sink = 0;
+    uint8_t output[FIELD_EXPORT_BYTES];
     for (size_t B = start; B <= stop; B += step) {
+        const size_t reported_bytes = argc == 5 ? logical_bytes : B * (size_t)FIELD_CHUNK_SIZE;
         for (size_t i = 0; i < NUM_WARMUP_ROUNDS; ++i) {
-            const bigint_t res = {{func}}(message, key, B);
-            sink ^= res.limb0;
+            {{func}}(output, key, message, reported_bytes);
+            sink ^= output[0];
         }
 
         double best_sample = 1ull << 52ull;
@@ -74,8 +73,8 @@ int main(int argc, char **argv) {
 {% else %}
             const uint64_t start = nanos();
 {% endif %}
-            const bigint_t res = {{func}}(message, key, B);
-            sink ^= res.limb0;
+            {{func}}(output, key, message, reported_bytes);
+            sink ^= output[0];
 {% if settings.platform == "avx2" %}
             const double sample = (double)stop_tsc(start);
 {% else %}
@@ -84,8 +83,7 @@ int main(int argc, char **argv) {
 {% endif %}
             best_sample = sample < best_sample ? sample : best_sample;
         }
-        const size_t reported_bytes = argc == 5 ? logical_bytes : B * (size_t)FIELD_CHUNK_SIZE;
-        printf("{\"module\":\"{{module_name}}\",\"function\":\"{{func}}\",\"B\":%zu,\"cycles\":%.0f,\"bytes\":%zu}\n", B, best_sample, reported_bytes);
+        printf("{\"module\":\"{{module_name}}\",\"function\":\"{{func}}\",\"field_pi\":%zu,\"field_theta\":%zu,\"B\":%zu,\"cycles\":%.0f,\"bytes\":%zu}\n", (size_t)FIELD_PI, (size_t)FIELD_THETA, B, best_sample, reported_bytes);
 
     }
 

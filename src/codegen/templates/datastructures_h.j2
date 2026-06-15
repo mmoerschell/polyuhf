@@ -15,6 +15,15 @@ typedef struct {
 {%endfor%}
 } bigint_t;
 
+#define FIELD_PI {{ settings.field.pi }}ull
+#define FIELD_THETA {{ settings.field.theta }}ull
+#define FIELD_LAMBDA {{ settings.lambda_ }}ull
+#define FIELD_LAMBDA_PRIME {{ settings.lambda_prime }}ull
+#define FIELD_LIMBS {{ settings.limbs }}ull
+#define FIELD_CHUNK_SIZE {{ settings.field.chunk_size() }}ull
+#define FIELD_EXPORT_BYTES {{ n_bytes }}ull
+#define FIELD_PRIME_HEX "{{ settings.field.prime_as_hex() }}"
+
 {% if settings.lanes %}
 typedef struct {
 {% for i in range(settings.limbs) %}    {{ vector_type }} limb{{i}};
@@ -23,6 +32,10 @@ typedef struct {
 {% endif %}
 
 void export_{{ n_bytes }}_bytes(uint8_t* dst, const bigint_t* src);
+
+static inline void export_field_bytes(uint8_t *dst, const bigint_t *src) {
+    export_{{ n_bytes }}_bytes(dst, src);
+}
 
 #ifdef __cplusplus
 }

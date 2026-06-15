@@ -1,4 +1,5 @@
 from itertools import chain
+import re
 
 import sympy as sp
 
@@ -42,13 +43,33 @@ class ASTBuilder(PolyUHFVisitor):
 
     # Visit a parse tree produced by PolyUHFParser#function.
     def visitFunction(self, ctx: PolyUHFParser.FunctionContext):  # noqa: N802
+        return self.visitChildren(ctx)
+
+    def visitHash_function(self, ctx: PolyUHFParser.Hash_functionContext):  # noqa: N802
+        name = ctx.IDENTIFIER().getText()
+        assert isinstance(name, str)
+        params = self.visit(ctx.hash_params())
+        body = self.visit(ctx.expr())
+        return ASTFunction(name, params, self.settings.field, body, True)
+
+    def visitHash_params(self, ctx: PolyUHFParser.Hash_paramsContext):  # noqa: N802
+        names = [tok.getText() for tok in ctx.IDENTIFIER()]
+        return [
+            (names[0], Buffer()),
+            (names[1], Buffer()),
+            (names[2], Index()),
+        ]
+
+    def visitHelper_function(  # noqa: N802
+        self, ctx: PolyUHFParser.Helper_functionContext
+    ):
         name = ctx.IDENTIFIER().getText()
         assert isinstance(name, str)
         param_groups = [self.visit(param_group) for param_group in ctx.param_group()]
         params: list[tuple[str, DSLType]] = list(chain.from_iterable(param_groups))
-        return_type = self.visit(ctx.ttype())
+        return_type = self.visit(ctx.helper_return_type())
         body = self.visit(ctx.expr())
-        return ASTFunction(name, params, return_type, body)
+        return ASTFunction(name, params, return_type, body, False)
 
     # Visit a parse tree produced by PolyUHFParser#param_group.
     def visitParam_group(self, ctx: PolyUHFParser.Param_groupContext):  # noqa: N802
@@ -63,6 +84,14 @@ class ASTBuilder(PolyUHFVisitor):
         if ctx.BUFFER():
             return Buffer()
         elif ctx.FIELDELEMENT():
+            return self.settings.field
+        elif ctx.INDEX():
+            return Index()
+        else:
+            raise NotImplementedError(ctx)
+
+    def visitHelper_return_type(self, ctx: PolyUHFParser.Helper_return_typeContext):  # noqa: N802
+        if ctx.FIELDELEMENT():
             return self.settings.field
         elif ctx.INDEX():
             return Index()
@@ -199,9 +228,18 @@ class ASTBuilder(PolyUHFVisitor):
         if len(expressions) != 4:
             raise DSLParseError("malformed reduction expression")
         start, stop, step, body = [self.visit(e) for e in expressions]
+        bound_text = (
+            f"(({expressions[1].getText()})-({expressions[0].getText()}))"
+            f"/({expressions[2].getText()})"
+        )
+        symbols = {
+            name: sp.Symbol(name)
+            for name in set(re.findall(r"[A-Za-z][A-Za-z0-9_]*", bound_text))
+        }
         bound = sp.simplify(
             sp.parse_expr(
-                f"(({expressions[1].getText()})-({expressions[0].getText()}))/({expressions[2].getText()})"
+                bound_text,
+                local_dict=symbols,
             )
         )
         # print(f"Loop bound is {bound}")

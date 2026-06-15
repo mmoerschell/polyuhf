@@ -10,7 +10,7 @@
 
 using namespace boost::multiprecision;
 
-#include "field_config.h"
+#include "datastructures.h"
 #include "load_store.h"
 
 static const cpp_int prime(FIELD_PRIME_HEX);

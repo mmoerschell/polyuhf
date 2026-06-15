@@ -16,6 +16,7 @@ from ir.ir_nodes import (
     IRModule,
     IROperand,
     IRReturn,
+    IRStore,
     IRStatement,
     IRTemporary,
 )
@@ -87,7 +88,10 @@ class IRFunctionBuilder:
                 # where 2^pi - theta <= x < 2^pi once at the end
                 IRInstruction(False, ret_val, "full_reduction", (ret_val,))
             )
-        statements.append(IRReturn(ret_val))
+        if self.function.is_hash:
+            statements.append(IRStore(ret_val))
+        else:
+            statements.append(IRReturn(ret_val))
         return IRFunction(
             self.function.name,
             [
@@ -98,6 +102,7 @@ class IRFunctionBuilder:
             ret_val,
             self.function.return_type,
             compile_dsl_type(self.function.return_type, False),
+            self.function.is_hash,
         )
 
     def compile_expr(  # noqa: C901

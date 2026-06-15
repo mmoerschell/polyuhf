@@ -17,6 +17,7 @@ from ir.ir_nodes import (
     IROperand,
     IRReturn,
     IRStatement,
+    IRStore,
     IRTemporary,
 )
 from settings import Settings
@@ -36,6 +37,14 @@ class FunctionCodeGenerator:
         self.temporaries: dict[int, str] = {}  # id(IRTemporary) -> C name
 
     def generate_signature(self) -> str:
+        if self.func.is_hash:
+            key = self.func.params[0].name
+            message = self.func.params[1].name
+            return (
+                f"void {self.func.name}"
+                f"(uint8_t* output, uint8_t* {key}, uint8_t* {message}, "
+                "size_t buffer_length)"
+            )
         param_names: list[str] = []
         param_ctypes: list[str] = []
         for p in self.func.params:
@@ -54,8 +63,8 @@ class FunctionCodeGenerator:
             else "void"
         )
         return (
-            f"{self.mcr.compile_ir_type(self.func.ir_return_type)} {self.func.name}"
-            f"({args_c})"
+            f"{self.mcr.compile_ir_type(self.func.ir_return_type)} "
+            f"{self.func.name}({args_c})"
         )
 
     def generate_definition(self, func: IRFunction, c_signature: str) -> str:
@@ -67,6 +76,12 @@ class FunctionCodeGenerator:
                 f"const {self.mcr.compile_vector_type()} vlambda_prime_mask = "
                 f"{self.mcr.compile_vector_splat(self.mcr.settings.lambda_prime_mask)};",
             ]
+        if self.func.is_hash:
+            len_name = self.func.params[2].name
+            lines.append(
+                f"const uint64_t {len_name} = "
+                "(buffer_length + FIELD_CHUNK_SIZE - 1) / FIELD_CHUNK_SIZE;"
+            )
         for s in self.func.body:
             text = self._compile_statement(s)
             lines.append(text)
@@ -108,6 +123,15 @@ class FunctionCodeGenerator:
                 )
             case IRReturn(value):
                 return f"return {self._compile_operand(value)};"
+            case IRStore(value):
+                return self.mcr.get_template("store").render(
+                    {
+                        "dst": "output",
+                        "src": self._compile_operand(value),
+                        "settings": self.mcr.settings,
+                        "n_bytes": (self.mcr.settings.field.pi + 7) // 8,
+                    }
+                )
 
     def _compile_instruction(self, insn: IRInstruction) -> str:  # noqa: C901
         optional_ctype = f"{self.mcr.compile_ir_type(insn.result.ir_type)} "
@@ -487,17 +511,15 @@ class ModuleCodeGenerator:
         perf_function_names: list[str] = []
         for func in self.module.funcs:
             fgen = FunctionCodeGenerator(self, func)
-            signature = fgen.generate_signature()
-            declarations.append(f"{signature};")
-            definitions.append(fgen.generate_definition(func, signature))
-            # Check whether function can be perfed
-            if (
-                len(func.params) == 3
-                and func.params[0].ir_type == "pod"  # key
-                and func.params[1].ir_type == "pod"  # message
-                and func.params[2].ir_type == "scalar"  # n. of blocks
-            ):
+            if func.is_hash:
+                signature = fgen.generate_signature()
+                declarations.append(f"{signature};")
+                definitions.append(fgen.generate_definition(func, signature))
                 perf_function_names.append(func.name)
+            else:
+                signature = fgen.generate_signature()
+                declarations.append(f"{signature};")
+                definitions.append(fgen.generate_definition(func, signature))
 
         context = {
             "declarations": declarations,
@@ -518,11 +540,11 @@ class ModuleCodeGenerator:
             self.get_template("perf.c").render(
                 {
                     "module_name": self.module.name,
-                    "func": self.module.funcs[0].name,
+                    "func": perf_function_names[0],
                     "settings": self.settings,
                 }
             )
-            if self.perf
+            if self.perf and perf_function_names
             else None
         )
 

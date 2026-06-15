@@ -60,7 +60,12 @@ class IRReturn:
     value: IROperand
 
 
-IRStatement = IRInstruction | IRLoop | IRIfElse | IRReturn
+@dataclass(frozen=True)
+class IRStore:
+    value: IROperand
+
+
+IRStatement = IRInstruction | IRLoop | IRIfElse | IRReturn | IRStore
 
 
 @dataclass(frozen=True)
@@ -68,6 +73,7 @@ class IRFunctionSignature:
     name: str
     params: tuple[tuple[str, IRType], ...]
     return_type: IRType
+    is_hash: bool
 
 
 @dataclass(frozen=True)
@@ -78,6 +84,7 @@ class IRFunction:
     return_value: IROperand
     dsl_return_type: DSLType
     ir_return_type: IRType
+    is_hash: bool
 
 
 @dataclass(frozen=True)

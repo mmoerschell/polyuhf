@@ -19,8 +19,28 @@ class PolyUHFVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by PolyUHFParser#hash_function.
+    def visitHash_function(self, ctx:PolyUHFParser.Hash_functionContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#hash_params.
+    def visitHash_params(self, ctx:PolyUHFParser.Hash_paramsContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#helper_function.
+    def visitHelper_function(self, ctx:PolyUHFParser.Helper_functionContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by PolyUHFParser#param_group.
     def visitParam_group(self, ctx:PolyUHFParser.Param_groupContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by PolyUHFParser#helper_return_type.
+    def visitHelper_return_type(self, ctx:PolyUHFParser.Helper_return_typeContext):
         return self.visitChildren(ctx)
 
 

@@ -64,22 +64,14 @@ class BoostCppTestEmitter:
         ]
 
         for func in module.functions:
-            if (
-                len(func.params) == 3
-                and isinstance(func.params[0][1], Buffer)
-                and isinstance(func.params[1][1], Buffer)
-                and isinstance(func.params[2][1], Index)
-                and isinstance(func.return_type, PrimeField)
-            ):
-                # only test functions that have signature message, key, B -> FE
-                code.append(self.visit(func))
+            code.append(self.visit(func, emit_test=func.is_hash))
 
         return "\n".join(code)
 
-    def visit(self, node: ASTNode) -> str:
+    def visit(self, node: ASTNode, **kwargs: object) -> str:
         method_name = f"visit_{type(node).__name__}"
         visitor = getattr(self, method_name, self.generic_visit)
-        return visitor(node)
+        return visitor(node, **kwargs)
 
     def generic_visit(self, node: ASTNode) -> str:
         raise NotImplementedError(f"No C++ emission defined for {type(node).__name__}")
@@ -171,7 +163,7 @@ class BoostCppTestEmitter:
 
     # ---------- Functions ----------
 
-    def visit_ASTFunction(self, node: ASTFunction) -> str:
+    def visit_ASTFunction(self, node: ASTFunction, emit_test: bool = False) -> str:
         params: list[str] = []
         for name, ttype in node.params:
             cpp_type = self._to_cpp_type(ttype)
@@ -185,5 +177,7 @@ class BoostCppTestEmitter:
                 "body_str": self.visit(node.body),
                 "settings": self.settings,
                 "B_max": self.max_B,
+                "emit_test": emit_test,
+                "return_is_field": isinstance(node.return_type, PrimeField),
             }
         )

@@ -138,35 +138,3 @@ def load_experiment_config(path: str | Path) -> ExperimentConfig:
         module_dir,
         extension,
     )
-
-
-def render_field_config_header(settings: Settings) -> str:
-    export_bytes = (settings.field.pi + 7) // 8
-    prime_hex = settings.field.prime_as_hex()
-    return f"""#pragma once
-
-#include <stddef.h>
-#include <stdint.h>
-
-#include "datastructures.h"
-
-#define FIELD_PI {settings.field.pi}ull
-#define FIELD_THETA {settings.field.theta}ull
-#define FIELD_LAMBDA {settings.lambda_}ull
-#define FIELD_LAMBDA_PRIME {settings.lambda_prime}ull
-#define FIELD_LIMBS {settings.limbs}ull
-#define FIELD_CHUNK_SIZE {settings.field.chunk_size()}ull
-#define FIELD_EXPORT_BYTES {export_bytes}ull
-#define FIELD_PRIME_HEX "{prime_hex}"
-
-static inline void export_field_bytes(uint8_t *dst, const bigint_t *src) {{
-    export_{export_bytes}_bytes(dst, src);
-}}
-"""
-
-
-def write_field_config_header(output_dir: str | Path, settings: Settings) -> Path:
-    output_path = Path(output_dir) / "field_config.h"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(render_field_config_header(settings), encoding="utf-8")
-    return output_path

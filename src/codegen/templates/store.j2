@@ -1,0 +1,4 @@
+{% for i in range(n_bytes - 1) %}{{ dst }}[{{ i }}]
+    = (uint8_t)({{ src }}.limb{{ 8 * i // settings.lambda_ }} >> ({{ 8 * i % settings.lambda_ }}))
+    {% if 8 * i // settings.lambda_ + 1 < settings.limbs %} | (uint8_t)({{ src }}.limb{{ 8 * i // settings.lambda_ + 1}} << ({{ settings.lambda_ - (8 * i % settings.lambda_ )}})){% endif %};
+{% endfor %}{{ dst }}[{{ n_bytes - 1 }}] = (uint8_t)({{ src }}.limb{{ 8 * (n_bytes - 1) // settings.lambda_ }} >> {{ 8 * (n_bytes - 1) % settings.lambda_ }});

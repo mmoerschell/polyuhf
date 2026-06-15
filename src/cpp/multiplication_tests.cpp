@@ -7,7 +7,7 @@
 #include <boost/test/data/test_case.hpp>
 #include <boost/test/unit_test.hpp>
 
-#include "field_config.h"
+#include "datastructures.h"
 #include "squareto1.h"
 
 using namespace boost::multiprecision;

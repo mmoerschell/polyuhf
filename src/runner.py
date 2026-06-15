@@ -16,7 +16,6 @@ from config import (
     ExperimentConfig,
     load_experiment_config,
     module_name_from_path,
-    write_field_config_header,
 )
 
 AnalysisResult = tuple[object, object, object]
@@ -62,7 +61,6 @@ def generate(
     if out_dir.exists():
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
-    write_field_config_header(out_dir, config.settings)
 
     flags = compile_flags(out_dir, True, perf, verbose, show_ir, format_output)
     analyses: AnalysisByModule = {}

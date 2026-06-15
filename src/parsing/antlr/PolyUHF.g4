@@ -7,11 +7,29 @@ module
     ;
 
 function
-    : FUNCTION IDENTIFIER '(' (param_group ( ',' param_group )*)? ')' ttype '{' expr '}'
+    : hash_function
+    | helper_function
+    ;
+
+hash_function
+    : HASH IDENTIFIER '(' hash_params ')' '{' expr '}'
+    ;
+
+hash_params
+    : IDENTIFIER BUFFER ',' IDENTIFIER BUFFER ',' IDENTIFIER INDEX
+    ;
+
+helper_function
+    : FUNCTION IDENTIFIER '(' (param_group ( ',' param_group )*)? ')' helper_return_type '{' expr '}'
     ;
 
 param_group
     : IDENTIFIER ( ',' IDENTIFIER )* ttype
+    ;
+
+helper_return_type
+    : FIELDELEMENT
+    | INDEX
     ;
 
 ttype
@@ -64,6 +82,7 @@ primary
 // Lexer rules
 
 FUNCTION    : 'func' ;
+HASH        : 'hash' ;
 IF          : 'if' ;
 NCTIF       : 'nctif' ;
 ELSE        : 'else' ;

@@ -38,12 +38,14 @@ class DSLFunctionSignature:
     name: str
     params: tuple[tuple[str, DSLType], ...]
     return_type: DSLType
+    is_hash: bool
 
 
 @dataclass(frozen=True)
 class Context:
     globals: dict[str, DSLFunctionSignature]
     locals: dict[str, DSLType]
+    current_is_hash: bool
 
 
 class Typechecker:
@@ -59,11 +61,13 @@ class Typechecker:
         ):
             raise ValueError("Duplicate function names.")
         function_signatures = {
-            f.name: DSLFunctionSignature(f.name, tuple(f.params), f.return_type)
+            f.name: DSLFunctionSignature(
+                f.name, tuple(f.params), f.return_type, f.is_hash
+            )
             for f in module.functions
         }
         for func in module.functions:
-            ctx = Context(function_signatures, {})
+            ctx = Context(function_signatures, {}, func.is_hash)
             for name, ttype in func.params:
                 ctx.locals[name] = ttype
             actual = self._typecheck_expr(func.body, ctx)
@@ -113,6 +117,10 @@ class Typechecker:
                 if func_name not in ctx.globals:
                     raise ValueError(f"Call to undefined function {func_name}")
                 signature = ctx.globals[func_name]
+                if signature.is_hash:
+                    raise ValueError(
+                        f"hash function '{func_name}' cannot be called as an expression"
+                    )
                 # Check number of arguments
                 if len(args) != len(signature.params):
                     raise ValueError(

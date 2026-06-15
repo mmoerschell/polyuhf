@@ -91,6 +91,7 @@ class ASTFunction(ASTNode):
     params: list[tuple[str, DSLType]]
     return_type: DSLType
     body: ASTExpr
+    is_hash: bool = False
 
 
 @dataclass

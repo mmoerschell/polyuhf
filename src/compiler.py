@@ -18,7 +18,6 @@ from codegen.formatter import tidy_and_format_c
 from config import (
     load_experiment_config,
     module_name_from_path,
-    write_field_config_header,
 )
 from ir.ir_builder import IRModuleBuilder
 from ir.ir_pretty_printing import pprint_module
@@ -127,15 +126,6 @@ def compile_string(  # noqa: C901
             written_files.append(output_path)
             if flags.verbose:
                 print(f'[{Fore.GREEN}+{Style.RESET_ALL}] Wrote code to "{output_path}"')
-
-        # Write field config header
-        field_config_path = write_field_config_header(output_dir, settings)
-        written_files.append(field_config_path)
-        if flags.verbose:
-            print(
-                f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote field config to "
-                f'"{field_config_path}"'
-            )
 
         # Formatter
         if flags.format:

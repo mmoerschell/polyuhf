@@ -1,5 +1,5 @@
-func nmh(message, key buffer, B index) fieldelement {
-    +[i,0:B:2]{(message[i] + key[i]) * (message[i+1] + key[i+1])}
+hash nmh(key buffer, message buffer, len index) {
+    +[i,0:len:2]{(message[i] + key[i]) * (message[i+1] + key[i+1])}
 }
 
 /* TODO odd(B)*M_B */

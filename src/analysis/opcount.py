@@ -8,6 +8,7 @@ from ir.ir_nodes import (
     IRModule,
     IRReturn,
     IRStatement,
+    IRStore,
     IRTemporary,
 )
 from settings import Settings
@@ -102,6 +103,8 @@ def per_statement(
             return (then_ops + else_ops) / 2, (then_traffic + else_traffic) / 2
         case IRReturn():
             return 0, 0
+        case IRStore():
+            return 0, (settings.field.pi + 7) // 8
 
 
 def per_statement_list(
@@ -125,7 +128,8 @@ def opcount_and_traffic(
     candidate_functions = list(
         filter(
             lambda f: (
-                len(f.params) == 3
+                f.is_hash
+                and len(f.params) == 3
                 and f.params[0].ir_type == "pod"  # key
                 and f.params[1].ir_type == "pod"  # message
                 and f.params[2].ir_type == "scalar"  # n. of blocks

@@ -2,32 +2,37 @@
     const boost::multiprecision::cpp_int prime("{{ settings.field.prime_as_hex() }}");
     auto load_from_buffer  = [&](const uint8_t* buffer, const size_t position)-> boost::multiprecision::cpp_int {
         boost::multiprecision::cpp_int res(0);
-        boost::multiprecision::import_bits(res, &buffer[{{ settings.field.chunk_size() }} * position], &buffer[{{ settings.field.chunk_size() }} * (position + 1)], 8, false);
+        boost::multiprecision::import_bits(res, &buffer[FIELD_CHUNK_SIZE * position], &buffer[FIELD_CHUNK_SIZE * (position + 1)], 8, false);
         return res;
     };
+    {% if return_is_field %}
     return ({{ body_str }}) % prime;
+    {% else %}
+    return {{ body_str }};
+    {% endif %}
 }
 
-
+{% if emit_test %}
 BOOST_DATA_TEST_CASE(Automatic_{{function_name}}_Tests, boost::unit_test::data::xrange({{ B_max }}), i) {
     std::mt19937 rng(42 + i); // deterministic per test case
     std::uniform_int_distribution<uint8_t> dist(0, 255);
 
     const size_t B = i + 1;     // number of blocks
-    std::vector<uint8_t> message(B * {{ settings.field.chunk_size() }}); // message
-    std::vector<uint8_t> key(B * {{ settings.field.chunk_size() }}); // key
+    const size_t byte_len = B * FIELD_CHUNK_SIZE;
+    std::vector<uint8_t> message(byte_len); // message
+    std::vector<uint8_t> key(byte_len); // key
     for (auto &x : message)
         x = dist(rng);{# x = 255 #}
     for (auto &x : key)
         x = dist(rng);{# x = 255 #}
 
     // Computations
-    const auto act_value = {{function_name}}(message.data(), key.data(), B);
-    const auto ref_value = {{function_name}}_reference(message.data(), key.data(), B);
-    std::array<uint8_t, {{ settings.field.chunk_size() + 1 }}> act_bytes{}, ref_bytes{};
-    export_{{ settings.field.chunk_size() + 1 }}_bytes(act_bytes.data(), &act_value);
+    std::array<uint8_t, FIELD_EXPORT_BYTES> act_bytes{}, ref_bytes{};
+    {{function_name}}(act_bytes.data(), key.data(), message.data(), byte_len);
+    const auto ref_value = {{function_name}}_reference(key.data(), message.data(), B);
     export_bits(ref_value, ref_bytes.begin(), 8, false);
 
     BOOST_CHECK_EQUAL_COLLECTIONS(act_bytes.cbegin(), act_bytes.cend(),
                                   ref_bytes.cbegin(), ref_bytes.cend());
 }
+{% endif %}

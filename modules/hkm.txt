@@ -1,11 +1,15 @@
-func hkm(r, M buffer, B index) fieldelement {
-    nctif B == 1 {
-        r[0] + M[0]
+func hkm_rec(key, message buffer, len index) fieldelement {
+    nctif len == 1 {
+        key[0] + message[0]
     } else {
-        hkm(r, r, 2 * (B / 2) - 1) *
-        (r[B/2] + M[2 * (B / 2) - 1]) + // paper is 1-indexed
-        nctif B % 2 {
-            M[B - 1] // paper is 1-indexed
+        hkm_rec(key, key, 2 * (len / 2) - 1) *
+        (key[len/2] + message[2 * (len / 2) - 1]) + // paper is 1-indexed
+        nctif len % 2 {
+            message[len - 1] // paper is 1-indexed
         }
     }
+}
+
+hash hkm(key buffer, message buffer, len index) {
+    hkm_rec(key, message, len)
 }
