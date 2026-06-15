@@ -2,22 +2,30 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+{% if settings.platform == "avx2" %}
+#include "tsc_x86.h"
+{% else %}
 #include <time.h>
+{% endif %}
 
 #include "datastructures.h"
 #include "field_config.h"
 #include "{{module_name}}.h"
 
+{% if settings.platform != "avx2" %}
 #define PROC_FREQUENCY {{ settings.target.frequency_ghz }}
+{% endif %}
 #define SEED {{ settings.target.perf_seed }}
 #define NUM_WARMUP_ROUNDS {{ settings.target.perf_warmup_rounds }}
 #define NUM_MEASURE_ROUNDS {{ settings.target.perf_measure_rounds }}
 
+{% if settings.platform != "avx2" %}
 static uint64_t nanos(void) {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
     return (uint64_t)ts.tv_sec * 1e9 + ts.tv_nsec;
 }
+{% endif %}
 
 int main(int argc, char **argv) {
     if (argc != 4 && argc != 5) {
@@ -39,6 +47,9 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Could not allocate message or key buffer. Arguments too large?\n");
         return EXIT_FAILURE;
     }
+{% if settings.platform == "avx2" %}
+    init_tsc();
+{% endif %}
     srand(SEED);
     for (size_t i = 0; i < buffer_len; ++i) {
         if (i < logical_bytes) {
@@ -56,15 +67,25 @@ int main(int argc, char **argv) {
             sink ^= res.limb0;
         }
 
-        const uint64_t start = nanos();
+        double best_sample = 1ull << 52ull;
         for (size_t i = 0; i < NUM_MEASURE_ROUNDS; ++i) {
+{% if settings.platform == "avx2" %}
+            const TIMESTAMP start = start_tsc();
+{% else %}
+            const uint64_t start = nanos();
+{% endif %}
             const bigint_t res = {{func}}(message, key, B);
             sink ^= res.limb0;
+{% if settings.platform == "avx2" %}
+            const double sample = (double)stop_tsc(start);
+{% else %}
+            const uint64_t end = nanos();
+            const double sample = (double)(end - start) * PROC_FREQUENCY;
+{% endif %}
+            best_sample = sample < best_sample ? sample : best_sample;
         }
-        const uint64_t end = nanos();
-        const double sample = (double)(end - start) / NUM_MEASURE_ROUNDS * PROC_FREQUENCY;
         const size_t reported_bytes = argc == 5 ? logical_bytes : B * (size_t)FIELD_CHUNK_SIZE;
-        printf("{\"module\":\"{{module_name}}\",\"function\":\"{{func}}\",\"B\":%zu,\"cycles\":%.0f,\"bytes\":%zu}\n", B, sample, reported_bytes);
+        printf("{\"module\":\"{{module_name}}\",\"function\":\"{{func}}\",\"B\":%zu,\"cycles\":%.0f,\"bytes\":%zu}\n", B, best_sample, reported_bytes);
 
     }
 

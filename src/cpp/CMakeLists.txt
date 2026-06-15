@@ -86,6 +86,7 @@ foreach(PERF_SOURCE ${GENERATED_PERF_SOURCES})
             -Wno-format-zero-length
         )
         if(GENERATED_DATASTRUCTURES_H MATCHES "immintrin\\.h")
+            target_sources("${PERF_STEM}" PRIVATE tsc_x86.c)
             target_compile_options("${PERF_STEM}" PRIVATE -mavx2)
         endif()
     endif()
