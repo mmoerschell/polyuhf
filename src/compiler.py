@@ -15,10 +15,6 @@ from analysis.opcount import opcount_and_traffic
 from automatic_tests.boost_cpp_emitter import BoostCppTestEmitter
 from codegen.code_generator import ModuleCodeGenerator
 from codegen.formatter import tidy_and_format_c
-from config import (
-    load_experiment_config,
-    module_name_from_path,
-)
 from ir.ir_builder import IRModuleBuilder
 from ir.ir_pretty_printing import pprint_module
 from parsing.antlr.PolyUHFLexer import PolyUHFLexer
@@ -38,7 +34,7 @@ class BailErrorListener(ErrorListener):
 def compile_string(  # noqa: C901
     text: str, flags: argparse.Namespace, module_name: str, settings: Settings
 ):
-    output_dir = Path(getattr(flags, "output_dir", "build/manual/generated"))
+    output_dir = Path(getattr(flags, "output_dir", "build"))
     output_dir.mkdir(parents=True, exist_ok=True)
     input_stream = InputStream(text)
 
@@ -136,7 +132,7 @@ def compile_string(  # noqa: C901
 
         # Automatic tests
         if flags.automatic_tests:
-            emitter = BoostCppTestEmitter(module_name, settings, settings.tests.max_B)
+            emitter = BoostCppTestEmitter(module_name, settings, 16000)  # TODO
             cpp_source = emitter.generate(ast)
             tests_cpp_path = output_dir / f"{module_name}_autotests.cpp"
             with open(tests_cpp_path, "w") as f:
@@ -201,12 +197,20 @@ if __name__ == "__main__":
         default="build/manual/generated",
         help="Directory for generated C/C++ files",
     )
-    cli.add_argument("--config", "-c", required=True, help="TOML experiment config")
+    cli.add_argument("pi", type=int, help="Pi")
+    cli.add_argument("theta", type=int, help="Theta")
+    cli.add_argument("platform", type=str, help="NEON/AVX2")
+    cli.add_argument(
+        "--karatsuba", "-k", action="store_true", help="Use Karatsuba multiplication"
+    )
+    cli.add_argument("unroll", type=int, help="Unrolling factor")
     flags = cli.parse_args()
 
     # Extract progam name from path
-    module_name = module_name_from_path(flags.input_file)
-    settings = load_experiment_config(flags.config).settings
+    module_name = Path(flags.input_file).stem
+    settings = Settings(
+        flags.pi, flags.theta, flags.platform, flags.karatsuba, flags.unroll
+    )
 
     # Compile
     module = compile_file(flags.input_file, module_name, flags, settings)
