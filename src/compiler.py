@@ -85,15 +85,15 @@ def compile_string(  # noqa: C901
 
         # Opcount & memory traffic
         if flags.analysis:
-            ops_and_traffic_per_function = opcount_and_traffic(ir, settings)
-            if not ops_and_traffic_per_function:
+            ops_and_traffic = opcount_and_traffic(ir, settings)
+            if not ops_and_traffic:
                 if flags.verbose:
                     print(
                         f"[{Fore.YELLOW}x{Style.RESET_ALL}] Ops/traffic "
                         f"analysis impossible for {module_name}"
                     )
             else:
-                ops, traffic, _ = ops_and_traffic_per_function
+                ops, traffic, _ = ops_and_traffic
                 if flags.verbose:
                     print(
                         f"[{Fore.BLUE}i{Style.RESET_ALL}] "
@@ -101,11 +101,11 @@ def compile_string(  # noqa: C901
                         f"and {traffic} bytes of memory traffic"
                     )
         else:
-            ops_and_traffic_per_function = None
+            ops_and_traffic = None
 
         # Codegen (pretty-printing & algorithms)
         generate_perf = bool(
-            ops_and_traffic_per_function is not None
+            ops_and_traffic is not None
             and getattr(flags, "generate_perf", flags.analysis)
         )
         gen = ModuleCodeGenerator(ir, settings, generate_perf)
@@ -157,7 +157,7 @@ def compile_string(  # noqa: C901
                         f' to "{tests_cpp_path}"'
                     )
 
-        return ops_and_traffic_per_function
+        return ops_and_traffic
 
     except NotImplementedError as e:
         raise e

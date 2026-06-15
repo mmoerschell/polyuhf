@@ -20,14 +20,19 @@ static uint64_t nanos(void) {
 }
 
 int main(int argc, char **argv) {
-    if (argc != 4) {
-        fprintf(stderr, "Usage: %s <start> <stop> <step>\nboth ends inclusive, and where each parameter represents a number of blocks\n", argv[0]);
+    if (argc != 4 && argc != 5) {
+        fprintf(stderr, "Usage: %s <start> <stop> <step> [logical-bytes]\nboth ends inclusive, and where each range parameter represents a number of blocks\n", argv[0]);
         return EXIT_FAILURE;
     }
     const size_t start = atoll(argv[1]);
     const size_t stop = atoll(argv[2]);
     const size_t step = atoll(argv[3]);
     const size_t buffer_len = stop * FIELD_CHUNK_SIZE;
+    const size_t logical_bytes = argc == 5 ? atoll(argv[4]) : buffer_len;
+    if (logical_bytes > buffer_len) {
+        fprintf(stderr, "logical-bytes must fit into stop * FIELD_CHUNK_SIZE\n");
+        return EXIT_FAILURE;
+    }
     uint8_t *message = (uint8_t *)malloc(buffer_len);
     uint8_t *key = (uint8_t *)malloc(buffer_len);
     if (!message || !key) {
@@ -36,16 +41,16 @@ int main(int argc, char **argv) {
     }
     srand(SEED);
     for (size_t i = 0; i < buffer_len; ++i) {
-        message[i] = rand() & 255u;
-        key[i] = rand() & 255u;
+        if (i < logical_bytes) {
+            message[i] = rand() & 255u;
+            key[i] = rand() & 255u;
+        } else {
+            message[i] = 0;
+            key[i] = 0;
+        }
     }
     uint64_t sink = 0;
     for (size_t B = start; B <= stop; B += step) {
-        if (B & 7ll) {
-            fprintf(stderr, "B must be a multiple of 8\n");
-            return EXIT_FAILURE;
-        }
-        
         for (size_t i = 0; i < NUM_WARMUP_ROUNDS; ++i) {
             const bigint_t res = {{func}}(message, key, B);
             sink ^= res.limb0;
@@ -58,7 +63,8 @@ int main(int argc, char **argv) {
         }
         const uint64_t end = nanos();
         const double sample = (double)(end - start) / NUM_MEASURE_ROUNDS * PROC_FREQUENCY;
-        printf("{\"module\":\"{{module_name}}\",\"function\":\"{{func}}\",\"B\":%zu,\"cycles\":%.0f,\"bytes\":%zu}\n", B, sample, B * (size_t)FIELD_CHUNK_SIZE);
+        const size_t reported_bytes = argc == 5 ? logical_bytes : B * (size_t)FIELD_CHUNK_SIZE;
+        printf("{\"module\":\"{{module_name}}\",\"function\":\"{{func}}\",\"B\":%zu,\"cycles\":%.0f,\"bytes\":%zu}\n", B, sample, reported_bytes);
 
     }
 

@@ -40,13 +40,13 @@ def compile_flags(
     format_output: bool,
 ) -> Namespace:
     return Namespace(
+        output_dir=output_dir,
         verbose=verbose,
         show_ir=show_ir,
+        analysis=perf,
         format=format_output,
         automatic_tests=autotests,
-        analysis=perf,
         generate_perf=perf,
-        output_dir=output_dir,
     )
 
 
@@ -124,6 +124,7 @@ def run_bench(
     stop: int,
     step: int,
     module: str | None,
+    logical_bytes: int | None = None,
 ) -> list[dict[str, object]]:
     samples: list[dict[str, object]] = []
     perf_bins = sorted(build_dir.glob("*_perf"))
@@ -133,8 +134,11 @@ def run_bench(
         raise RuntimeError("No perf binaries were generated")
 
     for binary in perf_bins:
+        command = [str(binary), str(start), str(stop), str(step)]
+        if logical_bytes is not None:
+            command.append(str(logical_bytes))
         result = subprocess.run(
-            [str(binary), str(start), str(stop), str(step)],
+            command,
             check=True,
             capture_output=True,
             text=True,
@@ -214,6 +218,31 @@ def graph_samples(
     return written
 
 
+def graph_field_sweep_samples(
+    samples: list[dict[str, object]],
+    output_dir: Path,
+    show: bool,
+) -> list[Path]:
+    os.environ.setdefault(
+        "MPLCONFIGDIR",
+        str(Path(tempfile.gettempdir()) / "polyuhf-matplotlib"),
+    )
+    os.environ.setdefault("MPLBACKEND", "Agg")
+    from analysis.graphs import field_sweep_cycles_per_byte_plot
+
+    grouped: dict[str, list[dict[str, object]]] = {}
+    for sample in samples:
+        module = str(sample["module"])
+        grouped.setdefault(module, []).append(sample)
+
+    written: list[Path] = []
+    for module, module_samples in grouped.items():
+        path = output_dir / f"{module}_field_sweep_cycles_per_byte.png"
+        field_sweep_cycles_per_byte_plot(module, module_samples, path, show)
+        written.append(path)
+    return written
+
+
 def bench_range(
     args: argparse.Namespace, config: ExperimentConfig
 ) -> tuple[int, int, int]:
@@ -224,7 +253,9 @@ def bench_range(
     )
 
 
-def load_config(args: argparse.Namespace) -> ExperimentConfig:
+def require_config(args: argparse.Namespace) -> ExperimentConfig:
+    if not args.config:
+        raise SystemExit("--config is required for this command")
     return load_experiment_config(args.config)
 
 
@@ -234,9 +265,41 @@ def build_from_args(
     return build(config, build_root, args.verbose, args.show_ir, args.format)
 
 
+def run_field_sweep(
+    config_paths: list[str],
+    build_root: Path,
+    logical_bytes: int,
+    module: str | None,
+    verbose: bool,
+    show_ir: bool,
+    format_output: bool,
+) -> list[dict[str, object]]:
+    samples: list[dict[str, object]] = []
+    for config_path in config_paths:
+        config = load_experiment_config(config_path)
+        build_dir, _ = build(config, build_root, verbose, show_ir, format_output)
+        chunk_size = config.settings.field.chunk_size()
+        blocks = (logical_bytes + chunk_size - 1) // chunk_size
+        padded_bytes = blocks * chunk_size
+        for sample in run_bench(build_dir, blocks, blocks, 1, module, logical_bytes):
+            sample.update(
+                {
+                    "config": str(config_path),
+                    "field_pi": config.settings.field.pi,
+                    "field_theta": config.settings.field.theta,
+                    "chunk_size": chunk_size,
+                    "B": blocks,
+                    "bytes": logical_bytes,
+                    "padded_bytes": padded_bytes,
+                }
+            )
+            samples.append(sample)
+    return samples
+
+
 def main(argv: list[str] | None = None) -> int:
     cli = argparse.ArgumentParser(description="PolyUHF unified build/test/bench runner")
-    cli.add_argument("--config", "-c", required=True, help="TOML experiment config")
+    cli.add_argument("--config", "-c", help="TOML experiment config")
     cli.add_argument(
         "--verbose",
         "-v",
@@ -279,34 +342,73 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Show matplotlib windows",
     )
+    field_sweep_parser = sub.add_parser(
+        "field-sweep",
+        help="Benchmark multiple field configs at a fixed logical byte length",
+    )
+    field_sweep_parser.add_argument(
+        "configs",
+        nargs="+",
+        help="Self-contained TOML configs to build and benchmark",
+    )
+    field_sweep_parser.add_argument(
+        "--bytes",
+        type=int,
+        default=25_000,
+        help="Logical input byte length used for cycles/byte",
+    )
+    field_sweep_parser.add_argument(
+        "--module",
+        help="Only run one module's perf binary",
+    )
+    field_sweep_parser.add_argument(
+        "--graph",
+        action="store_true",
+        help="Write field-sweep cycles/byte graphs",
+    )
+    field_sweep_parser.add_argument(
+        "--output-dir",
+        default="graphs",
+        help="Directory for generated field-sweep graph PNG files",
+    )
+    field_sweep_parser.add_argument(
+        "--show",
+        action="store_true",
+        help="Show matplotlib windows",
+    )
 
     args = cli.parse_args(argv)
-    config = load_config(args)
     build_root = Path(args.build_root)
 
     if args.command == "generate":
+        config = require_config(args)
         out_dir, _ = generate(
             config, build_root, True, args.verbose, args.show_ir, args.format
         )
         print(out_dir)
     elif args.command == "build":
+        config = require_config(args)
         build_dir, _ = build_from_args(config, build_root, args)
         print(build_dir)
     elif args.command == "test":
+        config = require_config(args)
         build_dir, _ = build_from_args(config, build_root, args)
         run_correctness(build_dir)
     elif args.command == "bench":
+        config = require_config(args)
         build_dir, _ = build_from_args(config, build_root, args)
         start, stop, step = bench_range(args, config)
         for sample in run_bench(build_dir, start, stop, step, args.module):
             print(json.dumps(sample, sort_keys=True))
     elif args.command == "run-all":
+        config = require_config(args)
         build_dir, _ = build_from_args(config, build_root, args)
         run_correctness(build_dir)
         start, stop, step = bench_range(args, config)
         for sample in run_bench(build_dir, start, stop, step, args.module):
             print(json.dumps(sample, sort_keys=True))
     elif args.command == "graph":
+        config = require_config(args)
         build_dir, analyses = build_from_args(config, build_root, args)
         start, stop, step = bench_range(args, config)
         samples = run_bench(build_dir, start, stop, step, args.module)
@@ -314,6 +416,23 @@ def main(argv: list[str] | None = None) -> int:
             samples, analyses, config, Path(args.output_dir), args.show
         ):
             print(path)
+    elif args.command == "field-sweep":
+        samples = run_field_sweep(
+            args.configs,
+            build_root,
+            args.bytes,
+            args.module,
+            args.verbose,
+            args.show_ir,
+            args.format,
+        )
+        for sample in samples:
+            print(json.dumps(sample, sort_keys=True))
+        if args.graph:
+            for path in graph_field_sweep_samples(
+                samples, Path(args.output_dir), args.show
+            ):
+                print(path)
     else:
         raise AssertionError(f"Unknown command {args.command}")
     return 0

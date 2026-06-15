@@ -69,10 +69,6 @@ def module_name_from_path(path: str | Path) -> str:
     return module_name
 
 
-def default_modules() -> tuple[Path, ...]:
-    return discover_modules(Path("modules"), ".txt")
-
-
 def discover_modules(directory: str | Path, extension: str) -> tuple[Path, ...]:
     module_dir = Path(directory)
     suffix = extension if extension.startswith(".") else f".{extension}"

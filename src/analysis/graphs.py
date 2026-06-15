@@ -96,6 +96,44 @@ def cycles_per_byte_plot(
     plt.close()
 
 
+def field_sweep_cycles_per_byte_plot(
+    module: str,
+    samples: list[dict[str, object]],
+    output_path: Path | None = None,
+    show: bool = False,
+) -> None:
+    samples = sorted(
+        samples,
+        key=lambda sample: (
+            int(sample["field_pi"]),
+            int(sample["field_theta"]),
+            str(sample["config"]),
+        ),
+    )
+    labels = [
+        f"p{sample['field_pi']}-t{sample['field_theta']}" for sample in samples
+    ]
+    x = np.arange(len(samples))
+    cycles_per_byte = np.array(
+        [float(sample["cycles"]) / float(sample["bytes"]) for sample in samples]
+    )
+
+    plt.figure(figsize=(8, 6))
+    plt.plot(x, cycles_per_byte, marker="o")
+    plt.xticks(x, labels, rotation=30, ha="right")
+    plt.xlabel("Field")
+    plt.ylabel("Cycles / Byte")
+    plt.title(f"Field sweep for {module}")
+    plt.grid(True, axis="y", alpha=0.3)
+    plt.tight_layout()
+    if output_path:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(output_path, dpi=600)
+    if show:
+        plt.show()
+    plt.close()
+
+
 def graphs(
     name: str,
     data_B: list[float],  # noqa: N803
