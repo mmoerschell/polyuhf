@@ -21,7 +21,13 @@ class Settings:
     carry_propagate_limbs: int
 
     def __init__(
-        self, pi: int, theta: int, platform: str, karatsuba: bool, unrolling_factor: int
+        self,
+        pi: int,
+        theta: int,
+        vectorize: bool,
+        platform: str,
+        karatsuba: bool,
+        unrolling_factor: int,
     ) -> None:
         match platform:
             case "avx2":
@@ -29,8 +35,8 @@ class Settings:
                     pi,
                     theta,
                     64,
-                    64,
-                    4,
+                    64 if vectorize else None,
+                    4 if vectorize else None,
                     "avx2",
                     "karatsuba" if karatsuba else "schoolbook",
                     unrolling_factor,
@@ -41,8 +47,8 @@ class Settings:
                     pi,
                     theta,
                     64,
-                    64,
-                    2,
+                    64 if vectorize else None,
+                    2 if vectorize else None,
                     "neon",
                     "karatsuba" if karatsuba else "schoolbook",
                     unrolling_factor,

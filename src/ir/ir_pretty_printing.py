@@ -11,8 +11,8 @@ from ir.ir_nodes import (
     IRModule,
     IROperand,
     IRReturn,
-    IRStore,
     IRStatement,
+    IRStore,
     IRTemporary,
 )
 

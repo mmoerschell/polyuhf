@@ -1,5 +1,5 @@
-from itertools import chain
 import re
+from itertools import chain
 
 import sympy as sp
 

@@ -2,10 +2,11 @@
 set -euo pipefail
 
 MODULE="mmh"
+PLATFORM="neon"
 UNROLLING_FACTOR="2"
 BUILD_ROOT="build/fieldsweep"
 MESSAGE_LENGTH=24000
-OUTPUT_FILE="data.csv"
+OUTPUT_FILE=fieldsweep/"$MODULE"_"$PLATFORM"_data.csv
 
 mkdir -p $BUILD_ROOT
 
@@ -53,27 +54,25 @@ fields=(
   "379 19"
 )
 
-modes=(
-  "scalar"
-  "schoolbook"
-  "karatsuba"
+modes_flags=(
+  "scalar_schoolbook"
+  "scalar_karatsuba -k"
+  "vector_schoolbook -v"
+  "vector_karatsuba -vk"
 )
 
-printf "pi,theta,setup,cycles\n" > $OUTPUT_FILE
+printf "pi,theta,mode,cycles\n" > $OUTPUT_FILE
 
 for field in "${fields[@]}"; do
   read -r pi theta <<< "$field"
   echo "FIELD $pi $theta"
-  for mode in "${modes[@]}"; do
-    # Mul algo
-    if [[ "$mode" == "karatsuba" ]]; then
-        mul_algo_flag="-k"
-    else
-        mul_algo_flag=""
-    fi
-
+  for m_f in "${modes_flags[@]}"; do
+    mode=""
+    flags=""
+    read -r mode flags <<< "$m_f"
+    
     # DSL compiler
-    ./compiler $mul_algo_flag -a -o $BUILD_ROOT/generated modules/$MODULE.txt $pi $theta neon $UNROLLING_FACTOR
+    ./compiler $flags -qa -o $BUILD_ROOT/generated modules/$MODULE.txt $pi $theta $PLATFORM $UNROLLING_FACTOR
 
     # CMake generate
     cmake --log-level=ERROR -S src/cpp/performance -B $BUILD_ROOT/cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DGENERATED_DIR=$BUILD_ROOT/generated -DPERF_MODULE=$MODULE -DCMAKE_BUILD_TYPE=Release -Wno-dev >/dev/null

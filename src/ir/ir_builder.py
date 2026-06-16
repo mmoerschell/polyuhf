@@ -16,8 +16,8 @@ from ir.ir_nodes import (
     IRModule,
     IROperand,
     IRReturn,
-    IRStore,
     IRStatement,
+    IRStore,
     IRTemporary,
 )
 from parsing.ast.ast_nodes import (

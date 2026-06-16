@@ -52,7 +52,7 @@ def compile_string(  # noqa: C901
         # Parse tree
         parse_tree = parser.module()  # first rule to apply
         # print(parse_tree.toStringTree(recog=parser))
-        if flags.verbose:
+        if not flags.quiet:
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Parsing")
 
         # Abstract Syntax tree
@@ -61,19 +61,19 @@ def compile_string(  # noqa: C901
         assert ast, "AST generation failed"
         assert isinstance(ast, ASTModule), "AST root should be a module"
         # pprint(ast)
-        if flags.verbose:
+        if not flags.quiet:
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] AST")
 
         # Type-checking
         tc = Typechecker(settings)
         signatures = tc.typecheck_module(ast)
         # pprint(ast)
-        if flags.verbose:
+        if not flags.quiet:
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Type-checking")
 
         ir_builder = IRModuleBuilder(ast, module_name, signatures, settings)
         ir = ir_builder.compile()
-        if flags.verbose:
+        if not flags.quiet:
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Intermediate Representation")
         if flags.show_ir:
             print(pprint_module(ir))
@@ -82,14 +82,14 @@ def compile_string(  # noqa: C901
         if flags.analysis:
             ops_and_traffic = opcount_and_traffic(ir, settings)
             if not ops_and_traffic:
-                if flags.verbose:
+                if not flags.quiet:
                     print(
                         f"[{Fore.YELLOW}x{Style.RESET_ALL}] Ops/traffic "
                         f"analysis impossible for {module_name}"
                     )
             else:
                 ops, traffic, _ = ops_and_traffic
-                if flags.verbose:
+                if not flags.quiet:
                     print(
                         f"[{Fore.BLUE}i{Style.RESET_ALL}] "
                         f"{ir.funcs[0].name} has {ops} ops "
@@ -105,7 +105,7 @@ def compile_string(  # noqa: C901
         )
         gen = ModuleCodeGenerator(ir, settings, generate_perf)
         header, source, datastructures_h, datastructures_s, perf = gen.compile()
-        if flags.verbose:
+        if not flags.quiet:
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
 
         # Write code to files
@@ -120,14 +120,14 @@ def compile_string(  # noqa: C901
             with open(output_path, "w") as code_output:
                 code_output.write(contents)
             written_files.append(output_path)
-            if flags.verbose:
+            if not flags.quiet:
                 print(f'[{Fore.GREEN}+{Style.RESET_ALL}] Wrote code to "{output_path}"')
 
         # Formatter
         if flags.format:
             for output_path in written_files:
                 tidy_and_format_c(output_path)
-            if flags.verbose:
+            if not flags.quiet:
                 print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Optional formatting")
 
         # Automatic tests
@@ -137,7 +137,7 @@ def compile_string(  # noqa: C901
             tests_cpp_path = output_dir / f"{module_name}_autotests.cpp"
             with open(tests_cpp_path, "w") as f:
                 f.write(cpp_source)
-                if flags.verbose:
+                if not flags.quiet:
                     print(
                         f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote autotests"
                         f' to "{tests_cpp_path}"'
@@ -161,7 +161,7 @@ def compile_file(
 ):
 
     # For debugging
-    if flags.verbose:
+    if not flags.quiet:
         print(f"[{Fore.BLUE}i{Style.RESET_ALL}] Compiling '{path}'")
 
     with open(path, mode="r", encoding="utf-8") as f:
@@ -174,7 +174,13 @@ if __name__ == "__main__":
     # CL arguments
     cli = argparse.ArgumentParser(description="DSL Compiler")
     cli.add_argument("input_file", type=str, help="input file")
-    cli.add_argument("--verbose", "-v", action="store_true", help="Verbose")
+    cli.add_argument(
+        "--vectorize",
+        "-v",
+        action="store_true",
+        help="Vectorize big integer operations",
+    )
+    cli.add_argument("--quiet", "-q", action="store_true", help="Only report errors")
     cli.add_argument("--show-ir", "-i", action="store_true", help="Show IR")
     cli.add_argument(
         "--format", "-f", action="store_true", help="Format using clang-tidy"
@@ -209,7 +215,12 @@ if __name__ == "__main__":
     # Extract progam name from path
     module_name = Path(flags.input_file).stem
     settings = Settings(
-        flags.pi, flags.theta, flags.platform, flags.karatsuba, flags.unroll
+        flags.pi,
+        flags.theta,
+        flags.vectorize,
+        flags.platform,
+        flags.karatsuba,
+        flags.unroll,
     )
 
     # Compile
