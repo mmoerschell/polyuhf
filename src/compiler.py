@@ -24,6 +24,8 @@ from parsing.ast.ast_nodes import ASTModule
 from settings import Settings
 from typechecker import Typechecker, TypeCheckingError
 
+GENERATED_DIR = Path("src/cpp/generated")
+
 
 class BailErrorListener(ErrorListener):
     # Raises an exception if anything goes south
@@ -34,8 +36,7 @@ class BailErrorListener(ErrorListener):
 def compile_string(  # noqa: C901
     text: str, flags: argparse.Namespace, module_name: str, settings: Settings
 ):
-    output_dir = Path(getattr(flags, "output_dir", "build"))
-    output_dir.mkdir(parents=True, exist_ok=True)
+    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
     input_stream = InputStream(text)
 
     lexer = PolyUHFLexer(input_stream)
@@ -116,7 +117,7 @@ def compile_string(  # noqa: C901
             ("datastructures", "h", datastructures_h),
             ("datastructures", "c", datastructures_s),
         ] + ([(f"{module_name}_perf", "c", perf)] if perf else []):
-            output_path = output_dir / f"{name}.{ext}"
+            output_path = GENERATED_DIR / f"{name}.{ext}"
             with open(output_path, "w") as code_output:
                 code_output.write(contents)
             written_files.append(output_path)
@@ -134,12 +135,12 @@ def compile_string(  # noqa: C901
         if flags.automatic_tests:
             emitter = BoostCppTestEmitter(module_name, settings, flags.test_size)
             cpp_source = emitter.generate(ast)
-            tests_cpp_path = output_dir / f"{module_name}_autotests.cpp"
+            tests_cpp_path = GENERATED_DIR / f"{module_name}_autotests.cpp"
             with open(tests_cpp_path, "w") as f:
                 f.write(cpp_source)
                 if not flags.quiet:
                     print(
-                        f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote autotests"
+                        f"[{Fore.GREEN}+{Style.RESET_ALL}] Wrote code"
                         f' to "{tests_cpp_path}"'
                     )
 
@@ -152,8 +153,6 @@ def compile_string(  # noqa: C901
             f"[{Fore.RED}-{Style.RESET_ALL}] Compilation error: {e}",
             file=sys.stderr,
         )
-        raise e
-        exit(1)
 
 
 def compile_file(
@@ -198,15 +197,9 @@ if __name__ == "__main__":
         help="Generate opcount metadata and perf harness when possible",
     )
     cli.add_argument(
-        "--output-dir",
-        "-o",
-        default="build/manual/generated",
-        help="Directory for generated C/C++ files",
-    )
-    cli.add_argument(
         "--test-size",
         type=int,
-        default=16000,
+        default=100,
         help="Number of generated Boost data cases for automatic tests",
     )
     cli.add_argument(

@@ -11,12 +11,11 @@
 
 #include <openssl/evp.h>
 
-#include "datastructures.h"
-#include "poly1305.h"
+#include "generated/datastructures.h"
+#include "generated/poly1305.h"
 
-namespace {
 
-std::array<uint8_t, 16> openssl_poly1305(const std::array<uint8_t, 32> &key,
+std::array<uint8_t, 16> openssl_reference_poly1305(const std::array<uint8_t, 32> &key,
                                          const std::vector<uint8_t> &message) {
     std::array<uint8_t, 16> tag{};
     size_t out_len = 0;
@@ -38,7 +37,6 @@ std::array<uint8_t, 16> openssl_poly1305(const std::array<uint8_t, 32> &key,
     return tag;
 }
 
-} // namespace
 
 BOOST_DATA_TEST_CASE(RandomPoly1305Tests, boost::unit_test::data::xrange(1000), i) {
     static_assert(FIELD_PI == 130);
@@ -63,7 +61,7 @@ BOOST_DATA_TEST_CASE(RandomPoly1305Tests, boost::unit_test::data::xrange(1000), 
     key[8] &= 252;
     key[12] &= 252;
 
-    const auto expected = openssl_poly1305(key, message);
+    const auto expected = openssl_reference_poly1305(key, message);
     std::array<uint8_t, FIELD_EXPORT_BYTES> actual{};
 
     poly1305(actual.data(), key.data(), const_cast<uint8_t *>(message.data()),
