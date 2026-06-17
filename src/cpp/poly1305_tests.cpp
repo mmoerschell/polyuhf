@@ -14,9 +14,9 @@
 #include "generated/datastructures.h"
 #include "generated/poly1305.h"
 
-
-std::array<uint8_t, 16> openssl_reference_poly1305(const std::array<uint8_t, 32> &key,
-                                         const std::vector<uint8_t> &message) {
+std::array<uint8_t, 16>
+openssl_reference_poly1305(const std::array<uint8_t, 32> &key,
+                           const std::vector<uint8_t> &message) {
     std::array<uint8_t, 16> tag{};
     size_t out_len = 0;
 
@@ -37,8 +37,8 @@ std::array<uint8_t, 16> openssl_reference_poly1305(const std::array<uint8_t, 32>
     return tag;
 }
 
-
-BOOST_DATA_TEST_CASE(RandomPoly1305Tests, boost::unit_test::data::xrange(1000), i) {
+BOOST_DATA_TEST_CASE(RandomPoly1305Tests, boost::unit_test::data::xrange(1000),
+                     i) {
     static_assert(FIELD_PI == 130);
     static_assert(FIELD_THETA == 5);
     static_assert(FIELD_CHUNK_SIZE == 16);
@@ -46,9 +46,11 @@ BOOST_DATA_TEST_CASE(RandomPoly1305Tests, boost::unit_test::data::xrange(1000), 
     std::mt19937 rng(42 + i); // deterministic per test case
     std::uniform_int_distribution<uint8_t> dist(0, 255);
     std::vector<uint8_t> message(16 * (i + 1)); // message
-    std::array<uint8_t, 32> key{}; // key
+    std::array<uint8_t, 32> key{};              // key
     for (auto &x : message)
         x = dist(rng);
+    // Set s = 0 because it works in a different field and without modular
+    // reduction
     for (auto it = key.begin(); it < key.begin() + 16; ++it)
         *it = dist(rng);
 
@@ -67,6 +69,7 @@ BOOST_DATA_TEST_CASE(RandomPoly1305Tests, boost::unit_test::data::xrange(1000), 
     poly1305(actual.data(), key.data(), const_cast<uint8_t *>(message.data()),
              message.size());
 
-    BOOST_CHECK_EQUAL_COLLECTIONS(actual.cbegin(), actual.cbegin() + expected.size(),
+    BOOST_CHECK_EQUAL_COLLECTIONS(actual.cbegin(),
+                                  actual.cbegin() + expected.size(),
                                   expected.cbegin(), expected.cend());
 }

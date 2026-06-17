@@ -33,9 +33,7 @@ class Settings:
         limb_realignment: str = "partial",
     ) -> None:
         if limb_realignment not in {"partial", "full"}:
-            raise ValueError(
-                "limb_realignment must be either 'partial' or 'full'"
-            )
+            raise ValueError("limb_realignment must be either 'partial' or 'full'")
         match platform:
             case "avx2":
                 self.configure(
@@ -89,7 +87,9 @@ class Settings:
         self.unrolling_factor = unrolling_factor
         self.carry_propagate_limbs = carry_propagate_limbs
         self.limb_realignment = limb_realignment
-        self.full_reduction_passes = 4 if limb_realignment == "full" else 2
+        self.full_reduction_passes = (
+            4 if limb_realignment == "full" else 2
+        )  # TODO good ol heuristic
         if self.lanes:
             assert self.lanes > 1
         # Autotune lambda

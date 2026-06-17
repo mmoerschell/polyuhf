@@ -35,14 +35,12 @@ if(CORRECTNESS)
         little_endian_hex.cpp
         generated/${MODULE_NAME}.c
         generated/datastructures.c
-        # TODO put autotests back in
+        generated/${MODULE_NAME}_autotests.cpp
     )
     # Manual tests
     if("${MODULE_NAME}" STREQUAL "poly1305")
         message(STATUS "Including manual Poly1305 tests")
         list(APPEND CORRECTNESS_SOURCES poly1305_tests.cpp)
-    else()
-        list(APPEND CORRECTNESS_SOURCES generated/${MODULE_NAME}_autotests.cpp)
     endif()
 
     # TODO: HKM test

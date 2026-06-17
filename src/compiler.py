@@ -199,7 +199,7 @@ if __name__ == "__main__":
     cli.add_argument(
         "--test-size",
         type=int,
-        default=100,
+        default=500,
         help="Number of generated Boost data cases for automatic tests",
     )
     cli.add_argument(

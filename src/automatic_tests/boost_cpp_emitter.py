@@ -6,6 +6,7 @@ from parsing.ast.ast_builder import (
     ASTCall,
     ASTComparison,
     ASTFunction,
+    ASTHornerReduction,
     ASTIfElse,
     ASTInt,
     ASTLeftFold,
@@ -153,6 +154,37 @@ class BoostCppTestEmitter:
             f"{ind1}for(int64_t {node.var} = {start}; {node.var} < {stop}; "
             f"{node.var} += {step}) {{\n"
             f"{ind2}_acc = (_acc + {body}) % prime;\n"
+            f"{ind1}}}\n"
+            f"{ind1}return _acc;\n"
+            f"{ind_base}}}()"
+        )
+
+    def visit_ASTHornerReduction(self, node: ASTHornerReduction) -> str:  # noqa: N802
+        assert node.ttype
+        acc_type = self._to_cpp_type(node.ttype)
+
+        start = self.visit(node.start)
+        stop = self.visit(node.stop)
+        step = self.visit(node.step)
+        r = self.visit(node.r)
+
+        self.indent_level += 1
+        ind1 = self._indent()
+        self.indent_level += 1
+        ind2 = self._indent()
+
+        body = self.visit(node.body)
+
+        self.indent_level -= 2
+        ind_base = self._indent()
+
+        return (
+            f"[&]() -> {acc_type} {{\n"
+            f"{ind1}const {acc_type} _r = ({r}) % prime;\n"
+            f"{ind1}{acc_type} _acc = {acc_type}(\"0\");\n"
+            f"{ind1}for(int64_t {node.var} = {start}; {node.var} < {stop}; "
+            f"{node.var} += {step}) {{\n"
+            f"{ind2}_acc = (_r * (_acc + {body})) % prime;\n"
             f"{ind1}}}\n"
             f"{ind1}return _acc;\n"
             f"{ind_base}}}()"
