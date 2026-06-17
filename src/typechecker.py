@@ -1,4 +1,3 @@
-import copy
 import itertools
 from dataclasses import dataclass
 
@@ -9,14 +8,16 @@ from parsing.ast.ast_nodes import (
     ASTComparison,
     ASTExpr,
     ASTFunction,
+    ASTHornerReduction,
     ASTIfElse,
     ASTInt,
+    ASTLeftFold,
     ASTLocalIdentifier,
     ASTModule,
-    ASTReduction,
+    ASTSum,
 )
 from settings import Settings
-from typesystem import Buffer, DSLType, Index
+from typesystem import Buffer, DSLType, Index, PrimeField
 
 
 @dataclass
@@ -145,14 +146,47 @@ class Typechecker:
                 if index_type != Index():
                     raise TypeCheckingError(None, index, Index(), index_type)
                 expr.ttype = self.settings.field
-            case ASTReduction(_, _, var, start, stop, step, body):
+            case ASTSum(_, var, start, stop, step, body):
                 for expr_ in [start, stop, step]:
                     ttype = self._typecheck_expr(expr_, ctx)
                     if ttype != Index():
                         raise TypeCheckingError(None, expr_, Index(), ttype)
-                ctx_ = copy.copy(ctx)
+                ctx_ = Context(ctx.globals, dict(ctx.locals), ctx.current_is_hash)
                 ctx_.locals[var] = Index()  # Shadowing
                 expr.ttype = self._typecheck_expr(body, ctx_)
+            case ASTHornerReduction(_, var, start, stop, step, r, body):
+                for expr_ in [start, stop, step]:
+                    ttype = self._typecheck_expr(expr_, ctx)
+                    if ttype != Index():
+                        raise TypeCheckingError(None, expr_, Index(), ttype)
+                rtype = self._typecheck_expr(r, ctx)
+                if not isinstance(rtype, PrimeField):
+                    raise TypeCheckingError(None, r, self.settings.field, rtype)
+                ctx_ = Context(ctx.globals, dict(ctx.locals), ctx.current_is_hash)
+                ctx_.locals[var] = Index()  # Shadowing
+                body_type = self._typecheck_expr(body, ctx_)
+                if body_type != rtype:
+                    raise TypeCheckingError(None, body, rtype, body_type)
+                expr.ttype = rtype
+            case ASTLeftFold(_, var, start, stop, step, acc_var, init, body):
+                if var == acc_var:
+                    raise ValueError(
+                        "foldl index variable and accumulator variable must differ"
+                    )
+                for expr_ in [start, stop, step]:
+                    ttype = self._typecheck_expr(expr_, ctx)
+                    if ttype != Index():
+                        raise TypeCheckingError(None, expr_, Index(), ttype)
+                init_type = self._typecheck_expr(init, ctx)
+                if isinstance(init_type, Buffer):
+                    raise TypeError("foldl accumulator cannot have buffer type")
+                ctx_ = Context(ctx.globals, dict(ctx.locals), ctx.current_is_hash)
+                ctx_.locals[var] = Index()  # Shadowing
+                ctx_.locals[acc_var] = init_type  # Shadowing
+                body_type = self._typecheck_expr(body, ctx_)
+                if body_type != init_type:
+                    raise TypeCheckingError(None, body, init_type, body_type)
+                expr.ttype = init_type
             case _:
                 raise NotImplementedError(f"{expr!r}")
         assert expr.ttype

@@ -76,13 +76,19 @@ primary
     | IDENTIFIER '(' (expr (',' expr)*)? ')'                                    # CallExpr
     | IDENTIFIER '[' expr ']'                                                   # BufferViewReadExpr
     | IDENTIFIER                                                                # IdentifierExpression
-    | op=('*' | '+') '[' IDENTIFIER ',' expr ':' expr ':' expr ']' '{' expr '}' # ReductionExpr
+    | SUM '[' IDENTIFIER ',' expr ':' expr ':' expr ']' '{' expr '}'            # SumReductionExpr
+    | HORNER '[' IDENTIFIER ',' expr ':' expr ':' expr ',' expr ']' '{' expr '}' # HornerReductionExpr
+    | FOLDL '[' IDENTIFIER ',' expr ':' expr ':' expr ',' IDENTIFIER '=' expr ']'
+        '{' expr '}'                                                            # LeftFoldExpr
     ;
 
 // Lexer rules
 
 FUNCTION    : 'func' ;
 HASH        : 'hash' ;
+HORNER      : 'horner' ;
+FOLDL       : 'foldl' ;
+SUM         : 'sum' ;
 IF          : 'if' ;
 NCTIF       : 'nctif' ;
 ELSE        : 'else' ;

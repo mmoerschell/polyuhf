@@ -41,6 +41,12 @@ endif()
 if(EXISTS "${GENERATED_DIR}/squareto1.h")
     list(APPEND MANUAL_TEST_SOURCES "${POLYUHF_CPP_DIR}/multiplication_tests.cpp")
 endif()
+if(EXISTS "${GENERATED_DIR}/poly1305.h")
+    list(APPEND MANUAL_TEST_SOURCES "${POLYUHF_CPP_DIR}/poly1305_tests.cpp")
+endif()
+if(EXISTS "${GENERATED_DIR}/hkm.h" AND EXISTS "${GENERATED_DIR}/hkm_iter.h")
+    list(APPEND MANUAL_TEST_SOURCES "${POLYUHF_CPP_DIR}/hkm_tests.cpp")
+endif()
 
 add_executable(correctness
     "${POLYUHF_CPP_DIR}/main.cpp"

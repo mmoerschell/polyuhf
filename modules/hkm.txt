@@ -2,7 +2,7 @@ func hkm_rec(key, message buffer, len index) fieldelement {
     nctif len == 1 {
         key[0] + message[0]
     } else {
-        hkm_rec(key, key, 2 * (len / 2) - 1) *
+        hkm_rec(key, message, 2 * (len / 2) - 1) *
         (key[len/2] + message[2 * (len / 2) - 1]) + // paper is 1-indexed
         nctif len % 2 {
             message[len - 1] // paper is 1-indexed

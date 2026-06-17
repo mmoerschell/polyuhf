@@ -1,0 +1,3 @@
+hash foldl_dummy(key buffer, message buffer, len index) {
+    foldl[i,0:len:1,acc=0 as fieldelement]{acc + key[0] + message[i]}
+}

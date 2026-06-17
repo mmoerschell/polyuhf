@@ -4,11 +4,13 @@ carry
 const
 copy
 full_reduction
+lane_powers
 load
 mul
 mul_karatsuba
 mul_schoolbook
 select
+splat
 square
 square_schoolbook
 vadd

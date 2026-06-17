@@ -10,7 +10,7 @@ else:
 
 def serializedATN():
     return [
-        4,1,35,202,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
+        4,1,39,236,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
         6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,
         2,14,7,14,2,15,7,15,1,0,4,0,34,8,0,11,0,12,0,35,1,0,1,0,1,1,1,1,
         3,1,42,8,1,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,3,1,3,1,3,1,3,1,
@@ -25,59 +25,71 @@ def serializedATN():
         15,3,15,160,8,15,1,15,1,15,1,15,3,15,165,8,15,1,15,1,15,1,15,1,15,
         1,15,5,15,172,8,15,10,15,12,15,175,9,15,3,15,177,8,15,1,15,1,15,
         1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,
-        1,15,1,15,1,15,1,15,1,15,1,15,3,15,200,8,15,1,15,0,0,16,0,2,4,6,
-        8,10,12,14,16,18,20,22,24,26,28,30,0,6,1,0,22,23,1,0,21,23,1,0,24,
-        29,1,0,6,7,1,0,8,10,2,0,6,6,8,8,208,0,33,1,0,0,0,2,41,1,0,0,0,4,
-        43,1,0,0,0,6,52,1,0,0,0,8,61,1,0,0,0,10,80,1,0,0,0,12,90,1,0,0,0,
-        14,92,1,0,0,0,16,94,1,0,0,0,18,96,1,0,0,0,20,102,1,0,0,0,22,104,
-        1,0,0,0,24,112,1,0,0,0,26,123,1,0,0,0,28,125,1,0,0,0,30,199,1,0,
-        0,0,32,34,3,2,1,0,33,32,1,0,0,0,34,35,1,0,0,0,35,33,1,0,0,0,35,36,
-        1,0,0,0,36,37,1,0,0,0,37,38,5,0,0,1,38,1,1,0,0,0,39,42,3,4,2,0,40,
-        42,3,8,4,0,41,39,1,0,0,0,41,40,1,0,0,0,42,3,1,0,0,0,43,44,5,16,0,
-        0,44,45,5,32,0,0,45,46,5,1,0,0,46,47,3,6,3,0,47,48,5,2,0,0,48,49,
-        5,3,0,0,49,50,3,16,8,0,50,51,5,4,0,0,51,5,1,0,0,0,52,53,5,32,0,0,
-        53,54,5,21,0,0,54,55,5,5,0,0,55,56,5,32,0,0,56,57,5,21,0,0,57,58,
-        5,5,0,0,58,59,5,32,0,0,59,60,5,23,0,0,60,7,1,0,0,0,61,62,5,15,0,
-        0,62,63,5,32,0,0,63,72,5,1,0,0,64,69,3,10,5,0,65,66,5,5,0,0,66,68,
-        3,10,5,0,67,65,1,0,0,0,68,71,1,0,0,0,69,67,1,0,0,0,69,70,1,0,0,0,
-        70,73,1,0,0,0,71,69,1,0,0,0,72,64,1,0,0,0,72,73,1,0,0,0,73,74,1,
-        0,0,0,74,75,5,2,0,0,75,76,3,12,6,0,76,77,5,3,0,0,77,78,3,16,8,0,
-        78,79,5,4,0,0,79,9,1,0,0,0,80,85,5,32,0,0,81,82,5,5,0,0,82,84,5,
-        32,0,0,83,81,1,0,0,0,84,87,1,0,0,0,85,83,1,0,0,0,85,86,1,0,0,0,86,
-        88,1,0,0,0,87,85,1,0,0,0,88,89,3,14,7,0,89,11,1,0,0,0,90,91,7,0,
-        0,0,91,13,1,0,0,0,92,93,7,1,0,0,93,15,1,0,0,0,94,95,3,18,9,0,95,
-        17,1,0,0,0,96,100,3,22,11,0,97,98,3,20,10,0,98,99,3,22,11,0,99,101,
-        1,0,0,0,100,97,1,0,0,0,100,101,1,0,0,0,101,19,1,0,0,0,102,103,7,
-        2,0,0,103,21,1,0,0,0,104,109,3,24,12,0,105,106,7,3,0,0,106,108,3,
-        24,12,0,107,105,1,0,0,0,108,111,1,0,0,0,109,107,1,0,0,0,109,110,
-        1,0,0,0,110,23,1,0,0,0,111,109,1,0,0,0,112,117,3,26,13,0,113,114,
-        7,4,0,0,114,116,3,26,13,0,115,113,1,0,0,0,116,119,1,0,0,0,117,115,
-        1,0,0,0,117,118,1,0,0,0,118,25,1,0,0,0,119,117,1,0,0,0,120,121,5,
-        7,0,0,121,124,3,26,13,0,122,124,3,28,14,0,123,120,1,0,0,0,123,122,
-        1,0,0,0,124,27,1,0,0,0,125,128,3,30,15,0,126,127,5,11,0,0,127,129,
-        3,28,14,0,128,126,1,0,0,0,128,129,1,0,0,0,129,29,1,0,0,0,130,131,
-        5,1,0,0,131,132,3,16,8,0,132,133,5,2,0,0,133,200,1,0,0,0,134,135,
-        5,17,0,0,135,136,3,16,8,0,136,137,5,3,0,0,137,138,3,16,8,0,138,139,
-        5,4,0,0,139,140,5,19,0,0,140,141,5,3,0,0,141,142,3,16,8,0,142,143,
-        5,4,0,0,143,200,1,0,0,0,144,145,5,18,0,0,145,146,3,16,8,0,146,147,
-        5,3,0,0,147,148,3,16,8,0,148,154,5,4,0,0,149,150,5,19,0,0,150,151,
-        5,3,0,0,151,152,3,16,8,0,152,153,5,4,0,0,153,155,1,0,0,0,154,149,
-        1,0,0,0,154,155,1,0,0,0,155,200,1,0,0,0,156,159,5,30,0,0,157,158,
-        5,20,0,0,158,160,3,14,7,0,159,157,1,0,0,0,159,160,1,0,0,0,160,200,
-        1,0,0,0,161,164,5,31,0,0,162,163,5,20,0,0,163,165,3,14,7,0,164,162,
-        1,0,0,0,164,165,1,0,0,0,165,200,1,0,0,0,166,167,5,32,0,0,167,176,
-        5,1,0,0,168,173,3,16,8,0,169,170,5,5,0,0,170,172,3,16,8,0,171,169,
-        1,0,0,0,172,175,1,0,0,0,173,171,1,0,0,0,173,174,1,0,0,0,174,177,
-        1,0,0,0,175,173,1,0,0,0,176,168,1,0,0,0,176,177,1,0,0,0,177,178,
-        1,0,0,0,178,200,5,2,0,0,179,180,5,32,0,0,180,181,5,12,0,0,181,182,
-        3,16,8,0,182,183,5,13,0,0,183,200,1,0,0,0,184,200,5,32,0,0,185,186,
-        7,5,0,0,186,187,5,12,0,0,187,188,5,32,0,0,188,189,5,5,0,0,189,190,
-        3,16,8,0,190,191,5,14,0,0,191,192,3,16,8,0,192,193,5,14,0,0,193,
-        194,3,16,8,0,194,195,5,13,0,0,195,196,5,3,0,0,196,197,3,16,8,0,197,
-        198,5,4,0,0,198,200,1,0,0,0,199,130,1,0,0,0,199,134,1,0,0,0,199,
-        144,1,0,0,0,199,156,1,0,0,0,199,161,1,0,0,0,199,166,1,0,0,0,199,
-        179,1,0,0,0,199,184,1,0,0,0,199,185,1,0,0,0,200,31,1,0,0,0,16,35,
-        41,69,72,85,100,109,117,123,128,154,159,164,173,176,199
+        1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,
+        1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,
+        1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,1,15,
+        1,15,3,15,234,8,15,1,15,0,0,16,0,2,4,6,8,10,12,14,16,18,20,22,24,
+        26,28,30,0,5,1,0,26,27,1,0,25,27,1,0,28,33,1,0,6,7,1,0,8,10,244,
+        0,33,1,0,0,0,2,41,1,0,0,0,4,43,1,0,0,0,6,52,1,0,0,0,8,61,1,0,0,0,
+        10,80,1,0,0,0,12,90,1,0,0,0,14,92,1,0,0,0,16,94,1,0,0,0,18,96,1,
+        0,0,0,20,102,1,0,0,0,22,104,1,0,0,0,24,112,1,0,0,0,26,123,1,0,0,
+        0,28,125,1,0,0,0,30,233,1,0,0,0,32,34,3,2,1,0,33,32,1,0,0,0,34,35,
+        1,0,0,0,35,33,1,0,0,0,35,36,1,0,0,0,36,37,1,0,0,0,37,38,5,0,0,1,
+        38,1,1,0,0,0,39,42,3,4,2,0,40,42,3,8,4,0,41,39,1,0,0,0,41,40,1,0,
+        0,0,42,3,1,0,0,0,43,44,5,17,0,0,44,45,5,36,0,0,45,46,5,1,0,0,46,
+        47,3,6,3,0,47,48,5,2,0,0,48,49,5,3,0,0,49,50,3,16,8,0,50,51,5,4,
+        0,0,51,5,1,0,0,0,52,53,5,36,0,0,53,54,5,25,0,0,54,55,5,5,0,0,55,
+        56,5,36,0,0,56,57,5,25,0,0,57,58,5,5,0,0,58,59,5,36,0,0,59,60,5,
+        27,0,0,60,7,1,0,0,0,61,62,5,16,0,0,62,63,5,36,0,0,63,72,5,1,0,0,
+        64,69,3,10,5,0,65,66,5,5,0,0,66,68,3,10,5,0,67,65,1,0,0,0,68,71,
+        1,0,0,0,69,67,1,0,0,0,69,70,1,0,0,0,70,73,1,0,0,0,71,69,1,0,0,0,
+        72,64,1,0,0,0,72,73,1,0,0,0,73,74,1,0,0,0,74,75,5,2,0,0,75,76,3,
+        12,6,0,76,77,5,3,0,0,77,78,3,16,8,0,78,79,5,4,0,0,79,9,1,0,0,0,80,
+        85,5,36,0,0,81,82,5,5,0,0,82,84,5,36,0,0,83,81,1,0,0,0,84,87,1,0,
+        0,0,85,83,1,0,0,0,85,86,1,0,0,0,86,88,1,0,0,0,87,85,1,0,0,0,88,89,
+        3,14,7,0,89,11,1,0,0,0,90,91,7,0,0,0,91,13,1,0,0,0,92,93,7,1,0,0,
+        93,15,1,0,0,0,94,95,3,18,9,0,95,17,1,0,0,0,96,100,3,22,11,0,97,98,
+        3,20,10,0,98,99,3,22,11,0,99,101,1,0,0,0,100,97,1,0,0,0,100,101,
+        1,0,0,0,101,19,1,0,0,0,102,103,7,2,0,0,103,21,1,0,0,0,104,109,3,
+        24,12,0,105,106,7,3,0,0,106,108,3,24,12,0,107,105,1,0,0,0,108,111,
+        1,0,0,0,109,107,1,0,0,0,109,110,1,0,0,0,110,23,1,0,0,0,111,109,1,
+        0,0,0,112,117,3,26,13,0,113,114,7,4,0,0,114,116,3,26,13,0,115,113,
+        1,0,0,0,116,119,1,0,0,0,117,115,1,0,0,0,117,118,1,0,0,0,118,25,1,
+        0,0,0,119,117,1,0,0,0,120,121,5,7,0,0,121,124,3,26,13,0,122,124,
+        3,28,14,0,123,120,1,0,0,0,123,122,1,0,0,0,124,27,1,0,0,0,125,128,
+        3,30,15,0,126,127,5,11,0,0,127,129,3,28,14,0,128,126,1,0,0,0,128,
+        129,1,0,0,0,129,29,1,0,0,0,130,131,5,1,0,0,131,132,3,16,8,0,132,
+        133,5,2,0,0,133,234,1,0,0,0,134,135,5,21,0,0,135,136,3,16,8,0,136,
+        137,5,3,0,0,137,138,3,16,8,0,138,139,5,4,0,0,139,140,5,23,0,0,140,
+        141,5,3,0,0,141,142,3,16,8,0,142,143,5,4,0,0,143,234,1,0,0,0,144,
+        145,5,22,0,0,145,146,3,16,8,0,146,147,5,3,0,0,147,148,3,16,8,0,148,
+        154,5,4,0,0,149,150,5,23,0,0,150,151,5,3,0,0,151,152,3,16,8,0,152,
+        153,5,4,0,0,153,155,1,0,0,0,154,149,1,0,0,0,154,155,1,0,0,0,155,
+        234,1,0,0,0,156,159,5,34,0,0,157,158,5,24,0,0,158,160,3,14,7,0,159,
+        157,1,0,0,0,159,160,1,0,0,0,160,234,1,0,0,0,161,164,5,35,0,0,162,
+        163,5,24,0,0,163,165,3,14,7,0,164,162,1,0,0,0,164,165,1,0,0,0,165,
+        234,1,0,0,0,166,167,5,36,0,0,167,176,5,1,0,0,168,173,3,16,8,0,169,
+        170,5,5,0,0,170,172,3,16,8,0,171,169,1,0,0,0,172,175,1,0,0,0,173,
+        171,1,0,0,0,173,174,1,0,0,0,174,177,1,0,0,0,175,173,1,0,0,0,176,
+        168,1,0,0,0,176,177,1,0,0,0,177,178,1,0,0,0,178,234,5,2,0,0,179,
+        180,5,36,0,0,180,181,5,12,0,0,181,182,3,16,8,0,182,183,5,13,0,0,
+        183,234,1,0,0,0,184,234,5,36,0,0,185,186,5,20,0,0,186,187,5,12,0,
+        0,187,188,5,36,0,0,188,189,5,5,0,0,189,190,3,16,8,0,190,191,5,14,
+        0,0,191,192,3,16,8,0,192,193,5,14,0,0,193,194,3,16,8,0,194,195,5,
+        13,0,0,195,196,5,3,0,0,196,197,3,16,8,0,197,198,5,4,0,0,198,234,
+        1,0,0,0,199,200,5,18,0,0,200,201,5,12,0,0,201,202,5,36,0,0,202,203,
+        5,5,0,0,203,204,3,16,8,0,204,205,5,14,0,0,205,206,3,16,8,0,206,207,
+        5,14,0,0,207,208,3,16,8,0,208,209,5,5,0,0,209,210,3,16,8,0,210,211,
+        5,13,0,0,211,212,5,3,0,0,212,213,3,16,8,0,213,214,5,4,0,0,214,234,
+        1,0,0,0,215,216,5,19,0,0,216,217,5,12,0,0,217,218,5,36,0,0,218,219,
+        5,5,0,0,219,220,3,16,8,0,220,221,5,14,0,0,221,222,3,16,8,0,222,223,
+        5,14,0,0,223,224,3,16,8,0,224,225,5,5,0,0,225,226,5,36,0,0,226,227,
+        5,15,0,0,227,228,3,16,8,0,228,229,5,13,0,0,229,230,5,3,0,0,230,231,
+        3,16,8,0,231,232,5,4,0,0,232,234,1,0,0,0,233,130,1,0,0,0,233,134,
+        1,0,0,0,233,144,1,0,0,0,233,156,1,0,0,0,233,161,1,0,0,0,233,166,
+        1,0,0,0,233,179,1,0,0,0,233,184,1,0,0,0,233,185,1,0,0,0,233,199,
+        1,0,0,0,233,215,1,0,0,0,234,31,1,0,0,0,16,35,41,69,72,85,100,109,
+        117,123,128,154,159,164,173,176,233
     ]
 
 class PolyUHFParser ( Parser ):
@@ -92,16 +104,17 @@ class PolyUHFParser ( Parser ):
 
     literalNames = [ "<INVALID>", "'('", "')'", "'{'", "'}'", "','", "'+'", 
                      "'-'", "'*'", "'/'", "'%'", "'**'", "'['", "']'", "':'", 
-                     "'func'", "'hash'", "'if'", "'nctif'", "'else'", "'as'", 
-                     "'buffer'", "'fieldelement'", "'index'", "'=='", "'!='", 
-                     "'<='", "'>='", "'<'", "'>'" ]
+                     "'='", "'func'", "'hash'", "'horner'", "'foldl'", "'sum'", 
+                     "'if'", "'nctif'", "'else'", "'as'", "'buffer'", "'fieldelement'", 
+                     "'index'", "'=='", "'!='", "'<='", "'>='", "'<'", "'>'" ]
 
     symbolicNames = [ "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
                       "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
-                      "<INVALID>", "<INVALID>", "<INVALID>", "FUNCTION", 
-                      "HASH", "IF", "NCTIF", "ELSE", "AS", "BUFFER", "FIELDELEMENT", 
-                      "INDEX", "EQ", "NEQ", "LE", "GE", "LT", "GT", "HEXADECIMAL", 
+                      "<INVALID>", "<INVALID>", "<INVALID>", "<INVALID>", 
+                      "FUNCTION", "HASH", "HORNER", "FOLDL", "SUM", "IF", 
+                      "NCTIF", "ELSE", "AS", "BUFFER", "FIELDELEMENT", "INDEX", 
+                      "EQ", "NEQ", "LE", "GE", "LT", "GT", "HEXADECIMAL", 
                       "DECIMAL", "IDENTIFIER", "WS", "LINE_COMMENT", "BLOCK_COMMENT" ]
 
     RULE_module = 0
@@ -141,27 +154,31 @@ class PolyUHFParser ( Parser ):
     T__11=12
     T__12=13
     T__13=14
-    FUNCTION=15
-    HASH=16
-    IF=17
-    NCTIF=18
-    ELSE=19
-    AS=20
-    BUFFER=21
-    FIELDELEMENT=22
-    INDEX=23
-    EQ=24
-    NEQ=25
-    LE=26
-    GE=27
-    LT=28
-    GT=29
-    HEXADECIMAL=30
-    DECIMAL=31
-    IDENTIFIER=32
-    WS=33
-    LINE_COMMENT=34
-    BLOCK_COMMENT=35
+    T__14=15
+    FUNCTION=16
+    HASH=17
+    HORNER=18
+    FOLDL=19
+    SUM=20
+    IF=21
+    NCTIF=22
+    ELSE=23
+    AS=24
+    BUFFER=25
+    FIELDELEMENT=26
+    INDEX=27
+    EQ=28
+    NEQ=29
+    LE=30
+    GE=31
+    LT=32
+    GT=33
+    HEXADECIMAL=34
+    DECIMAL=35
+    IDENTIFIER=36
+    WS=37
+    LINE_COMMENT=38
+    BLOCK_COMMENT=39
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
@@ -217,7 +234,7 @@ class PolyUHFParser ( Parser ):
                 self.state = 35 
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if not (_la==15 or _la==16):
+                if not (_la==16 or _la==17):
                     break
 
             self.state = 37
@@ -266,12 +283,12 @@ class PolyUHFParser ( Parser ):
             self.state = 41
             self._errHandler.sync(self)
             token = self._input.LA(1)
-            if token in [16]:
+            if token in [17]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 39
                 self.hash_function()
                 pass
-            elif token in [15]:
+            elif token in [16]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 40
                 self.helper_function()
@@ -473,7 +490,7 @@ class PolyUHFParser ( Parser ):
             self.state = 72
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if _la==32:
+            if _la==36:
                 self.state = 64
                 self.param_group()
                 self.state = 69
@@ -604,7 +621,7 @@ class PolyUHFParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 90
             _la = self._input.LA(1)
-            if not(_la==22 or _la==23):
+            if not(_la==26 or _la==27):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -655,7 +672,7 @@ class PolyUHFParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 92
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 14680064) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 234881024) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -763,7 +780,7 @@ class PolyUHFParser ( Parser ):
             self.state = 100
             self._errHandler.sync(self)
             _la = self._input.LA(1)
-            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 1056964608) != 0):
+            if (((_la) & ~0x3f) == 0 and ((1 << _la) & 16911433728) != 0):
                 self.state = 97
                 self.compOp()
                 self.state = 98
@@ -825,7 +842,7 @@ class PolyUHFParser ( Parser ):
             self.enterOuterAlt(localctx, 1)
             self.state = 102
             _la = self._input.LA(1)
-            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 1056964608) != 0)):
+            if not((((_la) & ~0x3f) == 0 and ((1 << _la) & 16911433728) != 0)):
                 self._errHandler.recoverInline(self)
             else:
                 self._errHandler.reportMatch(self)
@@ -1068,7 +1085,7 @@ class PolyUHFParser ( Parser ):
                 self.state = 121
                 self.unaryMinusExpr()
                 pass
-            elif token in [1, 6, 8, 17, 18, 30, 31, 32]:
+            elif token in [1, 18, 19, 20, 21, 22, 34, 35, 36]:
                 localctx = PolyUHFParser.UnaryAtomContext(self, localctx)
                 self.enterOuterAlt(localctx, 2)
                 self.state = 122
@@ -1194,13 +1211,14 @@ class PolyUHFParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
-    class ReductionExprContext(PrimaryContext):
+    class SumReductionExprContext(PrimaryContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a PolyUHFParser.PrimaryContext
             super().__init__(parser)
-            self.op = None # Token
             self.copyFrom(ctx)
 
+        def SUM(self):
+            return self.getToken(PolyUHFParser.SUM, 0)
         def IDENTIFIER(self):
             return self.getToken(PolyUHFParser.IDENTIFIER, 0)
         def expr(self, i:int=None):
@@ -1211,8 +1229,8 @@ class PolyUHFParser ( Parser ):
 
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitReductionExpr" ):
-                return visitor.visitReductionExpr(self)
+            if hasattr( visitor, "visitSumReductionExpr" ):
+                return visitor.visitSumReductionExpr(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -1232,6 +1250,30 @@ class PolyUHFParser ( Parser ):
         def accept(self, visitor:ParseTreeVisitor):
             if hasattr( visitor, "visitBufferViewReadExpr" ):
                 return visitor.visitBufferViewReadExpr(self)
+            else:
+                return visitor.visitChildren(self)
+
+
+    class HornerReductionExprContext(PrimaryContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a PolyUHFParser.PrimaryContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def HORNER(self):
+            return self.getToken(PolyUHFParser.HORNER, 0)
+        def IDENTIFIER(self):
+            return self.getToken(PolyUHFParser.IDENTIFIER, 0)
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(PolyUHFParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(PolyUHFParser.ExprContext,i)
+
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitHornerReductionExpr" ):
+                return visitor.visitHornerReductionExpr(self)
             else:
                 return visitor.visitChildren(self)
 
@@ -1324,6 +1366,33 @@ class PolyUHFParser ( Parser ):
                 return visitor.visitChildren(self)
 
 
+    class LeftFoldExprContext(PrimaryContext):
+
+        def __init__(self, parser, ctx:ParserRuleContext): # actually a PolyUHFParser.PrimaryContext
+            super().__init__(parser)
+            self.copyFrom(ctx)
+
+        def FOLDL(self):
+            return self.getToken(PolyUHFParser.FOLDL, 0)
+        def IDENTIFIER(self, i:int=None):
+            if i is None:
+                return self.getTokens(PolyUHFParser.IDENTIFIER)
+            else:
+                return self.getToken(PolyUHFParser.IDENTIFIER, i)
+        def expr(self, i:int=None):
+            if i is None:
+                return self.getTypedRuleContexts(PolyUHFParser.ExprContext)
+            else:
+                return self.getTypedRuleContext(PolyUHFParser.ExprContext,i)
+
+
+        def accept(self, visitor:ParseTreeVisitor):
+            if hasattr( visitor, "visitLeftFoldExpr" ):
+                return visitor.visitLeftFoldExpr(self)
+            else:
+                return visitor.visitChildren(self)
+
+
     class ParenthesesContext(PrimaryContext):
 
         def __init__(self, parser, ctx:ParserRuleContext): # actually a PolyUHFParser.PrimaryContext
@@ -1364,7 +1433,7 @@ class PolyUHFParser ( Parser ):
         self.enterRule(localctx, 30, self.RULE_primary)
         self._la = 0 # Token type
         try:
-            self.state = 199
+            self.state = 233
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,15,self._ctx)
             if la_ == 1:
@@ -1417,7 +1486,7 @@ class PolyUHFParser ( Parser ):
                 self.state = 154
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==19:
+                if _la==23:
                     self.state = 149
                     self.match(PolyUHFParser.ELSE)
                     self.state = 150
@@ -1438,7 +1507,7 @@ class PolyUHFParser ( Parser ):
                 self.state = 159
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==20:
+                if _la==24:
                     self.state = 157
                     self.match(PolyUHFParser.AS)
                     self.state = 158
@@ -1455,7 +1524,7 @@ class PolyUHFParser ( Parser ):
                 self.state = 164
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if _la==20:
+                if _la==24:
                     self.state = 162
                     self.match(PolyUHFParser.AS)
                     self.state = 163
@@ -1474,7 +1543,7 @@ class PolyUHFParser ( Parser ):
                 self.state = 176
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
-                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 7516586434) != 0):
+                if (((_la) & ~0x3f) == 0 and ((1 << _la) & 120267210882) != 0):
                     self.state = 168
                     self.expr()
                     self.state = 173
@@ -1516,16 +1585,10 @@ class PolyUHFParser ( Parser ):
                 pass
 
             elif la_ == 9:
-                localctx = PolyUHFParser.ReductionExprContext(self, localctx)
+                localctx = PolyUHFParser.SumReductionExprContext(self, localctx)
                 self.enterOuterAlt(localctx, 9)
                 self.state = 185
-                localctx.op = self._input.LT(1)
-                _la = self._input.LA(1)
-                if not(_la==6 or _la==8):
-                    localctx.op = self._errHandler.recoverInline(self)
-                else:
-                    self._errHandler.reportMatch(self)
-                    self.consume()
+                self.match(PolyUHFParser.SUM)
                 self.state = 186
                 self.match(PolyUHFParser.T__11)
                 self.state = 187
@@ -1549,6 +1612,80 @@ class PolyUHFParser ( Parser ):
                 self.state = 196
                 self.expr()
                 self.state = 197
+                self.match(PolyUHFParser.T__3)
+                pass
+
+            elif la_ == 10:
+                localctx = PolyUHFParser.HornerReductionExprContext(self, localctx)
+                self.enterOuterAlt(localctx, 10)
+                self.state = 199
+                self.match(PolyUHFParser.HORNER)
+                self.state = 200
+                self.match(PolyUHFParser.T__11)
+                self.state = 201
+                self.match(PolyUHFParser.IDENTIFIER)
+                self.state = 202
+                self.match(PolyUHFParser.T__4)
+                self.state = 203
+                self.expr()
+                self.state = 204
+                self.match(PolyUHFParser.T__13)
+                self.state = 205
+                self.expr()
+                self.state = 206
+                self.match(PolyUHFParser.T__13)
+                self.state = 207
+                self.expr()
+                self.state = 208
+                self.match(PolyUHFParser.T__4)
+                self.state = 209
+                self.expr()
+                self.state = 210
+                self.match(PolyUHFParser.T__12)
+                self.state = 211
+                self.match(PolyUHFParser.T__2)
+                self.state = 212
+                self.expr()
+                self.state = 213
+                self.match(PolyUHFParser.T__3)
+                pass
+
+            elif la_ == 11:
+                localctx = PolyUHFParser.LeftFoldExprContext(self, localctx)
+                self.enterOuterAlt(localctx, 11)
+                self.state = 215
+                self.match(PolyUHFParser.FOLDL)
+                self.state = 216
+                self.match(PolyUHFParser.T__11)
+                self.state = 217
+                self.match(PolyUHFParser.IDENTIFIER)
+                self.state = 218
+                self.match(PolyUHFParser.T__4)
+                self.state = 219
+                self.expr()
+                self.state = 220
+                self.match(PolyUHFParser.T__13)
+                self.state = 221
+                self.expr()
+                self.state = 222
+                self.match(PolyUHFParser.T__13)
+                self.state = 223
+                self.expr()
+                self.state = 224
+                self.match(PolyUHFParser.T__4)
+                self.state = 225
+                self.match(PolyUHFParser.IDENTIFIER)
+                self.state = 226
+                self.match(PolyUHFParser.T__14)
+                self.state = 227
+                self.expr()
+                self.state = 228
+                self.match(PolyUHFParser.T__12)
+                self.state = 229
+                self.match(PolyUHFParser.T__2)
+                self.state = 230
+                self.expr()
+                self.state = 231
                 self.match(PolyUHFParser.T__3)
                 pass
 

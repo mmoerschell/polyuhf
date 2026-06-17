@@ -8,9 +8,10 @@ from parsing.ast.ast_builder import (
     ASTFunction,
     ASTIfElse,
     ASTInt,
+    ASTLeftFold,
     ASTLocalIdentifier,
     ASTModule,
-    ASTReduction,
+    ASTSum,
     ASTUnaryMinus,
 )
 from parsing.ast.ast_nodes import ASTNode
@@ -126,14 +127,10 @@ class BoostCppTestEmitter:
         index = self.visit(node.index)
         return f"load_from_buffer({buffer}, {index})"
 
-    def visit_ASTReduction(self, node: ASTReduction) -> str:
+    def visit_ASTSum(self, node: ASTSum) -> str:
         assert node.ttype
         acc_type = self._to_cpp_type(node.ttype)
-
-        if isinstance(node.ttype, Index):
-            init_val = "0" if node.op == "+" else "1"
-        else:
-            init_val = f'{acc_type}("0")' if node.op == "+" else f'{acc_type}("1")'
+        init_val = "0" if isinstance(node.ttype, Index) else f'{acc_type}("0")'
 
         start = self.visit(node.start)
         stop = self.visit(node.stop)
@@ -155,9 +152,40 @@ class BoostCppTestEmitter:
             f"{ind1}{acc_type} _acc = {init_val};\n"
             f"{ind1}for(int64_t {node.var} = {start}; {node.var} < {stop}; "
             f"{node.var} += {step}) {{\n"
-            f"{ind2}_acc = (_acc {node.op} {body}) % prime;\n"
+            f"{ind2}_acc = (_acc + {body}) % prime;\n"
             f"{ind1}}}\n"
             f"{ind1}return _acc;\n"
+            f"{ind_base}}}()"
+        )
+
+    def visit_ASTLeftFold(self, node: ASTLeftFold) -> str:  # noqa: N802
+        assert node.ttype
+        acc_type = self._to_cpp_type(node.ttype)
+
+        start = self.visit(node.start)
+        stop = self.visit(node.stop)
+        step = self.visit(node.step)
+        init = self.visit(node.init)
+
+        self.indent_level += 1
+        ind1 = self._indent()
+        self.indent_level += 1
+        ind2 = self._indent()
+
+        body = self.visit(node.body)
+        update = body if isinstance(node.ttype, Index) else f"({body}) % prime"
+
+        self.indent_level -= 2
+        ind_base = self._indent()
+
+        return (
+            f"[&]() -> {acc_type} {{\n"
+            f"{ind1}{acc_type} {node.acc_var} = {init};\n"
+            f"{ind1}for(int64_t {node.var} = {start}; {node.var} < {stop}; "
+            f"{node.var} += {step}) {{\n"
+            f"{ind2}{node.acc_var} = {update};\n"
+            f"{ind1}}}\n"
+            f"{ind1}return {node.acc_var};\n"
             f"{ind_base}}}()"
         )
 

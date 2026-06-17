@@ -312,6 +312,35 @@ class FunctionCodeGenerator:
                     }
                 )
             # const
+            case IRInstruction(declare, result, "splat", (src,)):
+                assert declare, "splat should create a new temporary"
+                assert result.ir_type == "matrix"
+                dst = self._compile_operand(result)
+                return (
+                    f"{self.mcr.compile_ir_type(result.ir_type)} {dst};\n"
+                    + "\n".join(
+                        f"{dst}.limb{i} = "
+                        f"{self._compile_vector_splat_expr(limb_expr)};"
+                        for i in range(self.mcr.settings.limbs)
+                        for limb_expr in [self._field_limb_expr(src, i)]
+                    )
+                )
+            case IRInstruction(declare, result, "lane_powers", operands):
+                assert declare, "lane_powers should create a new temporary"
+                assert result.ir_type == "matrix"
+                assert len(operands) == self.mcr.settings.lanes
+                dst = self._compile_operand(result)
+                return (
+                    f"{self.mcr.compile_ir_type(result.ir_type)} {dst};\n"
+                    + "\n".join(
+                        f"{dst}.limb{i} = "
+                        + self.mcr.compile_vector_literal(
+                            self._field_limb_expr(operand, i) for operand in operands
+                        )
+                        + ";"
+                        for i in range(self.mcr.settings.limbs)
+                    )
+                )
             case IRInstruction(declare, result, "const", operands):
                 res = []
                 if declare:
@@ -472,6 +501,31 @@ class FunctionCodeGenerator:
                 )
             case _:
                 assert_never(operand)  # type: ignore
+
+    def _field_limb_expr(self, operand: IROperand, limb: int) -> str:
+        match operand:
+            case IRConst(_, "vector" | "matrix", value):
+                mask = (
+                    self.mcr.settings.lambda_prime_mask
+                    if limb == self.mcr.settings.limbs - 1
+                    else self.mcr.settings.lambda_mask
+                )
+                return str((value >> (limb * self.mcr.settings.lambda_)) & mask)
+            case IRConst(_, "scalar", _):
+                raise TypeError("scalar constants do not have field limbs")
+            case _:
+                return f"{self._compile_operand(operand)}.limb{limb}"
+
+    def _compile_vector_splat_expr(self, value: str) -> str:
+        match self.mcr.settings.platform:
+            case "neon":
+                return f"vdupq_n_u{self.mcr.settings.vector_lw}({value})"
+            case "avx2":
+                return f"_mm256_set1_epi64x((long long)({value}))"
+            case _:
+                raise NotImplementedError(
+                    f"platform {self.mcr.settings.platform!r} has no vector splat"
+                )
 
     def _compile_pf_arithmetic(self, insn: IRInstruction) -> str:
         # TODO is mul aliasing-safe?

@@ -67,6 +67,12 @@ def per_instruction(  # noqa: C901
         # Matrix
         case IRInstruction(_, IRTemporary(_, "matrix"), "vload") if settings.lanes:
             return 2.75 * settings.limbs, 16 * settings.lanes
+        case IRInstruction(_, IRTemporary(_, "matrix"), "splat") if settings.lanes:
+            return settings.limbs, 0
+        case IRInstruction(
+            _, IRTemporary(_, "matrix"), "lane_powers"
+        ) if settings.lanes:
+            return settings.lanes * settings.limbs, 0
         case IRInstruction(_, IRTemporary(_, "matrix"), "vadd") if settings.lanes:
             return settings.lanes * settings.limbs, 0
         case IRInstruction(_, IRTemporary(_, "matrix"), "vmul") if settings.lanes:

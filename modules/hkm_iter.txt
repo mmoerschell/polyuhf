@@ -1,0 +1,17 @@
+/*
+Have a look at hkm_rewrite.py to see how this pattern emerges.
+*/
+
+func hkm_iter_pairs(key, message buffer, len index) fieldelement {
+    foldl[i,1:len-1:2,acc=key[0]+message[0]]{
+        acc * (key[(i + 1) / 2] + message[i]) + message[i + 1]
+    }
+}
+
+hash hkm_iter(key buffer, message buffer, len index) {
+    nctif len % 2 {
+        hkm_iter_pairs(key, message, len)
+    } else {
+        hkm_iter_pairs(key, message, len) * (key[len / 2] + message[len - 1])
+    }
+}

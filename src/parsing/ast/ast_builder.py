@@ -11,11 +11,13 @@ from parsing.ast.ast_nodes import (
     ASTCall,
     ASTComparison,
     ASTFunction,
+    ASTHornerReduction,
     ASTIfElse,
     ASTInt,
+    ASTLeftFold,
     ASTLocalIdentifier,
     ASTModule,
-    ASTReduction,
+    ASTSum,
     ASTUnaryMinus,
 )
 from settings import Settings
@@ -220,13 +222,14 @@ class ASTBuilder(PolyUHFVisitor):
     def visitIdentifierExpression(self, ctx: PolyUHFParser.IdentifierExpressionContext):  # noqa: N802
         return ASTLocalIdentifier(None, ctx.IDENTIFIER().getText())
 
-    # Visit a parse tree produced by PolyUHFParser#ReductionExpr.
-    def visitReductionExpr(self, ctx: PolyUHFParser.ReductionExprContext):  # noqa: N802
-        op = ctx.op.text  # type: ignore
+    # Visit a parse tree produced by PolyUHFParser#SumReductionExpr.
+    def visitSumReductionExpr(  # noqa: N802
+        self, ctx: PolyUHFParser.SumReductionExprContext
+    ):
         var = ctx.IDENTIFIER().getText()
         expressions = ctx.expr()
         if len(expressions) != 4:
-            raise DSLParseError("malformed reduction expression")
+            raise DSLParseError("malformed sum expression")
         start, stop, step, body = [self.visit(e) for e in expressions]
         bound_text = (
             f"(({expressions[1].getText()})-({expressions[0].getText()}))"
@@ -243,4 +246,57 @@ class ASTBuilder(PolyUHFVisitor):
             )
         )
         # print(f"Loop bound is {bound}")
-        return ASTReduction(None, op, var, start, stop, step, body, bound)
+        return ASTSum(None, var, start, stop, step, body, bound)
+
+    # Visit a parse tree produced by PolyUHFParser#HornerReductionExpr.
+    def visitHornerReductionExpr(  # noqa: N802
+        self, ctx: PolyUHFParser.HornerReductionExprContext
+    ):
+        var = ctx.IDENTIFIER().getText()
+        expressions = ctx.expr()
+        if len(expressions) != 5:
+            raise DSLParseError("malformed horner reduction expression")
+        start, stop, step, r, body = [self.visit(e) for e in expressions]
+        bound_text = (
+            f"(({expressions[1].getText()})-({expressions[0].getText()}))"
+            f"/({expressions[2].getText()})"
+        )
+        symbols = {
+            name: sp.Symbol(name)
+            for name in set(re.findall(r"[A-Za-z][A-Za-z0-9_]*", bound_text))
+        }
+        bound = sp.simplify(
+            sp.parse_expr(
+                bound_text,
+                local_dict=symbols,
+            )
+        )
+        return ASTHornerReduction(None, var, start, stop, step, r, body, bound)
+
+    # Visit a parse tree produced by PolyUHFParser#LeftFoldExpr.
+    def visitLeftFoldExpr(  # noqa: N802
+        self, ctx: PolyUHFParser.LeftFoldExprContext
+    ):
+        identifiers = [tok.getText() for tok in ctx.IDENTIFIER()]
+        if len(identifiers) != 2:
+            raise DSLParseError("malformed foldl expression")
+        var, acc_var = identifiers
+        expressions = ctx.expr()
+        if len(expressions) != 5:
+            raise DSLParseError("malformed foldl expression")
+        start, stop, step, init, body = [self.visit(e) for e in expressions]
+        bound_text = (
+            f"(({expressions[1].getText()})-({expressions[0].getText()}))"
+            f"/({expressions[2].getText()})"
+        )
+        symbols = {
+            name: sp.Symbol(name)
+            for name in set(re.findall(r"[A-Za-z][A-Za-z0-9_]*", bound_text))
+        }
+        bound = sp.simplify(
+            sp.parse_expr(
+                bound_text,
+                local_dict=symbols,
+            )
+        )
+        return ASTLeftFold(None, var, start, stop, step, acc_var, init, body, bound)

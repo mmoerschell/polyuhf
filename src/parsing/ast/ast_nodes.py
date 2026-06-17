@@ -72,12 +72,34 @@ class ASTBufferViewRead(ASTExpr):
 
 
 @dataclass
-class ASTReduction(ASTExpr):
-    op: str
+class ASTSum(ASTExpr):
     var: str
     start: ASTExpr
     stop: ASTExpr
     step: ASTExpr
+    body: ASTExpr
+    bound: sp.Expr
+
+
+@dataclass
+class ASTHornerReduction(ASTExpr):
+    var: str
+    start: ASTExpr
+    stop: ASTExpr
+    step: ASTExpr
+    r: ASTExpr
+    body: ASTExpr
+    bound: sp.Expr
+
+
+@dataclass
+class ASTLeftFold(ASTExpr):
+    var: str
+    start: ASTExpr
+    stop: ASTExpr
+    step: ASTExpr
+    acc_var: str
+    init: ASTExpr
     body: ASTExpr
     bound: sp.Expr
 
