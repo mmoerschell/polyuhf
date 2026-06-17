@@ -132,7 +132,7 @@ def compile_string(  # noqa: C901
 
         # Automatic tests
         if flags.automatic_tests:
-            emitter = BoostCppTestEmitter(module_name, settings, 16000)  # TODO
+            emitter = BoostCppTestEmitter(module_name, settings, flags.test_size)
             cpp_source = emitter.generate(ast)
             tests_cpp_path = output_dir / f"{module_name}_autotests.cpp"
             with open(tests_cpp_path, "w") as f:
@@ -203,6 +203,18 @@ if __name__ == "__main__":
         default="build/manual/generated",
         help="Directory for generated C/C++ files",
     )
+    cli.add_argument(
+        "--test-size",
+        type=int,
+        default=16000,
+        help="Number of generated Boost data cases for automatic tests",
+    )
+    cli.add_argument(
+        "--delay-limb-realignment",
+        choices=("partial", "full"),
+        default="partial",
+        help="Delay limb realignment partially or fully until final reduction",
+    )
     cli.add_argument("pi", type=int, help="Pi")
     cli.add_argument("theta", type=int, help="Theta")
     cli.add_argument("platform", type=str, help="NEON/AVX2")
@@ -221,6 +233,7 @@ if __name__ == "__main__":
         flags.platform,
         flags.karatsuba,
         flags.unroll,
+        flags.delay_limb_realignment,
     )
 
     # Compile

@@ -19,6 +19,8 @@ class Settings:
     align: int
     mul_algo: str
     carry_propagate_limbs: int
+    limb_realignment: str
+    full_reduction_passes: int
 
     def __init__(
         self,
@@ -28,7 +30,12 @@ class Settings:
         platform: str,
         karatsuba: bool,
         unrolling_factor: int,
+        limb_realignment: str = "partial",
     ) -> None:
+        if limb_realignment not in {"partial", "full"}:
+            raise ValueError(
+                "limb_realignment must be either 'partial' or 'full'"
+            )
         match platform:
             case "avx2":
                 self.configure(
@@ -41,6 +48,7 @@ class Settings:
                     "karatsuba" if karatsuba else "schoolbook",
                     unrolling_factor,
                     2,
+                    limb_realignment,
                 )
             case "neon":
                 self.configure(
@@ -53,6 +61,7 @@ class Settings:
                     "karatsuba" if karatsuba else "schoolbook",
                     unrolling_factor,
                     2,
+                    limb_realignment,
                 )
             case _:
                 raise NotImplementedError(self.platform)
@@ -68,6 +77,7 @@ class Settings:
         mul_algo: str,
         unrolling_factor: int,
         carry_propagate_limbs: int,
+        limb_realignment: str,
     ) -> None:
 
         self.field = PrimeField(pi, theta)
@@ -78,6 +88,8 @@ class Settings:
         self.mul_algo = mul_algo
         self.unrolling_factor = unrolling_factor
         self.carry_propagate_limbs = carry_propagate_limbs
+        self.limb_realignment = limb_realignment
+        self.full_reduction_passes = 4 if limb_realignment == "full" else 2
         if self.lanes:
             assert self.lanes > 1
         # Autotune lambda

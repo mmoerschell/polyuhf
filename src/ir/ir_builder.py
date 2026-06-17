@@ -104,6 +104,18 @@ class IRFunctionBuilder:
         self.function = ast_function
         self.signature = dsl_signature
 
+    def _carry_if_partial(self, value: IRTemporary) -> list[IRStatement]:
+        if self.module_builder.settings.limb_realignment == "full":
+            return []
+        return [
+            IRInstruction(
+                False,
+                value,
+                vectorized_insn_name("carry", value.ir_type == "matrix"),
+                (value,),
+            )
+        ]
+
     def compile(self) -> IRFunction:
         statements, ret_val = self.compile_expr(self.function.body)
         if isinstance(ret_val, IRTemporary) and ret_val.ir_type == "vector":
@@ -360,14 +372,7 @@ class IRFunctionBuilder:
                 (current, base),
             )
             statements.append(product)
-            statements.append(
-                IRInstruction(
-                    False,
-                    product.result,
-                    vectorized_insn_name("carry", base.ir_type == "matrix"),
-                    (product.result,),
-                )
-            )
+            statements.extend(self._carry_if_partial(product.result))
             current = product.result
         return statements, current
 
@@ -396,14 +401,7 @@ class IRFunctionBuilder:
             product,
         ]
         if carry_result:
-            statements.append(
-                IRInstruction(
-                    False,
-                    product.result,
-                    vectorized_insn_name("carry", product.result.ir_type == "matrix"),
-                    (product.result,),
-                )
-            )
+            statements.extend(self._carry_if_partial(product.result))
         statements.append(IRInstruction(False, acc, "copy", (product.result,)))
         return statements
 
@@ -465,9 +463,7 @@ class IRFunctionBuilder:
                     (scalar_powers[exponent - 1], r_term),
                 )
                 scalar_power_stmts.append(product)
-                scalar_power_stmts.append(
-                    IRInstruction(False, product.result, "carry", (product.result,))
-                )
+                scalar_power_stmts.extend(self._carry_if_partial(product.result))
                 scalar_powers[exponent] = product.result
 
             splat_r = IRInstruction(
@@ -541,12 +537,6 @@ class IRFunctionBuilder:
                         scaled_acc,
                         update_acc,
                         IRInstruction(
-                            False,
-                            update_acc.result,
-                            "vcarry",
-                            (update_acc.result,),
-                        ),
-                        IRInstruction(
                             False, declare_acc.result, "copy", (update_acc.result,)
                         ),
                     ]
@@ -556,14 +546,7 @@ class IRFunctionBuilder:
                     self.compile_horner_step(declare_acc.result, r_for_main, bod_term)
                 )
 
-        unrolled_body_stmts.append(
-            IRInstruction(
-                False,
-                declare_acc.result,
-                vectorized_insn_name("carry", declare_acc.result.ir_type == "matrix"),
-                (declare_acc.result,),
-            )
-        )
+        unrolled_body_stmts.extend(self._carry_if_partial(declare_acc.result))
 
         main_loop = IRLoop(
             IRBoundIdentifier(Index(), compile_dsl_type(Index(), False), reduction.var),
@@ -652,9 +635,7 @@ class IRFunctionBuilder:
             IRInstruction(False, declare_acc.result, "copy", (init_term,))
         ]
         if isinstance(fold.ttype, PrimeField):
-            initialize_acc.append(
-                IRInstruction(False, declare_acc.result, "carry", (declare_acc.result,))
-            )
+            initialize_acc.extend(self._carry_if_partial(declare_acc.result))
 
         body_ctx = ctx.without_offset(fold.var).without_offset(fold.acc_var).bind(
             fold.var,
@@ -665,9 +646,7 @@ class IRFunctionBuilder:
             IRInstruction(False, declare_acc.result, "copy", (body_term,))
         ]
         if isinstance(fold.ttype, PrimeField):
-            update_acc.append(
-                IRInstruction(False, declare_acc.result, "carry", (declare_acc.result,))
-            )
+            update_acc.extend(self._carry_if_partial(declare_acc.result))
 
         base_step = fold.step.value
         loop = IRLoop(
@@ -781,14 +760,7 @@ class IRFunctionBuilder:
             unrolled_body_stmts.append(update_acc)
 
         # Handle carries every 'unroll_facror' times
-        unrolled_body_stmts.append(
-            IRInstruction(
-                False,
-                declare_acc.result,
-                vectorized_insn_name("carry", declare_acc.result.ir_type == "matrix"),
-                (declare_acc.result,),
-            )
-        )
+        unrolled_body_stmts.extend(self._carry_if_partial(declare_acc.result))
 
         # Create the main unrolled vector loop
         main_loop = IRLoop(

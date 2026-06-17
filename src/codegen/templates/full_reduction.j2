@@ -1,13 +1,11 @@
 /* {{ x }} = full_reduction {{ x }} */
 /* full_reduction: extended carry */
+{% for _ in range(settings.full_reduction_passes) %}
 {% for i in range(settings.limbs - 1) %}{{ x }}.limb{{i + 1}} += {{ x }}.limb{{i}} >> {{ settings.lambda_ }};
 {{ x }}.limb{{i}} &= {{settings.lambda_mask}}ull;{% endfor %}
 {{ x }}.limb0 += {{ settings.field.theta }} * ({{ x }}.limb{{ settings.limbs - 1 }} >> {{ settings.lambda_prime }});
 {{ x }}.limb{{ settings.limbs - 1 }} &= {{settings.lambda_prime_mask}}ull;
-{% for i in range(settings.limbs - 1) -%}
-{{ x }}.limb{{i + 1}} += {{ x }}.limb{{i}} >> {{ settings.lambda_ }};
-{{ x }}.limb{{i}} &= {{ settings.lambda_mask }}ull;
-{%- endfor %}
+{% endfor %}
 /* full_reduction: subtract prime when {{ x }} >= 2^pi - theta */
 {%- set y = x + "_plus_theta" -%}
 {%- set overflow_bit = x + "_overflow_bit" -%}
