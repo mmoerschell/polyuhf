@@ -16,13 +16,50 @@ endif()
 
 option(CORRECTNESS "Build a correctness target" ON)
 option(PERFORMANCE "Build a performance target" ON)
-option(AVX2_FLAG "Set -mavx2 flag" OFF)
 
 find_package(Boost CONFIG REQUIRED COMPONENTS unit_test_framework json)
 find_package(OpenSSL REQUIRED)
 
 set(CORRECTNESS_TARGET correctness_${MODULE_NAME})
 set(PERFORMANCE_TARGET performance_${MODULE_NAME})
+
+#########
+# Flags #
+#########
+
+set(PLATFORM "" CACHE STRING "Platform to build for: neon | avx2")
+if("${PLATFORM}" STREQUAL "neon")
+    set(C_BUILD_FLAGS
+        # Warnings
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Wno-unused-variable
+        -Wno-format-zero-length
+        # Performance
+        -O3
+        -DNDEBUG
+        -mcpu=apple-m3 # NOTE alternatively: -mcpu=native
+        -fomit-frame-pointer
+    )
+elseif("${PLATFORM}" STREQUAL "avx2")
+    set(C_BUILD_FLAGS
+        # Warnings
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Wno-unused-variable
+        -Wno-format-zero-length
+        # Performance
+        -O3
+        -DNDEBUG
+        -march=native # pulls in -mavx2
+        -fomit-frame-pointer
+        )
+else()
+    message(FATAL_ERROR "Invalid PLATFORM '${PLATFORM}'")
+endif()
+
 
 ######################
 # Correctness target #
@@ -63,16 +100,7 @@ if(CORRECTNESS)
         ${OPENSSL_INCLUDE_DIR}
     )
 
-    target_compile_options(${CORRECTNESS_TARGET} PRIVATE
-        -Wall
-        -Wextra
-        -Wpedantic
-        -Wno-unused-variable
-    )
-
-    if(AVX2_FLAG)
-        target_compile_options(${CORRECTNESS_TARGET} PRIVATE -mavx2)
-    endif()
+    target_compile_options(${CORRECTNESS_TARGET} PRIVATE ${C_BUILD_FLAGS})
 endif()
 
 ######################
@@ -81,22 +109,10 @@ endif()
 
 if(PERFORMANCE)
     add_executable(${PERFORMANCE_TARGET}
-        generated/${MODULE_NAME}_perf.c
-        generated/${MODULE_NAME}.c
-        generated/datastructures.c
+    generated/${MODULE_NAME}.c
+    generated/datastructures.c
+    generated/${MODULE_NAME}_perf.c
     )
 
-    target_compile_options(${PERFORMANCE_TARGET} PRIVATE
-        # TODO find some better flags
-        -O3
-        -Wall
-        -Wextra
-        -Wpedantic
-        -Wno-format-zero-length
-    )
-
-    if(AVX2_FLAG)
-        target_sources(${PERFORMANCE_TARGET} PRIVATE "tsc_x86.c")
-        target_compile_options(${PERFORMANCE_TARGET} PRIVATE -mavx2)
-    endif()
+    target_compile_options(${CORRECTNESS_TARGET} PRIVATE ${C_BUILD_FLAGS})
 endif()

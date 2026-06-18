@@ -89,11 +89,6 @@ if [[ "$PERFORMANCE" == "1" ]]; then
     cmake_performance=ON
 fi
 
-avx2_flag=OFF
-if [[ "${PLATFORM:l}" == "avx2" ]]; then
-    avx2_flag=ON
-fi
-
 echo "Erasing $BUILD_DIR and $GENERATED_DIR"
 rm -rf "$BUILD_DIR" "$GENERATED_DIR"
 
@@ -110,7 +105,7 @@ cmake -S src/cpp -B "$BUILD_DIR" -G Ninja \
     -DMODULE_NAME="$MODULE_NAME" \
     -DCORRECTNESS="$cmake_correctness" \
     -DPERFORMANCE="$cmake_performance" \
-    -DAVX2_FLAG="$avx2_flag" >&3
+    -DPLATFORM="$PLATFORM" >&3
 
 # Build
 if [[ "$CORRECTNESS" == "1" ]]; then
