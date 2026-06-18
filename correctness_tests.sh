@@ -37,7 +37,7 @@ for mdu in "${MODULES_DELAY_UNROLL[@]}"; do
 
         for karatsuba in $(seq 0 1); do
             echo "Testing module '$module' in GF(2^$pi-$theta) with $delay delay and unrolling $unroll, karatsuba=$karatsuba"
-            ./runner.sh 1 "$karatsuba" "$delay" 1 0 1 "$module" "$pi" "$theta" "$PLATFORM" "$unroll"
+            ./runner.sh 1 "$karatsuba" "$delay" 1 0 1 0 "$module" "$pi" "$theta" "$PLATFORM" "$unroll"
         done
 
     done

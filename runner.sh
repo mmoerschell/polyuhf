@@ -5,8 +5,8 @@ set -euo pipefail
 BUILD_DIR=src/cpp/build
 GENERATED_DIR=src/cpp/generated
 
-if [ "$#" -ne 11 ]; then
-    echo "Usage: $0 <vectorize:0|1> <karatsuba:0|1> <delay:partial|full> <correctness:0|1> <performance:0|1> <quiet:0|1> <module> <pi> <theta> <platform> <unrolling factor>" >&2
+if [ "$#" -ne 12 ]; then
+    echo "Usage: $0 <vectorize:0|1> <karatsuba:0|1> <delay:partial|full> <correctness:0|1> <performance:0|1> <quiet:0|1> <build-only:0|1> <module> <pi> <theta> <platform> <unrolling factor>" >&2
     exit 1
 fi
 
@@ -17,11 +17,12 @@ DELAY=$3
 CORRECTNESS=$4
 PERFORMANCE=$5
 QUIET=$6
-MODULE_NAME=$7
-PI=$8
-THETA=$9
-PLATFORM=${10}
-UNROLL=${11}
+BUILD_ONLY=$7
+MODULE_NAME=$8
+PI=$9
+THETA=${10}
+PLATFORM=${11}
+UNROLL=${12}
 
 # Check parameters
 if [[ "$VECTORIZE" != "0" && "$VECTORIZE" != "1" ]]; then
@@ -46,6 +47,10 @@ if [[ "$PERFORMANCE" != "0" && "$PERFORMANCE" != "1" ]]; then
 fi
 if [[ "$QUIET" != "0" && "$QUIET" != "1" ]]; then
     echo "quiet must be 0 or 1" >&2
+    exit 2
+fi
+if [[ "$BUILD_ONLY" != "0" && "$BUILD_ONLY" != "1" ]]; then
+    echo "build-only must be 0 or 1" >&2
     exit 2
 fi
 if [[ "$CORRECTNESS" == "0" && "$PERFORMANCE" == "0" ]]; then
@@ -116,11 +121,11 @@ if [[ "$PERFORMANCE" == "1" ]]; then
 fi
 
 # Run/correctness
-if [[ "$CORRECTNESS" == "1" ]]; then
+if [[ "$BUILD_ONLY" == "0" && "$CORRECTNESS" == "1" ]]; then
     "$BUILD_DIR/correctness_$MODULE_NAME"
 fi
 
 # Run/performance
-if [[ "$PERFORMANCE" == "1" ]]; then
+if [[ "$BUILD_ONLY" == "0" && "$PERFORMANCE" == "1" ]]; then
     "$BUILD_DIR/performance_$MODULE_NAME" 100 100 1
 fi
