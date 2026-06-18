@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# TODO adjust input length to be a multiple of the block size in every field
+
 MODULE="mmh"
+DELAY="full"
 PLATFORM="neon"
-UNROLLING_FACTOR="2"
+UNROLLING_FACTOR="1"
 CPP_BUILD_DIR="src/cpp/build"
 GENERATED_DIR="$CPP_BUILD_DIR/generated"
-MESSAGE_LENGTH=24000
+MESSAGE_LENGTH=16000
 OUTPUT_FILE=data/fieldsweep/"$MODULE"_"$PLATFORM"_data.csv
 
 mkdir -p fieldsweep
@@ -55,11 +58,11 @@ fields=(
   "379 19"
 )
 
-modes_flags=(
-  "scalar_schoolbook"
-  "scalar_karatsuba -k"
-  "vector_schoolbook -v"
-  "vector_karatsuba -v -k"
+modes_vec_kara=(
+  "scalar_schoolbook 0 0"
+  "scalar_karatsuba 0 1"
+  "vector_schoolbook 1 0"
+  "vector_karatsuba 1 1"
 )
 
 printf "pi,theta,mode,cycles\n" > $OUTPUT_FILE
@@ -67,38 +70,18 @@ printf "pi,theta,mode,cycles\n" > $OUTPUT_FILE
 for field in "${fields[@]}"; do
   read -r pi theta <<< "$field"
   echo "FIELD $pi $theta"
-  for m_f in "${modes_flags[@]}"; do
-    mode=""
-    flags=""
-    read -r mode flags <<< "$m_f"
-    compiler_flags=("${(@z)flags}")
-
-    cmake -E rm -rf "$CPP_BUILD_DIR"
-    mkdir -p "$GENERATED_DIR"
-    
-    # DSL compiler
-    venv/bin/python src/compiler.py "${compiler_flags[@]}" -qa modules/$MODULE.txt $pi $theta $PLATFORM $UNROLLING_FACTOR
-
-    # CMake generate
-    cmake --log-level=ERROR \
-      -S src/cpp/performance \
-      -B "$CPP_BUILD_DIR" \
-      -G Ninja \
-      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-      -DGENERATED_DIR="$GENERATED_DIR" \
-      -DPERF_MODULE="$MODULE" \
-      -DCMAKE_BUILD_TYPE=Release \
-      -Wno-dev >/dev/null
-
-    # CMake build
-    cmake --build "$CPP_BUILD_DIR"
+  for m_f in "${modes_vec_kara[@]}"; do
+    read -r mode vectorize karatsuba <<< "$m_f"
+   
+    # Build
+    ./runner.sh $vectorize $karatsuba $DELAY 0 1 1 1 $MODULE $pi $theta $PLATFORM $UNROLLING_FACTOR
 
     # Run/perf
-    cycles="$("$CPP_BUILD_DIR/${MODULE}_perf" $MESSAGE_LENGTH $MESSAGE_LENGTH 1)"
-    cycles=$((cycles))
+    cycles="$(src/cpp/build/performance_$MODULE $MESSAGE_LENGTH $MESSAGE_LENGTH 1 median)"
+    cycles=$((cycles)) # trim whitespace
 
     printf "%d,%d,%s,%d\n" $pi $theta $mode $cycles >> $OUTPUT_FILE
   done
 done
 
-echo "Wrote output to $OUTPUT_FILE"
+echo "Wrote output to '$OUTPUT_FILE'"

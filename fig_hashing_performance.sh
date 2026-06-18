@@ -15,7 +15,6 @@ KARATSUBA="$6"
 UNROLLING_FACTOR="$7"
 
 BLOCK_RESOLUTION=16
-
 STEP=$((PI / 8 * BLOCK_RESOLUTION)) # 2 lanes
 START=$STEP
 STOP=$((16000 + STEP))
@@ -29,6 +28,7 @@ printf "bytes,cycles\n" > $OUTPUT_FILE
 ./runner.sh 1 $KARATSUBA $DELAY 0 1 1 1 $MODULE $PI $THETA $PLATFORM $UNROLLING_FACTOR 
 
 # Run
+echo "Step size is $STEP"
 date
 n_bytes=$START
 while IFS= read -r line; do
