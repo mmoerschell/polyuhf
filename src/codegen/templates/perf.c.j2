@@ -5,6 +5,8 @@
 
 {% if settings.platform == "neon" -%}
 #include "../measurements/vct_arm.h"
+#define CPU_FREQ_GHZ 4.05
+#define CPU_FREQ_HZ (CPU_FREQ_GHZ*1e9)
 {% elif settings.platform == "avx2" -%}
 #include "../measurements/tsc_x86.h"
 {% else -%}
@@ -15,23 +17,16 @@ INVALID PLATFORM
 #include "{{module_name}}.h"
 
 #define SEED 42
-#define NUM_WARMUP_ROUNDS 1000
-#define NUM_MEASURE_ROUNDS 2000
-// Multiple samples (reps) taken per measuring round, and divided
+#define NUM_MEASURE_ROUNDS 10
+// Adaptive # of samples (reps) taken per measuring round, and divided
 
-// TODO put these in TOML
-#define CPU_FREQ_HZ 4.05e9
-// on avx2: 
-//#define CTR_FREQ_HZ ...
+static int compare_doubles(const void *a, const void *b)
+{
+    const double x = *(const double *)a;
+    const double y = *(const double *)b;
 
-
-{% if settings.platform not in ["neon", "avx2"] %}
-static uint64_t nanos(void) {
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    return (uint64_t)ts.tv_sec * 1e9 + ts.tv_nsec;
+    return (x > y) - (x < y);
 }
-{% endif %}
 
 int main(int argc, char **argv) {
     // Input
@@ -49,7 +44,8 @@ int main(int argc, char **argv) {
     const size_t buffer_len = stop + 500;
     uint8_t *message = (uint8_t *)malloc(buffer_len);
     uint8_t *key = (uint8_t *)malloc(buffer_len);
-    if (!message || !key) {
+    double *measurements = (double*) malloc(NUM_MEASURE_ROUNDS * sizeof(double));
+    if (!message || !key || !measurements) {
         fprintf(stderr, "Could not allocate message or key buffer. Arguments too large?\n");
         return EXIT_FAILURE;
     }
@@ -62,16 +58,18 @@ int main(int argc, char **argv) {
     uint8_t output[FIELD_EXPORT_BYTES];
 
 {% if settings.platform == "neon" -%}
-    const TIMESTAMP CTR_FREQ_HZ = get_vct_freq();
+    // Read VCT counter freq
+    const TIMESTAMP ctr_freq_hz = get_vct_freq();
+    const double target_ticks = (double)ctr_freq_hz / CPU_FREQ_GHZ;
+{% elif settings.platform == "avx2" %}
+    const double target_ticks = 1e9;
 {%- endif %}
 
     // For all requested sizes
     for (size_t bytes = start; bytes <= stop; bytes += step) {
-        // Dynamically adapt # of reps to target roughly 200ms
-        double target_ticks = CTR_FREQ_HZ / 5000;
-        size_t reps = 1;
-        size_t warmup_r;
-        for (warmup_r = 0; warmup_r < NUM_WARMUP_ROUNDS; ++warmup_r) {
+        // Dynamically adapt # of reps to target, doubles as warmup
+        size_t reps;
+        for (reps = 1; reps < (1u << 20); reps *= 2) {
 {% if settings.platform == "neon" %}
             const TIMESTAMP start = start_vct();
 {% elif settings.platform == "avx2" %}
@@ -86,14 +84,9 @@ int main(int argc, char **argv) {
 {% elif settings.platform == "avx2" %}
             const myInt64 ticks = stop_tsc(start);
 {% endif %}
-            if (ticks >= target_ticks || reps >= (1u << 20)) {
+            if (ticks >= target_ticks) {
                 break;
             }
-            reps *= 2;
-        }
-        for (; warmup_r < NUM_WARMUP_ROUNDS; ++warmup_r) {
-            {{func}}(output, key, message, bytes);
-            sink ^= output[0];
         }
         printf("Using batch size of %zu\n", reps);
 
@@ -112,24 +105,30 @@ int main(int argc, char **argv) {
                 sink ^= output[0];
                 // Stop timer
             }
+            // Stop timer, estimate cycles
 {% if settings.platform == "neon" %}
             const TIMESTAMP sample = stop_vct(start);
+            const double cycles = (double)sample / reps / ctr_freq_hz * CPU_FREQ_HZ;
 {% elif settings.platform == "avx2" %}
             const myInt64 sample = stop_tsc(start);
+            const double cycles = (double)sample / reps;
 {% endif %}
-            // Estimate cycles
-            const double cycles = (double)sample / (double)reps / CTR_FREQ_HZ * CPU_FREQ_HZ;
 
-            // Determine minimum
+            // Save result, update minimum
+            measurements[i] = cycles;
             min_cycles = cycles < min_cycles ? cycles : min_cycles;
         }
+
+        // Compute median
+        qsort(measurements, NUM_MEASURE_ROUNDS, sizeof(measurements[0]), compare_doubles);
         {# printf("{\"module\":\"{{module_name}}\",\"function\":\"{{func}}\",\"field_pi\":%zu,\"field_theta\":%zu,\"cycles\":%.0f,\"bytes\":%zu}\n", (size_t)FIELD_PI, (size_t)FIELD_THETA, min_cycles, bytes); #}
-        printf("%.0f\n", min_cycles);
+        printf("median: %.0f, min: %.0f\n", measurements[NUM_MEASURE_ROUNDS / 2], min_cycles);
 
     }
 
     free(message);
     free(key);
+    free(measurements);
     fprintf(stderr, "", sink);
     return EXIT_SUCCESS;
 }
