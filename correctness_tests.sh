@@ -12,8 +12,8 @@ MODULES_DELAY_UNROLL=(
     "mmh full 8"
     "sqh full 8"
     "nmh full 8"
-    "hkm partial 2"
-    "hkm_iter partial 2"
+    "hkm partial 1"
+    "hkm_iter partial 1"
     "poly1305 partial 1"
 )
 
