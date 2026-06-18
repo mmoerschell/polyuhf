@@ -623,6 +623,30 @@ class IRFunctionBuilder:
         if not isinstance(fold.step, ASTInt):
             raise ValueError(f"Non-constant loop step {fold.step}")
 
+        base_step = fold.step.value
+        unroll_factor = self.module_builder.settings.unrolling_factor or 1
+        unrolled_step = base_step * unroll_factor
+
+        tail_len_expr = ASTBinaryOperation(
+            Index(),
+            "%",
+            ASTBinaryOperation(Index(), "-", fold.stop, fold.start),
+            ASTInt(Index(), unrolled_step),
+        )
+        main_loop_end_expr = ASTBinaryOperation(
+            Index(),
+            "-",
+            fold.stop,
+            tail_len_expr,
+        )
+        main_end_stmts, main_end_term = self.compile_expr(main_loop_end_expr, ctx=ctx)
+        non_empty = IRInstruction(
+            True,
+            IRTemporary(Index(), compile_dsl_type(Index(), False)),
+            "lt",
+            (sta_term, sto_term),
+        )
+
         assert fold.ttype
         acc_ir_type = compile_dsl_type(fold.ttype, False)
         declare_acc = IRInstruction(
@@ -637,25 +661,73 @@ class IRFunctionBuilder:
         if isinstance(fold.ttype, PrimeField):
             initialize_acc.extend(self._carry_if_partial(declare_acc.result))
 
-        body_ctx = ctx.without_offset(fold.var).without_offset(fold.acc_var).bind(
-            fold.var,
-            IRBoundIdentifier(Index(), compile_dsl_type(Index(), False), fold.var),
-        ).bind(fold.acc_var, declare_acc.result)
-        body_stmts, body_term = self.compile_expr(fold.body, lanes=1, ctx=body_ctx)
-        update_acc: list[IRStatement] = [
-            IRInstruction(False, declare_acc.result, "copy", (body_term,))
-        ]
+        unrolled_body_stmts: list[IRStatement] = []
+        for u in range(unroll_factor):
+            offset_val = u * base_step
+            body_ctx = (
+                ctx.without_offset(fold.var)
+                .without_offset(fold.acc_var)
+                .bind(
+                    fold.var,
+                    IRBoundIdentifier(
+                        Index(), compile_dsl_type(Index(), False), fold.var
+                    ),
+                )
+                .bind(fold.acc_var, declare_acc.result)
+                .with_offset(fold.var, offset_val)
+            )
+            body_stmts, body_term = self.compile_expr(fold.body, lanes=1, ctx=body_ctx)
+            unrolled_body_stmts.extend(body_stmts)
+            unrolled_body_stmts.append(
+                IRInstruction(False, declare_acc.result, "copy", (body_term,))
+            )
         if isinstance(fold.ttype, PrimeField):
-            update_acc.extend(self._carry_if_partial(declare_acc.result))
+            unrolled_body_stmts.extend(self._carry_if_partial(declare_acc.result))
 
-        base_step = fold.step.value
-        loop = IRLoop(
+        try:
+            main_bound = sp.simplify(fold.bound / unroll_factor)  # type: ignore
+        except Exception:
+            main_bound = fold.bound
+
+        main_loop = IRLoop(
             IRBoundIdentifier(Index(), compile_dsl_type(Index(), False), fold.var),
             sta_term,
+            main_end_term,
+            IRConst(Index(), compile_dsl_type(Index(), False), unrolled_step),
+            unrolled_body_stmts,
+            main_bound,  # type: ignore
+        )
+
+        tail_ctx = (
+            ctx.without_offset(fold.var)
+            .without_offset(fold.acc_var)
+            .bind(
+                fold.var,
+                IRBoundIdentifier(Index(), compile_dsl_type(Index(), False), fold.var),
+            )
+            .bind(fold.acc_var, declare_acc.result)
+        )
+        tail_body_stmts, tail_body_term = self.compile_expr(
+            fold.body, lanes=1, ctx=tail_ctx
+        )
+        tail_update: list[IRStatement] = [
+            IRInstruction(False, declare_acc.result, "copy", (tail_body_term,))
+        ]
+        if isinstance(fold.ttype, PrimeField):
+            tail_update.extend(self._carry_if_partial(declare_acc.result))
+
+        try:
+            tail_bound = fold.bound % unrolled_step  # type: ignore
+        except Exception:
+            tail_bound = sp.var("tail_bound")  # type: ignore # TODO
+
+        tail_loop = IRLoop(
+            IRBoundIdentifier(Index(), compile_dsl_type(Index(), False), fold.var),
+            main_end_term,
             sto_term,
             IRConst(Index(), compile_dsl_type(Index(), False), base_step),
-            body_stmts + update_acc,
-            fold.bound,
+            tail_body_stmts + tail_update,
+            tail_bound,  # type: ignore
         )
 
         return (
@@ -664,7 +736,15 @@ class IRFunctionBuilder:
             + init_stmts
             + [declare_acc]
             + initialize_acc
-            + [loop],
+            + [
+                non_empty,
+                IRIfElse(
+                    non_empty.result,
+                    main_end_stmts + [main_loop, tail_loop],
+                    None,
+                    False,
+                ),
+            ],
             declare_acc.result,
         )
 
