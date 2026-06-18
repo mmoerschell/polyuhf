@@ -114,5 +114,5 @@ if(PERFORMANCE)
     generated/${MODULE_NAME}_perf.c
     )
 
-    target_compile_options(${CORRECTNESS_TARGET} PRIVATE ${C_BUILD_FLAGS})
+    target_compile_options(${PERFORMANCE_TARGET} PRIVATE ${C_BUILD_FLAGS})
 endif()
