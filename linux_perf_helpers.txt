@@ -1,0 +1,3 @@
+sudo cpupower frequency-set -g performance
+taskset -c 2 ./performance
+
