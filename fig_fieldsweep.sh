@@ -1,14 +1,15 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
 MODULE="mmh"
 PLATFORM="neon"
 UNROLLING_FACTOR="2"
-BUILD_ROOT="build/fieldsweep"
+CPP_BUILD_DIR="src/cpp/build"
+GENERATED_DIR="$CPP_BUILD_DIR/generated"
 MESSAGE_LENGTH=24000
-OUTPUT_FILE=fieldsweep/"$MODULE"_"$PLATFORM"_data.csv
+OUTPUT_FILE=data/fieldsweep/"$MODULE"_"$PLATFORM"_data.csv
 
-mkdir -p $BUILD_ROOT
+mkdir -p fieldsweep
 
 fields=(
   "100 15"
@@ -58,7 +59,7 @@ modes_flags=(
   "scalar_schoolbook"
   "scalar_karatsuba -k"
   "vector_schoolbook -v"
-  "vector_karatsuba -vk"
+  "vector_karatsuba -v -k"
 )
 
 printf "pi,theta,mode,cycles\n" > $OUTPUT_FILE
@@ -70,18 +71,30 @@ for field in "${fields[@]}"; do
     mode=""
     flags=""
     read -r mode flags <<< "$m_f"
+    compiler_flags=("${(@z)flags}")
+
+    cmake -E rm -rf "$CPP_BUILD_DIR"
+    mkdir -p "$GENERATED_DIR"
     
     # DSL compiler
-    ./compiler $flags -qa -o $BUILD_ROOT/generated modules/$MODULE.txt $pi $theta $PLATFORM $UNROLLING_FACTOR
+    venv/bin/python src/compiler.py "${compiler_flags[@]}" -qa modules/$MODULE.txt $pi $theta $PLATFORM $UNROLLING_FACTOR
 
     # CMake generate
-    cmake --log-level=ERROR -S src/cpp/performance -B $BUILD_ROOT/cmake -G Ninja -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DGENERATED_DIR=$BUILD_ROOT/generated -DPERF_MODULE=$MODULE -DCMAKE_BUILD_TYPE=Release -Wno-dev >/dev/null
+    cmake --log-level=ERROR \
+      -S src/cpp/performance \
+      -B "$CPP_BUILD_DIR" \
+      -G Ninja \
+      -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+      -DGENERATED_DIR="$GENERATED_DIR" \
+      -DPERF_MODULE="$MODULE" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -Wno-dev >/dev/null
 
     # CMake build
-    cmake --build $BUILD_ROOT/cmake
+    cmake --build "$CPP_BUILD_DIR"
 
     # Run/perf
-    cycles="$($BUILD_ROOT/cmake/($MODULE)_perf $MESSAGE_LENGTH $MESSAGE_LENGTH 1)"
+    cycles="$("$CPP_BUILD_DIR/${MODULE}_perf" $MESSAGE_LENGTH $MESSAGE_LENGTH 1)"
     cycles=$((cycles))
 
     printf "%d,%d,%s,%d\n" $pi $theta $mode $cycles >> $OUTPUT_FILE

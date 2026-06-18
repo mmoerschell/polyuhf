@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 {% if settings.platform == "neon" -%}
 #include "../measurements/vct_arm.h"
@@ -28,10 +29,17 @@ static int compare_doubles(const void *a, const void *b)
     return (x > y) - (x < y);
 }
 
+
+typedef enum {
+    MODE_MIN = 0,
+    MODE_MEDIAN = 1
+} IOMode;
+
+
 int main(int argc, char **argv) {
     // Input
-    if (argc != 4) {
-        fprintf(stderr, "Usage: %s <start> <stop> <step>\nboth ends inclusive, and where each parameter is a byte length\n", argv[0]);
+    if (argc != 5) {
+        fprintf(stderr, "Usage: %s <start> <stop> <step> <I/O-mode:min|median>\nboth ends inclusive, and where each parameter is a byte length\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -39,11 +47,20 @@ int main(int argc, char **argv) {
     const size_t start = atoll(argv[1]);
     const size_t stop = atoll(argv[2]);
     const size_t step = atoll(argv[3]);
+    IOMode mode;
+    if (!strcmp(argv[4], "min"))
+        mode = MODE_MIN;
+    else if (!strcmp(argv[4], "median"))
+        mode = MODE_MEDIAN;
+    else {
+        fprintf(stderr, "Invalid mode %s\n", argv[4]);
+        return EXIT_FAILURE;
+    }
 
     // Allocate memory
     const size_t buffer_len = stop + 500;
-    uint8_t *message = (uint8_t *)malloc(buffer_len);
-    uint8_t *key = (uint8_t *)malloc(buffer_len);
+    uint8_t *message = (uint8_t *)calloc(buffer_len, 1);
+    uint8_t *key = (uint8_t *)calloc(buffer_len, 1);
     double *measurements = (double*) malloc(NUM_MEASURE_ROUNDS * sizeof(double));
     if (!message || !key || !measurements) {
         fprintf(stderr, "Could not allocate message or key buffer. Arguments too large?\n");
@@ -88,7 +105,7 @@ int main(int argc, char **argv) {
                 break;
             }
         }
-        printf("Using batch size of %zu\n", reps);
+        {# printf("Using batch size of %zu\n", reps); #}
 
         double min_cycles = 1ull << 52ull;
         for (size_t i = 0; i < NUM_MEASURE_ROUNDS; ++i) {
@@ -119,10 +136,14 @@ int main(int argc, char **argv) {
             min_cycles = cycles < min_cycles ? cycles : min_cycles;
         }
 
-        // Compute median
-        qsort(measurements, NUM_MEASURE_ROUNDS, sizeof(measurements[0]), compare_doubles);
-        {# printf("{\"module\":\"{{module_name}}\",\"function\":\"{{func}}\",\"field_pi\":%zu,\"field_theta\":%zu,\"cycles\":%.0f,\"bytes\":%zu}\n", (size_t)FIELD_PI, (size_t)FIELD_THETA, min_cycles, bytes); #}
-        printf("median: %.0f, min: %.0f\n", measurements[NUM_MEASURE_ROUNDS / 2], min_cycles);
+        // Output
+        if (mode == MODE_MIN) {
+            printf("%.0f\n", min_cycles);
+        } else if (mode == MODE_MEDIAN) {
+            qsort(measurements, NUM_MEASURE_ROUNDS, sizeof(measurements[0]), compare_doubles);
+            printf("%.0f\n", measurements[NUM_MEASURE_ROUNDS / 2]);
+        }
+        fflush(stdout);
 
     }
 
