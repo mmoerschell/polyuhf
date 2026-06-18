@@ -81,12 +81,18 @@ def compile_string(  # noqa: C901
 
         # Opcount & memory traffic
         if flags.analysis:
-            ops_and_traffic = opcount_and_traffic(ir, settings)
+            analysis_failed_reason = None
+            try:
+                ops_and_traffic = opcount_and_traffic(ir, settings)
+            except NotImplementedError as e:
+                ops_and_traffic = None
+                analysis_failed_reason = f"unsupported for {module_name}: {e}"
             if not ops_and_traffic:
                 if not flags.quiet:
+                    reason = analysis_failed_reason or f"impossible for {module_name}"
                     print(
                         f"[{Fore.YELLOW}x{Style.RESET_ALL}] Ops/traffic "
-                        f"analysis impossible for {module_name}"
+                        f"analysis {reason}"
                     )
             else:
                 ops, traffic, _ = ops_and_traffic
@@ -100,11 +106,7 @@ def compile_string(  # noqa: C901
             ops_and_traffic = None
 
         # Codegen (pretty-printing & algorithms)
-        generate_perf = bool(
-            ops_and_traffic is not None
-            and getattr(flags, "generate_perf", flags.analysis)
-        )
-        gen = ModuleCodeGenerator(ir, settings, generate_perf)
+        gen = ModuleCodeGenerator(ir, settings, flags.analysis)
         header, source, datastructures_h, datastructures_s, perf = gen.compile()
         if not flags.quiet:
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Codegen")
@@ -199,7 +201,7 @@ if __name__ == "__main__":
     cli.add_argument(
         "--test-size",
         type=int,
-        default=500,
+        default=1500,
         help="Number of generated Boost data cases for automatic tests",
     )
     cli.add_argument(
