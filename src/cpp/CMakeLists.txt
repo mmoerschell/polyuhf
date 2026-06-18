@@ -37,13 +37,18 @@ if(CORRECTNESS)
         generated/datastructures.c
         generated/${MODULE_NAME}_autotests.cpp
     )
-    # Manual tests
+
+    # OpenSSL Poly1305 tests
     if("${MODULE_NAME}" STREQUAL "poly1305")
         message(STATUS "Including manual Poly1305 tests")
         list(APPEND CORRECTNESS_SOURCES poly1305_tests.cpp)
     endif()
 
-    # TODO: HKM test
+    # HKM iterative rewrite tests
+    if("${MODULE_NAME}" STREQUAL "hkm_iter")
+        message(STATUS "Including HKM rewrite tests")
+        list(APPEND CORRECTNESS_SOURCES hkm_tests.cpp)
+    endif()
 
     add_executable(${CORRECTNESS_TARGET} ${CORRECTNESS_SOURCES})
 

@@ -5,8 +5,8 @@ set -euo pipefail
 BUILD_DIR=src/cpp/build
 GENERATED_DIR=src/cpp/generated
 
-if [ "$#" -ne 10 ]; then
-    echo "Usage: $0 <vectorize:0|1> <karatsuba:0|1> <delay:partial|full> <correctness:0|1> <performance:0|1> <module> <pi> <theta> <platform> <unrolling factor>" >&2
+if [ "$#" -ne 11 ]; then
+    echo "Usage: $0 <vectorize:0|1> <karatsuba:0|1> <delay:partial|full> <correctness:0|1> <performance:0|1> <quiet:0|1> <module> <pi> <theta> <platform> <unrolling factor>" >&2
     exit 1
 fi
 
@@ -16,11 +16,12 @@ KARATSUBA=$2
 DELAY=$3
 CORRECTNESS=$4
 PERFORMANCE=$5
-MODULE_NAME=$6
-PI=$7
-THETA=$8
-PLATFORM=$9
-UNROLL=${10}
+QUIET=$6
+MODULE_NAME=$7
+PI=$8
+THETA=$9
+PLATFORM=${10}
+UNROLL=${11}
 
 # Check parameters
 if [[ "$VECTORIZE" != "0" && "$VECTORIZE" != "1" ]]; then
@@ -41,6 +42,10 @@ if [[ "$CORRECTNESS" != "0" && "$CORRECTNESS" != "1" ]]; then
 fi
 if [[ "$PERFORMANCE" != "0" && "$PERFORMANCE" != "1" ]]; then
     echo "performance must be 0 or 1" >&2
+    exit 2
+fi
+if [[ "$QUIET" != "0" && "$QUIET" != "1" ]]; then
+    echo "quiet must be 0 or 1" >&2
     exit 2
 fi
 if [[ "$CORRECTNESS" == "0" && "$PERFORMANCE" == "0" ]]; then
@@ -65,6 +70,9 @@ fi
 if [[ "$PERFORMANCE" == "1" ]]; then
     compiler_args+=(--analysis)
 fi
+if [[ "$QUIET" == "1" ]]; then
+    compiler_args+=(--quiet)
+fi
 compiler_args+=(--delay-limb-realignment "$DELAY")
 
 cmake_correctness=OFF
@@ -88,11 +96,16 @@ rm -rf "$BUILD_DIR" "$GENERATED_DIR"
 python3 ./compiler "${compiler_args[@]}" "modules/$MODULE_NAME.txt" "$PI" "$THETA" "$PLATFORM" "$UNROLL"
 
 # Generate
+if [[ "$QUIET" == "1" ]]; then
+    exec 3>/dev/null
+else
+    exec 3>&1
+fi
 cmake -S src/cpp -B "$BUILD_DIR" -G Ninja \
     -DMODULE_NAME="$MODULE_NAME" \
     -DCORRECTNESS="$cmake_correctness" \
     -DPERFORMANCE="$cmake_performance" \
-    -DAVX2_FLAG="$avx2_flag"
+    -DAVX2_FLAG="$avx2_flag" >&3
 
 # Build
 if [[ "$CORRECTNESS" == "1" ]]; then
