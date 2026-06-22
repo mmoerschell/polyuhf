@@ -1,27 +1,55 @@
 # pyright: basic
+import sys
+
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 
-MODULES_UNROLL = [("mmh", 2), ("sqh", 2), ("nmh", 2), ("hkm_iter", 1)]
-PI = 116
-THETA = 3
 
-plt.figure(figsize=(8, 6))
+MODULES = [
+    "mmh",
+    "nmh",
+    "sqh",
+    "hkm_iter",
+    "poly1305",
+]
 
-for module, unroll in MODULES_UNROLL:
-    df = pd.read_csv(f"data/hashing_performance/neon_{module}_{PI}_{THETA}_kara1_ur{unroll}_data.csv")
-    bytes_ = np.array(df["bytes"])
-    cycles = np.array(df["cycles"])
-    cycles_per_byte = cycles / bytes_
-    plt.scatter(bytes_, cycles_per_byte, label=f"{module}")
+FIELDS = [
+    (116, 3),
+    (226, 5),
+]
 
 
-plt.xlabel("Message length in bytes")
-plt.ylabel("Cycles / Byte")
-plt.legend()
-plt.title(f"Hashing performance in GF(2^{PI}-{THETA})")
-plt.grid(True, which="both", alpha=0.3)
-plt.tight_layout()
-plt.show()
-plt.close()
+def main(argv: list[str]) -> int:
+    platform = argv[1]
+
+    df = pd.read_csv(f"data/hashing_performance/{platform}_data.csv")
+
+    for pi, theta in FIELDS:
+        for karatsuba in range(2):
+            plt.figure(figsize=(8, 6))
+            for module in MODULES:
+                filtered_lines = df[
+                    (df["pi"] == pi)
+                    & (df["karatsuba"] == karatsuba)
+                    & (df["module"] == module)
+                ]
+                bytes_ = np.array(filtered_lines["length"])
+                cycles = np.array(filtered_lines["cycles"])
+                cycles_per_byte = cycles / bytes_
+                plt.scatter(bytes_, cycles_per_byte, label=f"{module}")
+
+            plt.xlabel("Message length in bytes")
+            plt.ylabel("Cycles / Byte")
+            plt.legend()
+            plt.title(f"Hashing performance in GF(2^{pi}-{theta})")
+            plt.grid(True, which="both", alpha=0.3)
+            plt.tight_layout()
+            plt.show()
+            plt.close()
+    return 0
+
+
+if __name__ == "__main__":
+    assert len(sys.argv) == 2, f"Usage: {sys.argv[0]} <platform>"
+    raise SystemExit(main(sys.argv))
