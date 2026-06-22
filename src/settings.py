@@ -62,7 +62,7 @@ class Settings:
                     limb_realignment,
                 )
             case _:
-                raise NotImplementedError(self.platform)
+                raise NotImplementedError(platform)
 
     def configure(
         self,
