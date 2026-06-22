@@ -1,46 +1,65 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [ "$#" -ne 7 ]; then
-    echo "Usage: $0 <platform> <module> <delay:partial|full> <pi> <theta> <karatsuba> <unroll>" >&2
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <platform>" >&2
     exit 1
 fi
 
 PLATFORM="$1"
-MODULE="$2"
-DELAY="$3"
-PI="$4"
-THETA="$5"
-KARATSUBA="$6"
-UNROLLING_FACTOR="$7"
 
-BLOCK_RESOLUTION=16
-STEP=$((PI / 8 * BLOCK_RESOLUTION)) # 2 lanes
+MODULES_SETTINGS=(
+    "mmh 1 full"
+    "nmh 1 full"
+    "sqh 1 full"
+    "hkm_iter 0 partial"
+    "poly1305 1 partial"
+)
+
+FIELDS=(
+    "116 3"
+    "226 5"
+)
+
+
+STEP=$((14 * 100))
 START=$STEP
-STOP=$((16000 + STEP))
-OUTPUT_FILE=data/hashing_performance/"$PLATFORM"_"$MODULE"_"$PI"_"$THETA"_"kara$KARATSUBA"_"ur$UNROLLING_FACTOR"_data.csv
+STOP=16000
+OUTPUT_FILE=data/hashing_performance/"$PLATFORM"_data.csv
+mkdir -p data/hashing_performance
 
-mkdir -p data
 
-printf "bytes,cycles\n" > $OUTPUT_FILE
+printf "module,pi,theta,karatsuba,length,cycles\n" > $OUTPUT_FILE
 
-# Build
-./runner.sh 1 $KARATSUBA $DELAY 0 1 1 1 $MODULE $PI $THETA $PLATFORM $UNROLLING_FACTOR 
 
-# Run
-echo "Step size is $STEP"
 date
-n_bytes=$START
-while IFS= read -r line; do
-    # Write data
-    echo "$n_bytes,$line" >> $OUTPUT_FILE
-    # Report progress
-    percent=$((100 * n_bytes / $STOP))
-    printf "\r[%3d%% done]" "$percent"
-    # Loop step
-    n_bytes=$((n_bytes + STEP))
-done < <(./src/cpp/build/performance_"$MODULE" $START $STOP $STEP median)
-echo ""
+for mod_settings in "${MODULES_SETTINGS[@]}"; do
+    read -r module vectorize delay <<< "$mod_settings"
+
+
+    for field in "${FIELDS[@]}"; do
+        read -r pi theta <<< "$field"
+
+        for karatsuba in $(seq 0 1); do
+            # Build
+            ./runner.sh 1 $karatsuba $delay 0 1 1 1 $module $pi $theta $PLATFORM 1 
+
+            # Run
+            n_bytes=$START
+            while IFS= read -r cycles; do
+                # Write data
+                echo "$module,$pi,$theta,$karatsuba,$n_bytes,$cycles" >> $OUTPUT_FILE
+                # Report progress
+                percent=$((100 * n_bytes / $STOP))
+                printf "\r[%3d%% done]" "$percent"
+                # Loop step
+                n_bytes=$((n_bytes + STEP))
+            done < <(./src/cpp/build/performance_"$module" $START $STOP $STEP median)
+            echo ""
+
+        done
+    done
+done
 date
 
 echo "Wrote output to '$OUTPUT_FILE'"
