@@ -1,0 +1,5 @@
+pi,theta,mode,cycles
+130,5,scalar_schoolbook,90481
+130,5,scalar_karatsuba,75072
+130,5,vector_schoolbook,95845
+130,5,vector_karatsuba,56885

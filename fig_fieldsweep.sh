@@ -1,14 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# TODO adjust input length to be a multiple of the block size in every field
-
 MODULE="mmh"
 DELAY="full"
 PLATFORM="neon"
 UNROLLING_FACTOR="1"
-CPP_BUILD_DIR="src/cpp/build"
-GENERATED_DIR="$CPP_BUILD_DIR/generated"
 MESSAGE_LENGTH=16000
 OUTPUT_FILE=data/fieldsweep/"$MODULE"_"$PLATFORM"_data.csv
 

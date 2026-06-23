@@ -12,8 +12,6 @@ MODULES_SETTINGS=(
     "mmh 1 full"
     "nmh 1 full"
     "sqh 1 full"
-    "hkm_iter 0 partial"
-    "poly1305 1 partial"
 )
 
 FIELDS=(
@@ -22,8 +20,8 @@ FIELDS=(
 )
 
 
-STEP=$((14 * 100))
-START=$STEP
+STEP=112
+START=140
 STOP=16000
 OUTPUT_FILE=data/hashing_performance/"$PLATFORM"_data.csv
 mkdir -p data/hashing_performance
@@ -56,6 +54,11 @@ for mod_settings in "${MODULES_SETTINGS[@]}"; do
                 n_bytes=$((n_bytes + STEP))
             done < <(./src/cpp/build/performance_"$module" $START $STOP $STEP median)
             echo ""
+
+            # Cool down
+            echo "Cooling down"
+
+            sleep 120
 
         done
     done

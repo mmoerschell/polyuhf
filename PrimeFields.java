@@ -7,10 +7,10 @@ public class PrimeFields {
         int fields = 0;
         for (int pi = 100; pi <= 400; ++pi) {
             final var x = BigInteger.ONE.shiftLeft(pi);
-            for (int theta = 1; theta < 20; theta += 2) {
+            for (int theta = 1; theta < 50; theta += 2) {
                 final var thetaBigInt = BigInteger.valueOf(theta);
                 final var candidate = x.subtract(thetaBigInt);
-                if (candidate.isProbablePrime(100)) {
+                if (candidate.isProbablePrime(100) && thetaBigInt.bitCount() < 4) {
                     System.out.println("\"" + pi + " " + theta + "\"");
                     fields += 1;
                     break;
