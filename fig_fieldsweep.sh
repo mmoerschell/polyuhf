@@ -6,9 +6,10 @@ DELAY="full"
 PLATFORM="neon"
 UNROLLING_FACTOR="1"
 MESSAGE_LENGTH=16000
+
+mkdir -p data/fieldsweep
 OUTPUT_FILE=data/fieldsweep/"$MODULE"_"$PLATFORM"_data.csv
 
-mkdir -p fieldsweep
 
 fields=(
   "100 15"

@@ -6,7 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 
-def generate_graph(module: str, platform: str):
+def generate_graph(module: str, platform: str, save: bool):
     df = pd.read_csv(f"data/fieldsweep/{module}_{platform}_data.csv")
     scalar_sb = df[df["mode"] == "scalar_schoolbook"]
     scalar_ka = df[df["mode"] == "scalar_karatsuba"]
@@ -18,25 +18,44 @@ def generate_graph(module: str, platform: str):
     performance = fastest / 16000  # cycles per byte
 
     plt.figure(figsize=(8, 6))
+    # plt.scatter(
+    #     np.array(scalar_sb["pi"]),
+    #     np.array(performance),
+    #     label=module,
+    # )
     plt.scatter(
-        np.array(scalar_sb["pi"]),
-        np.array(performance),
-        label=module,
+        np.array(vec_schoolbook["pi"]),
+        np.array(vec_schoolbook["cycles"]) / 16000.0,
+        label="schoolbook"
+    )
+    plt.scatter(
+        np.array(vec_karatsuba["pi"]),
+        np.array(vec_karatsuba["cycles"]) / 16000.0,
+        label="karatsuba"
     )
     plt.xlabel("Pi")
     plt.ylabel("Cycles / byte")
-    plt.title(f"Hashing performance across fields for {module}")
-    plt.tight_layout()
     plt.legend()
-    plt.show()
+    plt.title(f"Performance across fields, 16kb, {module} on {platform.upper()}")
+    plt.tight_layout()
+    if save:
+        path = (
+            f"figures/field_performance_16kb_"
+            f"{platform}_{module}.png"
+        )
+        plt.savefig(path, dpi=300)
+        print(f"Wrote figure to '{path}'")
+    else:
+        plt.show()
     plt.close()
 
 
 def main(argv: list[str]) -> int:
-    assert len(argv) == 3, f"usage: {argv[0]} <module> <platform>"
+    assert len(argv) in {3, 4}, f"usage: {argv[0]} <module> <platform> [save]"
     module = argv[1]
     platform = argv[2]
-    generate_graph(module, platform)
+    save = len(argv) == 4 and argv[3] == "save"
+    generate_graph(module, platform, save)
     return 0
 
 

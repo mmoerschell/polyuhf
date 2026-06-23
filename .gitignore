@@ -221,15 +221,12 @@ __marimo__/
 .streamlit/secrets.toml
 
 # Debug program, changes all the time but not meaningful
-programs/debug.txt
+modules/debug.txt
 
 # Generated code
 src/cpp/generated
 src/cpp/build
 src/cpp/doctor.h
-
-# Graphs
-graphs/*.png
 
 # Java
 *.class

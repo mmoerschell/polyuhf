@@ -6,7 +6,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 
-def generate_graph(module: str, platform: str):
+def generate_graph(module: str, platform: str, save: bool):
     df = pd.read_csv(f"data/fieldsweep/{module}_{platform}_data.csv")
     scalar_sb = df[df["mode"] == "scalar_schoolbook"]
     scalar_ka = df[df["mode"] == "scalar_karatsuba"]
@@ -26,18 +26,26 @@ def generate_graph(module: str, platform: str):
     )
     plt.xlabel("Pi")
     plt.ylabel("Cycles")
-    plt.title(f"Speedup over scalar implementation for {module}")
+    plt.title(
+        f"Speedup over scalar code, 16kb, {module} on {platform.upper()}"
+    )
     plt.tight_layout()
     plt.legend()
-    plt.show()
+    if save:
+        path = f"figures/field_speedup_16kb_{platform}_{module}.png"
+        plt.savefig(path, dpi=300)
+        print(f"Wrote figure to '{path}'")
+    else:
+        plt.show()
     plt.close()
 
 
 def main(argv: list[str]) -> int:
-    assert len(argv) == 3
+    assert len(argv) in {3, 4}, f"usage: {argv[0]} <module> <platform> [save]"
     module = argv[1]
     platform = argv[2]
-    generate_graph(module, platform)
+    save = len(argv) == 4 and argv[3] == "save"
+    generate_graph(module, platform, save)
     return 0
 
 
