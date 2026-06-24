@@ -1,0 +1,166 @@
+\chapter{Background}
+\label{ch:background}
+
+This chapter introduces the cryptographic and implementation background needed for the rest of the thesis. We start with universal hashing and polynomial hash functions, then move to prime-field arithmetic and limb representations. Finally, we describe the SIMD layout that is used by the generated vectorized code.
+
+\section{Universal and Delta-Universal Hashing}
+\label{sec:universal-hashing}
+
+Let \(\mathcal{R}\) be a key space, \(\mathcal{M}\) a message space, and \(\mathcal{D}\) an output domain. A keyed hash family is a function
+\[
+    H : \mathcal{R} \times \mathcal{M} \rightarrow \mathcal{D}.
+\]
+For a key \(r \in \mathcal{R}\), we write \(H_r(M)\) for \(H(r,M)\). A family is \(\varepsilon\)-almost universal if, for all distinct messages \(M,M' \in \mathcal{M}\),
+\[
+    \Pr_{r \leftarrow \mathcal{R}}\left[H_r(M) = H_r(M')\right] \leq \varepsilon.
+\]
+In many cryptographic applications one needs the stronger delta-universal variant. If \(\mathcal{D}\) is an additive group, \(H\) is \(\varepsilon\)-almost delta-universal if, for all \(M \neq M'\) and all \(Z \in \mathcal{D}\),
+\[
+    \Pr_{r \leftarrow \mathcal{R}}\left[H_r(M) - H_r(M') = Z\right] \leq \varepsilon.
+\]
+These definitions are useful because they can be combined with pseudorandom masks or block-cipher calls to build message authentication codes. The resulting construction inherits computational security from the primitive used for masking, while the collision behavior of the hash family is bounded information-theoretically.
+
+\section{Polynomial Hash Functions}
+\label{sec:polynomial-hash-functions}
+
+Polynomial hash functions instantiate \(H\) by evaluating a polynomial over a finite field. The classical univariate construction interprets message blocks \(M_1,\ldots,M_n\) as field elements and evaluates
+\[
+    H_{\mathrm{poly}}(r,M)
+        = \sum_{i=1}^{n} M_i r^{n-i}
+        = M_1 r^{n-1} + M_2 r^{n-2} + \cdots + M_n.
+\]
+This form is convenient because it can be evaluated online by Horner's rule:
+\[
+    T \leftarrow M_1,\qquad
+    T \leftarrow rT + M_i \quad \text{for } i=2,\ldots,n.
+\]
+The degree of the polynomial controls the universality bound. The exact bound also depends on the message domain and on how byte strings are encoded as field elements. In practice, the encoding must be injective on the intended message space, or otherwise distinct byte strings could be mapped to the same field-element sequence before the polynomial is even evaluated.
+
+\subsection{Poly1305}
+\label{subsec:poly1305}
+
+Poly1305 is the best-known prime-field polynomial hash function. It works over the field defined by the prime \(2^{130}-5\). Message bytes are split into blocks and interpreted as field elements; a polynomial is then evaluated at a secret key \(r\). In the complete authenticator, the result is combined with a second secret value \(s\), but the polynomial evaluation itself is the part relevant to this thesis.
+
+Poly1305 is important both as a deployed baseline and as an example of the tension between design and implementation. Its original design choices were influenced by implementation techniques and architectures that are no longer dominant. Later work observes that some of these choices, such as key clamping, no longer provide the same implementation benefit in modern integer and vectorized implementations~\cite{degabriele2024sok}. This motivates revisiting both the field choice and the implementation strategy.
+
+\section{Prime Fields and Crandall Primes}
+\label{sec:prime-fields}
+
+This thesis focuses on prime fields of the form
+\[
+    \mathbb{F}_p,\qquad p = 2^\pi - \theta,
+\]
+where \(\theta\) is small. Such primes are often called Crandall primes. They are attractive for implementation because powers of \(2^\pi\) can be reduced cheaply:
+\[
+    x \cdot 2^\pi \equiv x \cdot \theta \pmod{2^\pi - \theta}.
+\]
+Thus, when a multiplication produces terms above bit position \(\pi\), these terms can be folded back into the low limbs by multiplying by \(\theta\), usually implemented as a short sequence of shifts and additions when \(\theta\) has low Hamming weight.
+
+\paragraph{Byte encoding.}
+At the API boundary, messages and keys are byte strings. The compiler maps consecutive chunks of bytes to field elements. For a field parameter \(\pi\), the natural chunk size used in this project is \(\lfloor \pi/8 \rfloor\) bytes. This deliberately ignores any fractional byte of field capacity. For example, the field \(2^{116}-3\) consumes 14 bytes per field element, while \(2^{226}-5\) consumes 28 bytes. The remaining bits below the prime are not filled from a following byte; the next byte belongs to the next field element. This convention keeps the byte-to-field mapping simple and uniform across fields.
+
+\section{Limb Representations}
+\label{sec:limb-representations}
+
+Machine instructions operate on fixed-width words, while the field elements considered here are typically larger than a single word. We write \(\omega\) for the machine-word size, for example \(\omega=64\) on the targets used in this thesis. Field elements are represented as vectors of limbs stored in \(\omega\)-bit words. If the regular limb size is \(\lambda\), then the base is \(B=2^\lambda\), with \(\lambda \leq \omega\). An integer \(a\) represented by \(\ell\) limbs has the form
+\[
+    a = \sum_{i=0}^{\ell-1} a_i 2^{i\lambda},
+\]
+where each \(a_i\) is stored in one machine word. The most significant limb may use fewer bits than the other limbs. We denote its size by
+\[
+    \lambda' = \pi - (\ell-1)\lambda,
+\]
+so that a field element in canonical limb form satisfies \(0 \leq a_i < 2^\lambda\) for \(i<\ell-1\) and \(0 \leq a_{\ell-1} < 2^{\lambda'}\). The limb count is chosen so that \((\ell-1)\lambda+\lambda'=\pi\).
+
+\paragraph{Saturation.}
+A representation is saturated if the stored limbs use the full capacity of the machine words, i.e. if \(\lambda=\omega\) for the regular limbs. It is unsaturated if \(\lambda<\omega\). Unsaturated representations are central to fast polynomial hashing over prime fields: the spare \(\omega-\lambda\) high bits can temporarily hold carries, allowing additions and partial products to be accumulated before carry propagation is performed.
+
+\paragraph{Balance.}
+Balanced and unbalanced representations describe a different axis. In a balanced representation, all limbs use the same number of value bits. In an unbalanced representation, the most significant limb uses fewer bits. Since \(\pi\) is rarely a multiple of the chosen limb size, unbalanced representations arise naturally. They complicate some reductions slightly, but they often avoid increasing the limb count.
+
+\paragraph{Parameter choice.}
+In the compiler, the field parameters \(\pi,\theta\), the target word size \(\omega\), and arithmetic bounds determine the selected values of \(\lambda\), \(\lambda'\), and \(\ell\). SPHGen gives bounds for the size of intermediate limbs after operations such as schoolbook multiplication~\cite{pegolotti2026sphgen}. We use the same kind of criterion when selecting a limb size: \(\lambda\) should be as large as possible, because larger limbs reduce \(\ell\), but still small enough that the configured arithmetic and carry schedule fit in the available machine words. These values then appear in generated constants such as limb masks, load shifts, and carry-propagation code.
+
+\section{Prime-Field Arithmetic}
+\label{sec:prime-field-arithmetic}
+
+Field addition in an unsaturated limb representation is straightforward: corresponding limbs are added independently. The result may not be in canonical form, but as long as the limb bounds are respected it still represents the correct field element. A later carry propagation step restores the limb alignment.
+
+\paragraph{Multiplication.}
+Multiplication is more expensive. Let
+\[
+    a=\sum_{i=0}^{\ell-1} a_i 2^{i\lambda},
+    \qquad
+    b=\sum_{j=0}^{\ell-1} b_j 2^{j\lambda}.
+\]
+The ordinary schoolbook product is
+\[
+    ab = \sum_{k=0}^{2\ell-2}
+             \left(\sum_{i+j=k} a_i b_j\right)2^{k\lambda}.
+\]
+A direct product therefore has up to \(2\ell-1\) limbs. For a Crandall prime \(p=2^\pi-\theta\), high terms can be folded back using \(2^\pi \equiv \theta \pmod p\). When the top limb is unbalanced, powers above \(\pi\) also carry a factor \(2^{\lambda-\lambda'}\), which we denote as \(\kappa\). The generated schoolbook multiplication follows the same principle as the usual folded product:
+\[
+    c_k =
+      \sum_{i+j=k} a_i b_j
+      +
+      \theta \cdot 2^{\lambda-\lambda'}
+      \sum_{i+j=k+\ell} a_i b_j,
+      \qquad 0 \leq k < \ell,
+\]
+with the exact shifts and masks specialized to \(\lambda\), \(\lambda'\), and \(\theta\). This formula is best read as the algebraic reason why multiplication can produce an \(\ell\)-limb partially reduced result rather than a \(2\ell-1\)-limb integer.
+
+\paragraph{Squaring.}
+Squaring can be treated as a special case of multiplication. In schoolbook multiplication, the products \(a_i a_j\) and \(a_j a_i\) are computed separately. For squaring these terms are equal, so the cross terms can be computed once and doubled. This reduces the number of limb multiplications and is useful for constructions such as SQH, which are built around squaring.
+
+\paragraph{Karatsuba.}
+Karatsuba multiplication is an alternative to schoolbook multiplication. The compiler uses one Karatsuba level rather than a recursive implementation. Let
+\[
+    m=\left\lceil \ell/2 \right\rceil,\qquad X=2^{m\lambda},
+\]
+and split the two operands as
+\[
+    a=a_0+Xa_1,\qquad b=b_0+Xb_1,
+\]
+where \(a_0,b_0\) contain the lower \(m\) limbs and \(a_1,b_1\) contain the remaining upper limbs. If \(\ell\) is odd, the upper halves are implicitly zero-extended to the lower-half length when forming sums. The compiler then computes three schoolbook products
+\[
+    z_0=a_0b_0,\qquad
+    z_2=a_1b_1,\qquad
+    z_1=(a_0+a_1)(b_0+b_1)-z_0-z_2.
+\]
+The unreduced product is reconstructed as
+\[
+    ab = z_0 + Xz_1 + X^2z_2.
+\]
+After this reconstruction, terms whose limb index is at least \(\ell\) are folded back into the lower \(\ell\) limbs using the same Crandall factor as in the schoolbook case. Equivalently, if \(d_k\) denotes the \(k\)-th limb coefficient of \(z_0+Xz_1+X^2z_2\), the generated partially reduced limbs have the shape
+\[
+    c_k = d_k + \theta \cdot 2^{\lambda-\lambda'} d_{k+\ell},
+    \qquad 0 \leq k < \ell,
+\]
+with absent coefficients interpreted as zero. This saves limb multiplications inside the three subproducts, but introduces additional additions, subtractions, temporaries, and usually more register pressure. Whether it is faster therefore depends on the limb count and target architecture.
+
+\section{Carry Propagation and Limb Realignment}
+\label{sec:carry-realignment}
+
+Carry propagation transforms a non-canonical but valid limb representation into one whose limbs again satisfy the chosen bounds. For limbs \(a_i\), a carry round repeatedly extracts
+\[
+    t_i = \left\lfloor a_i / 2^\lambda \right\rfloor
+\]
+from regular limbs, adds \(t_i\) to the next limb, and masks \(a_i\) to \(\lambda\) bits. For the most significant limb the extracted value is
+\[
+    t_{\ell-1} = \left\lfloor a_{\ell-1} / 2^{\lambda'} \right\rfloor,
+\]
+and the Crandall identity sends it back to the least significant limb as \(t_{\ell-1}\theta\). A full reduction at the end of a hash function additionally handles the case where the represented integer is still at least the field prime \(p=2^\pi-\theta\).
+
+\paragraph{Realignment.}
+The term limb realignment is used for the analogous process after multiplication, where intermediate products occupy wider temporary words. In this thesis, both carry propagation and limb realignment appear in the IR as carry instructions. This is slightly imprecise mathematically, but useful in the compiler: both operations are synchronization points that restore the representation expected by later arithmetic.
+
+\paragraph{Delay strategies.}
+The placement of these operations is an important performance choice. Immediate realignment performs carries as soon as possible. Partially delayed realignment performs carry propagation at selected loop boundaries, for example after a configurable number of unrolled iterations. Fully delayed realignment omits intermediate carries and relies on a final reduction, provided the arithmetic bounds allow it. The latter can be very fast for sums of independent products, but it is not automatically safe for every recurrence.
+
+\section{SIMD Model for Polynomial Hashing}
+\label{sec:simd-model}
+
+The vectorized code generated by this project uses SIMD lanes to process several field elements in parallel. The layout is limb-major: a vector register holds the same limb of several independent field elements, one per lane. A complete vectorized field value is therefore represented by several vector registers, one for each limb.
+
+\paragraph{Lane layout.}
+This model has two dimensions. Along the limb dimension, several registers together represent one or more big integers. Along the lane dimension, each register contains several independent field elements. For example, on a two-lane 64-bit NEON target, one vectorized field value contains two field elements processed in parallel. On a four-lane 64-bit AVX2 target, it contains four. This layout is well suited to sums and parallel Horner branches, where different message blocks can be processed independently for part of the computation.
