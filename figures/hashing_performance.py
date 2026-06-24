@@ -9,7 +9,7 @@ MODULES = [
     "mmh",
     "nmh",
     "sqh",
-    # "hkm_iter",
+    "hkm_iter",
 ]
 
 FIELDS = [
