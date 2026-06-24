@@ -12,6 +12,7 @@ MODULES_SETTINGS=(
     "mmh 1 full"
     "nmh 1 full"
     "sqh 1 full"
+    "hkm_iter 0 partial"
 )
 
 FIELDS=(
@@ -40,7 +41,7 @@ for mod_settings in "${MODULES_SETTINGS[@]}"; do
 
         for karatsuba in $(seq 0 1); do
             # Build
-            ./runner.sh 1 $karatsuba $delay 0 1 1 1 $module $pi $theta $PLATFORM 1 
+            ./runner.sh $vectorize $karatsuba $delay 0 1 1 1 $module $pi $theta $PLATFORM 1
 
             # Run
             n_bytes=$START
