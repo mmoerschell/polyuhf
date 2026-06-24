@@ -218,6 +218,27 @@ marimo/_lsp/
 __marimo__/
 
 # Streamlit
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.dvi
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lol
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.thm
+*.toc
+report/thesis.ps
+report/thesis.pdf
+report/eth-template/declaration-originality.pdf
 .streamlit/secrets.toml
 
 # Debug program, changes all the time but not meaningful
