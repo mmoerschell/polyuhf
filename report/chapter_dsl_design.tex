@@ -1,0 +1,129 @@
+\chapter{DSL Design}
+\label{ch:dsl-design}
+
+The source language is designed to describe polynomial hash functions close to their mathematical presentation. It is intentionally small. Rather than providing a general-purpose imperative language, it offers expressions, functions, conditionals, buffer accesses, field arithmetic, and a few reduction constructs. The examples in this thesis are motivated by concrete designs, but the language is not hard-wired to them: a programmer can combine the available expression forms to describe other polynomial computations over the selected field.
+
+\section{Design Principles}
+\label{sec:dsl-principles}
+
+The most important design principle is that DSL functions are expression-oriented. A programmer writes the value computed by a function, not an explicit sequence of statements that updates local variables. This mirrors the way polynomial hash functions are usually described in papers: as sums, products, recurrences, and polynomial evaluations over a finite domain.
+
+The language has no user-visible mutable variables. Mutable state appears only after lowering, for example as an accumulator in the IR for a reduction. This restriction simplifies type checking and code generation. It also makes it easier to generate a mathematical reference implementation for testing, since the source program has a direct expression-tree interpretation.
+
+At the same time, the DSL is not purely mathematical notation. It contains buffers and index expressions, because generated hash functions must read bytes from memory. It also distinguishes hash functions from helper functions, because hash functions have a stable C API while helper functions may return field elements or indices internally.
+
+\section{Types}
+\label{sec:dsl-types}
+
+The language has three user-facing types.
+
+\begin{description}
+    \item[Index.] Index values are scalar integer values used for loop bounds, offsets, and length computations.
+    \item[Field element.] Field elements are values in the selected prime field \(\mathbb{F}_{2^\pi-\theta}\). The source program does not fix \(\pi\) and \(\theta\); these are compiler parameters.
+    \item[Buffer.] Buffers represent byte arrays passed at the C boundary. Loading from a buffer at field-element index \(i\) decodes the corresponding byte chunk into a field element.
+\end{description}
+
+The field element type is intentionally abstract in the source language. A DSL program does not mention the number of limbs, the limb width, or the SIMD layout. These are introduced by the compiler after the target field and platform are known.
+
+\section{Core Grammar}
+\label{sec:dsl-grammar}
+
+\Cref{lst:dsl-grammar} gives a compact grammar for the central part of the language. It omits lexical details such as comments and numeric-token syntax, but it captures the structure that matters for the compiler: a module contains functions, every function body is exactly one expression, and reductions are expression forms rather than statements.
+
+\begin{lstlisting}[style=thesisBNF,caption={Core grammar of the DSL.},label={lst:dsl-grammar}]
+module      ::= function+
+function    ::= hashfun | helperfun
+
+hashfun     ::= "hash" ident "(" ident "buffer" ","
+                              ident "buffer" ","
+                              ident "index" ")" "{" expr "}"
+
+helperfun   ::= "func" ident "(" params? ")" rettype "{" expr "}"
+params      ::= paramgroup ("," paramgroup)*
+paramgroup  ::= ident ("," ident)* type
+rettype     ::= "fieldelement" | "index"
+type        ::= "buffer" | "fieldelement" | "index"
+
+expr        ::= comparison
+comparison  ::= addsub (("=="|"!="|"<"|"<="|">"|">=") addsub)?
+addsub      ::= muldiv (("+"|"-") muldiv)*
+muldiv      ::= unary (("*"|"/"|"%") unary)*
+unary       ::= "-" unary | power
+power       ::= primary ("**" power)?
+
+primary     ::= literal ("as" type)?
+              | ident
+              | ident "[" expr "]"
+              | ident "(" (expr ("," expr)*)? ")"
+              | "if" expr "{" expr "}" "else" "{" expr "}"
+              | "nctif" expr "{" expr "}" ("else" "{" expr "}")?
+              | reduction
+              | "(" expr ")"
+
+reduction   ::= sum | horner | foldl
+sum         ::= "sum" "[" ident "," expr ":" expr ":" expr "]"
+                "{" expr "}"
+horner      ::= "horner" "[" ident "," expr ":" expr ":" expr
+                          "," expr "]" "{" expr "}"
+foldl       ::= "foldl" "[" ident "," expr ":" expr ":" expr
+                         "," ident "=" expr "]" "{" expr "}"
+\end{lstlisting}
+
+\section{Hash Functions and Helper Functions}
+\label{sec:hash-helper-functions}
+
+The DSL distinguishes between hash functions and helper functions. A hash function is the external entry point. In generated C, every hash function has the same shape:
+\begin{lstlisting}[style=thesisC]
+void h(uint8_t *output, uint8_t *key,
+       uint8_t *message, size_t len);
+\end{lstlisting}
+At this boundary, \(len\) is a byte length. The compiler converts it to a number of field elements using the field chunk size.
+
+Inside the DSL, the corresponding length parameter denotes a number of field elements. This convention keeps DSL programs independent of the selected field. For example, a sum over \(0,\ldots,len-1\) always means a sum over decoded message blocks, even though the number of bytes per block changes with \(\pi\).
+
+Helper functions are internal functions. They may take DSL values as parameters and return indices or field elements. They are useful for factoring out repeated algebraic structure, but they are not exposed through the stable C hash API.
+
+\section{Expressions and Operations}
+\label{sec:dsl-expressions}
+
+Index expressions contain ordinary integer operations such as addition, subtraction, multiplication, division, and remainder. They are used to describe loop bounds and buffer positions.
+
+Buffer loads decode byte chunks into field elements. The load index is zero-based and counts field elements, not bytes. Thus, if the field chunk size is \(c=\lfloor \pi/8\rfloor\), then loading \(message[i]\) reads bytes beginning at offset \(ic\). The exact load code is target-dependent, but the source-level meaning is independent of the backend.
+
+The expression language contains unary and binary operators. The unary operator is negation. Binary arithmetic operators are \(+\), \(-\), \(*\), \(/\), and \(\%\); comparison operators are \(=\), \(\neq\), \(<\), \(\leq\), \(>\), and \(\geq\) in mathematical notation, written in the concrete syntax as the usual C-like tokens. Arithmetic binary operations require both operands to have the same DSL type. For index operands they denote integer arithmetic. For field-element operands, addition and multiplication denote operations modulo the selected prime. Comparisons return index values, used as conditions.
+
+Exponentiation is intentionally restricted. The compiler recognizes exponent \(0\), \(1\), and \(2\). The case \(x^2\) over field elements lowers to a dedicated square operation.
+
+\section{Reductions}
+\label{sec:dsl-reductions}
+
+The DSL contains three reduction forms.
+
+\paragraph{Sums.}
+A sum has an index variable, a range, a step, and a body expression. It denotes the finite sum of the body over the index domain. This construct naturally expresses MMH, SQH, and NMH-style lower-level designs. It also gives the compiler a clear vectorization opportunity: several summands can often be evaluated independently and accumulated in parallel.
+
+\paragraph{Horner reductions.}
+A Horner reduction evaluates a polynomial recurrence. It takes a range, a body expression, and an expression for the multiplier \(r\). The multiplier is evaluated once before the loop and then reused. The recurrence has the form
+\[
+    acc \leftarrow r \cdot (acc + e_i),
+\]
+where \(e_i\) is the body expression at index \(i\). This construct captures Poly1305-style polynomial evaluation and admits the branch-parallel vectorization strategy described in the literature.
+
+\paragraph{Left folds.}
+A left fold introduces an accumulator name and an initial value. For each index in the range, the body expression computes the next accumulator value from the current index and accumulator. Semantically, it is the usual recurrence
+\[
+    acc_0 = init,\qquad acc_{j+1} = f(i_j, acc_j).
+\]
+In this compiler, left folds are scalar. They are used for loop-carried designs such as the iterative HKM rewrite, where each output depends on the previous accumulator value.
+
+\section{Conditionals}
+\label{sec:dsl-conditionals}
+
+The language distinguishes constant-time and non-constant-time conditionals. A regular conditional is intended for cryptographic code paths whose timing should not depend on secret data. It lowers to code that computes both branches and selects the required result. A non-constant-time conditional, written separately in the DSL, lowers to an ordinary branch and may omit an else branch.
+
+This distinction is important because not every branch in a hash function has the same security meaning. Branching on public information, such as the parity or length of a message, is usually acceptable. Branching on secret data is not. The DSL makes this distinction explicit instead of hiding it in code generation.
+
+\section{Supported Examples}
+\label{sec:dsl-supported-examples}
+
+The implemented language supports the examples used in this thesis: MMH, SQH, NMH, Poly1305-style Horner evaluation, and HKM through an iterative left fold. It also supports helper functions, arithmetic expressions, buffer accesses, and explicit conditionals. These examples exercise the main source constructs, but they are not special cases in the compiler. The language should be read as an expression-oriented core for polynomial hash design, not as a catalogue of four hard-coded hash functions.

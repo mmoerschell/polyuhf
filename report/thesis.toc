@@ -2,26 +2,91 @@
 \babel@toc {english}{}\relax 
 \contentsline {chapter}{Contents}{ii}{chapter*.1}%
 \contentsline {chapter}{\chapternumberline {1}Introduction}{1}{chapter.1}%
-\contentsline {section}{\numberline {1.1}Features}{1}{section.1.1}%
-\contentsline {subsection}{\numberline {1.1.1}Extra package includes}{2}{subsection.1.1.1}%
-\contentsline {subsection}{\numberline {1.1.2}Layout setup}{2}{subsection.1.1.2}%
-\contentsline {subsection}{\numberline {1.1.3}Theorem setup}{2}{subsection.1.1.3}%
-\contentsline {subsection}{\numberline {1.1.4}Macro setup}{3}{subsection.1.1.4}%
-\contentsline {chapter}{\chapternumberline {2}Writing scientific texts in English}{4}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Basic writing rules}{4}{section.2.1}%
-\contentsline {section}{\numberline {2.2}Being nice to the reader}{4}{section.2.2}%
-\contentsline {section}{\numberline {2.3}A few important grammar rules}{5}{section.2.3}%
-\contentsline {section}{\numberline {2.4}Things you (usually) don't say in English}{8}{section.2.4}%
-\contentsline {chapter}{\chapternumberline {3}Typography}{9}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Punctuation}{9}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Spacing}{10}{section.3.2}%
-\contentsline {section}{\numberline {3.3}Choice of `fonts'}{11}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Displayed equations}{11}{section.3.4}%
-\contentsline {section}{\numberline {3.5}Floats}{12}{section.3.5}%
-\contentsline {chapter}{\chapternumberline {4}Example Chapter}{14}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Example Section}{14}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}Example Subsection}{14}{subsection.4.1.1}%
-\contentsline {subsubsection}{Example Subsubsection}{14}{section*.2}%
-\contentsline {paragraph}{Example Paragraph}{14}{section*.3}%
-\contentsline {subparagraph}{Example Subparagraph}{14}{section*.4}%
-\contentsline {appendix}{\chapternumberline {A}Dummy Appendix}{15}{appendix.A}%
+\contentsline {section}{\numberline {1.1}Problem Statement}{2}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Design Goals}{2}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Contributions}{3}{section.1.3}%
+\contentsline {chapter}{\chapternumberline {2}Background}{4}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Universal and Delta-Universal Hashing}{4}{section.2.1}%
+\contentsline {section}{\numberline {2.2}Polynomial Hash Functions}{5}{section.2.2}%
+\contentsline {subsection}{\numberline {2.2.1}Poly1305}{5}{subsection.2.2.1}%
+\contentsline {section}{\numberline {2.3}Prime Fields and Crandall Primes}{5}{section.2.3}%
+\contentsline {paragraph}{Byte encoding.}{6}{section*.2}%
+\contentsline {section}{\numberline {2.4}Limb Representations}{6}{section.2.4}%
+\contentsline {paragraph}{Saturation.}{6}{section*.3}%
+\contentsline {paragraph}{Balance.}{6}{section*.4}%
+\contentsline {paragraph}{Parameter choice.}{7}{section*.5}%
+\contentsline {section}{\numberline {2.5}Prime-Field Arithmetic}{7}{section.2.5}%
+\contentsline {paragraph}{Multiplication.}{7}{section*.6}%
+\contentsline {paragraph}{Squaring.}{8}{section*.7}%
+\contentsline {paragraph}{Karatsuba.}{8}{section*.8}%
+\contentsline {section}{\numberline {2.6}Carry Propagation and Limb Realignment}{8}{section.2.6}%
+\contentsline {paragraph}{Realignment.}{9}{section*.9}%
+\contentsline {paragraph}{Delay strategies.}{9}{section*.10}%
+\contentsline {section}{\numberline {2.7}SIMD Model for Polynomial Hashing}{9}{section.2.7}%
+\contentsline {paragraph}{Lane layout.}{9}{section*.11}%
+\contentsline {chapter}{\chapternumberline {3}Related Work}{10}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Efficient Prime-Field Polynomial Hashing}{10}{section.3.1}%
+\contentsline {section}{\numberline {3.2}SPHGen}{11}{section.3.2}%
+\contentsline {section}{\numberline {3.3}New Multivariate Polynomial Designs}{11}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Prime-Field Hashing Beyond Poly1305}{11}{section.3.4}%
+\contentsline {chapter}{\chapternumberline {4}DSL Design}{13}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Design Principles}{13}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Types}{14}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Core Grammar}{14}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Hash Functions and Helper Functions}{15}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Expressions and Operations}{15}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Reductions}{16}{section.4.6}%
+\contentsline {paragraph}{Sums.}{16}{section*.12}%
+\contentsline {paragraph}{Horner reductions.}{16}{section*.13}%
+\contentsline {paragraph}{Left folds.}{16}{section*.14}%
+\contentsline {section}{\numberline {4.7}Conditionals}{16}{section.4.7}%
+\contentsline {section}{\numberline {4.8}Supported Examples}{17}{section.4.8}%
+\contentsline {chapter}{\chapternumberline {5}Compiler Design}{18}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Pipeline Overview}{18}{section.5.1}%
+\contentsline {paragraph}{Generated artifacts.}{18}{section*.15}%
+\contentsline {section}{\numberline {5.2}Parsing and AST Construction}{18}{section.5.2}%
+\contentsline {paragraph}{AST shape.}{18}{section*.16}%
+\contentsline {section}{\numberline {5.3}Type Checking}{19}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Intermediate Representation}{20}{section.5.4}%
+\contentsline {paragraph}{Functions and mutation.}{20}{section*.17}%
+\contentsline {paragraph}{Instruction vocabulary.}{20}{section*.18}%
+\contentsline {subsection}{\numberline {5.4.1}IR Types}{21}{subsection.5.4.1}%
+\contentsline {section}{\numberline {5.5}Lowering Ordinary Expressions}{21}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Lowering Reductions}{22}{section.5.6}%
+\contentsline {paragraph}{Sums.}{22}{section*.19}%
+\contentsline {paragraph}{Horner reductions.}{22}{section*.20}%
+\contentsline {paragraph}{Left folds.}{22}{section*.21}%
+\contentsline {section}{\numberline {5.7}Unrolling and Carry Placement}{22}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Vectorization}{23}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Conditionals}{23}{section.5.9}%
+\contentsline {section}{\numberline {5.10}Configuration and Target Parameters}{23}{section.5.10}%
+\contentsline {paragraph}{Supported targets.}{23}{section*.22}%
+\contentsline {paragraph}{Configuration responsibility.}{24}{section*.23}%
+\contentsline {chapter}{\chapternumberline {6}Code Generation and Runtime Support}{25}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Generated C API}{25}{section.6.1}%
+\contentsline {paragraph}{Buffer convention.}{25}{section*.24}%
+\contentsline {paragraph}{Output format.}{25}{section*.25}%
+\contentsline {section}{\numberline {6.2}Generated Files and Build Integration}{26}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Big Integer Representation}{26}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Load and Store}{27}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Generated Arithmetic}{27}{section.6.5}%
+\contentsline {paragraph}{Multiplication and squaring.}{27}{section*.26}%
+\contentsline {section}{\numberline {6.6}Carry and Full Reduction}{28}{section.6.6}%
+\contentsline {section}{\numberline {6.7}Backends}{28}{section.6.7}%
+\contentsline {paragraph}{Vector backends.}{28}{section*.27}%
+\contentsline {section}{\numberline {6.8}Performance Harness}{28}{section.6.8}%
+\contentsline {section}{\numberline {6.9}Optional Formatting}{29}{section.6.9}%
+\contentsline {chapter}{\chapternumberline {7}Correctness and Validation}{30}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Reference Semantics}{30}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Automatic Boost Tests}{31}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Manual Tests}{31}{section.7.3}%
+\contentsline {subsection}{\numberline {7.3.1}Poly1305}{31}{subsection.7.3.1}%
+\contentsline {subsection}{\numberline {7.3.2}HKM}{31}{subsection.7.3.2}%
+\contentsline {section}{\numberline {7.4}Cross-Checks}{32}{section.7.4}%
+\contentsline {chapter}{Bibliography}{33}{section*.30}%
+\contentsline {appendix}{\chapternumberline {A}Reference Polynomial Definitions}{34}{appendix.A}%
+\contentsline {paragraph}{MMH.}{34}{section*.31}%
+\contentsline {paragraph}{SQH.}{34}{section*.32}%
+\contentsline {paragraph}{NMH.}{34}{section*.33}%
+\contentsline {paragraph}{HKM.}{35}{section*.34}%
+\contentsline {appendix}{\chapternumberline {B}IR Instruction Reference}{36}{appendix.B}%

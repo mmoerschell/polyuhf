@@ -1,0 +1,44 @@
+\chapter{Introduction}
+\label{ch:introduction}
+
+Universal hash functions are a small but central component in many cryptographic constructions. They are used to turn fixed-key algebraic operations into fast authenticators, most prominently in Carter-Wegman style message authentication codes and in authenticated encryption schemes such as AES-GCM and ChaCha20-Poly1305. The security guarantees of these constructions are information-theoretic at the level of the hash family, while their performance is often close to that of ordinary arithmetic on machine words. This combination makes polynomial universal hash functions an attractive target for both cryptographic design and low-level optimization.
+
+The deployed example that motivates much of the recent literature is Poly1305. It evaluates a polynomial over the prime field defined by \(2^{130}-5\), and it is widely used as part of ChaCha20-Poly1305. Poly1305 also illustrates a broader point: a polynomial hash function is not only a mathematical object. Its performance depends on a dense set of implementation choices, including the prime field, the limb representation of field elements, the multiplication algorithm, the placement of carry propagation, and the vector instruction set of the target machine. Small changes in these choices can change both throughput and the amount of security obtained from a fixed number of input bytes.
+
+Recent work has begun to systematize this design space. Degabriele, Gilcher, Govinden, and Paterson collect implementation techniques for polynomial hashing over prime fields and propose several alternatives to Poly1305~\cite{degabriele2024sok}. SPHGen then turns part of this space into a program generator for simple polynomial hash functions over Crandall prime fields~\cite{pegolotti2026sphgen}. In parallel, new multivariate polynomial designs have been proposed that aim to improve the security-performance trade-off by combining lower-level and higher-level polynomial hash functions~\cite{gilcher2026newdesigns}. These developments suggest a natural compiler question: can we describe polynomial hash families at a higher level, while still generating efficient low-level code over a range of fields and instruction sets?
+
+\section{Problem Statement}
+\label{sec:problem-statement}
+
+The problem addressed in this thesis is the design and implementation of a small domain-specific language (DSL) for polynomial universal hash functions. The language should let a cryptographic designer describe the algebraic structure of a hash function without manually writing the associated field arithmetic, vectorized loops, carry propagation, and test harnesses. The compiler should then lower this description to C code for concrete prime fields and target platforms.
+
+The difficulty is that the useful abstraction boundary is not obvious. A language that exposes only low-level arithmetic parameters is easy to compile, but it does not express the structure of newer polynomial designs. Conversely, a language that hides all implementation choices risks preventing the optimizations that make prime-field hashing fast in practice. The goal of this project is to explore a middle ground: a language expressive enough for the lower-level designs from the multivariate-polynomial literature, but close enough to the implementation model of SPHGen to support vectorization and specialized field arithmetic.
+
+\section{Design Goals}
+\label{sec:design-goals}
+
+The compiler developed in this thesis is guided by four design goals.
+
+First, the source language should reflect the algebraic shape of polynomial hash functions. In particular, it should provide direct constructs for finite reductions such as sums, Horner-style polynomial evaluation, and left folds. These constructs are closer to the notation used in cryptographic papers than explicit loops and mutable variables.
+
+Second, the compiler should separate the mathematical description from machine-dependent implementation choices. The same DSL module should be compilable for different Crandall prime fields, multiplication algorithms, and vector targets. The programmer still selects these parameters, but the source program need not be rewritten for every field.
+
+Third, the generated code should expose a stable hash-function API. At the C boundary, hash functions operate on byte buffers and a byte length. Internally, the compiler maps these bytes to field elements according to the selected field size. This is important because changing the field changes the number of message bytes consumed per field element.
+
+Fourth, the implementation should come with practical validation tools. Since this compiler is intended for cryptographic code, a generated implementation without a convenient correctness story would not be useful. The compiler therefore emits automatic tests based on a high-precision C++ reference implementation, and handwritten tests cover cases where an external reference is available.
+
+\section{Contributions}
+\label{sec:contributions}
+
+This thesis makes the following contributions.
+
+\begin{itemize}
+    \item We design a DSL for describing polynomial universal hash functions over Crandall prime fields. The language supports field elements, indices, buffers, helper functions, hash functions, arithmetic expressions, conditionals, and three reduction constructs.
+    \item We define an intermediate representation (IR) for scalar and vectorized prime-field arithmetic. The IR is structured around explicit instructions, loops, conditionals, loads, stores, carry propagation, and full reductions.
+    \item We implement a C backend for scalar code, ARM NEON, and AVX2. The backend emits field arithmetic for Crandall prime fields, including schoolbook multiplication, Karatsuba multiplication, dedicated squaring, load/store routines, carry propagation, and full reduction.
+    \item We implement compiler lowering for the lower-level polynomial patterns that appear in the new-designs literature, including sums for MMH/SQH/NMH-style constructions, Horner-style evaluation for Poly1305-like functions, and left folds for iterative HKM-style recurrences.
+    \item We generate correctness tests automatically using Boost Multiprecision~\cite{boost} as a reference, and we add manual validation tests for important special cases such as Poly1305 and HKM.
+    \item We generate a small benchmarking harness for compiled hash functions, allowing the produced implementations to be measured over byte-oriented input sizes.
+\end{itemize}
+
+The current project focuses on the compiler and the generated implementations. The examples from~\cite{gilcher2026newdesigns} serve to exercise the language and lowering pipeline without turning the compiler into a collection of hand-written implementations.

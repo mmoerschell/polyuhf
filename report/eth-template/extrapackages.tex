@@ -56,11 +56,64 @@
 %% document.
 %\usepackage{makeidx}
 
-%% [OPT] Fancy package for source code listings.  The template text
-%% needs it for some LaTeX snippets; remove/adapt the \lstset when you
-%% remove the template content.
+%% [OPT] Source-code listings used for generated C snippets and grammar fragments.
+\usepackage{xcolor}
 \usepackage{listings}
-\lstset{language=TeX,basicstyle={\normalfont\ttfamily}}
+\definecolor{ListingKeyword}{RGB}{0,72,140}
+\definecolor{ListingComment}{RGB}{90,105,115}
+\definecolor{ListingString}{RGB}{150,58,43}
+\definecolor{ListingNumber}{RGB}{115,70,145}
+\definecolor{ListingBackground}{RGB}{248,248,246}
+\lstdefinelanguage{BNF}{
+  morekeywords={module,function,hashfun,helperfun,params,paramgroup,rettype,type,
+    expr,comparison,addsub,muldiv,unary,power,primary,reduction,sum,horner,foldl,
+    ident,literal},
+  sensitive=true,
+  morecomment=[l]{//},
+  morestring=[b]"
+}
+\lstdefinestyle{thesisC}{
+  language=C,
+  basicstyle=\small\ttfamily,
+  keywordstyle=\color{ListingKeyword}\bfseries,
+  commentstyle=\color{ListingComment}\itshape,
+  stringstyle=\color{ListingString},
+  numberstyle=\tiny\color{ListingNumber},
+  backgroundcolor=\color{ListingBackground},
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  showstringspaces=false
+}
+\lstdefinestyle{thesisBNF}{
+  language=BNF,
+  basicstyle=\scriptsize\ttfamily,
+  keywordstyle=\color{ListingKeyword}\bfseries,
+  commentstyle=\color{ListingComment}\itshape,
+  stringstyle=\color{ListingString},
+  backgroundcolor=\color{ListingBackground},
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  showstringspaces=false
+}
+\lstdefinestyle{thesisIR}{
+  basicstyle=\scriptsize\ttfamily,
+  keywordstyle=\color{ListingKeyword}\bfseries,
+  commentstyle=\color{ListingComment}\itshape,
+  stringstyle=\color{ListingString},
+  backgroundcolor=\color{ListingBackground},
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  showstringspaces=false,
+  morekeywords={module,hash,func,loop,var,from,to,step,nctif,if,else,store,ret,
+    buffer,index,prime,scalar,vector,matrix,pod,const,sub,mod,vload,load,vadd,add,
+    vmul,mul,horiz_add,copy,full_reduction}
+}
+\lstset{basicstyle={\normalfont\ttfamily}}
+\crefname{lstlisting}{listing}{listings}
+\Crefname{lstlisting}{Listing}{Listings}
 
 % Template v2 fixes: this is an old package, microtype is superior + fixes an error
 %% [REC] Fancy character protrusion.  Must be loaded after all fonts.

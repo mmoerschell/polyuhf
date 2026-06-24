@@ -1,0 +1,15 @@
+[0] Config.pm:328> INFO - This is Biber 2.21
+[0] Config.pm:331> INFO - Logfile is 'thesis.blg'
+[28] biber-darwin:342> INFO - === Mi. Juni 24, 2026, 18:36:41
+[35] Biber.pm:421> INFO - Reading 'thesis.bcf'
+[66] Biber.pm:1002> INFO - Found 5 citekeys in bib section 0
+[72] Biber.pm:4487> INFO - Processing section 0
+[76] Biber.pm:4678> INFO - Looking for bibtex file 'refs.bib' for section 0
+[76] bibtex.pm:1713> INFO - LaTeX decoding ...
+[78] bibtex.pm:1519> INFO - Found BibTeX data source 'refs.bib'
+[103] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'normalization = NFD' with 'normalization = prenormalized'
+[103] UCollate.pm:68> INFO - Overriding locale 'en-US' defaults 'variable = shifted' with 'variable = non-ignorable'
+[103] Biber.pm:4307> INFO - Sorting list 'none/global//global/global/global' of type 'entry' with template 'none' and locale 'en-US'
+[103] Biber.pm:4313> INFO - No sort tailoring available for locale 'en-US'
+[107] bbl.pm:676> INFO - Writing 'thesis.bbl' with encoding 'UTF-8'
+[108] bbl.pm:779> INFO - Output to thesis.bbl
