@@ -18,8 +18,9 @@ INVALID PLATFORM
 #include "{{module_name}}.h"
 
 #define SEED 42
-#define NUM_MEASURE_ROUNDS 10
-// Adaptive # of samples (reps) taken per measuring round, and divided
+#define NUM_WARMUP_ROUNDS 15
+#define NUM_MEASURE_ROUNDS 15
+// Adaptive # of samples (reps) taken per measuring round
 
 static int compare_doubles(const void *a, const void *b)
 {
@@ -48,10 +49,14 @@ int main(int argc, char **argv) {
     const size_t stop = atoll(argv[2]);
     const size_t step = atoll(argv[3]);
     IOMode mode;
-    if (!strcmp(argv[4], "min"))
+    if (!strcmp(argv[4], "min")) {
         mode = MODE_MIN;
-    else if (!strcmp(argv[4], "median"))
+        fprintf(stderr, "MIN mode\n");
+    }
+    else if (!strcmp(argv[4], "median")){
         mode = MODE_MEDIAN;
+        fprintf(stderr, "MEDIAN mode\n");
+    }
     else {
         fprintf(stderr, "Invalid mode %s\n", argv[4]);
         return EXIT_FAILURE;
@@ -77,22 +82,25 @@ int main(int argc, char **argv) {
 {% if settings.platform == "neon" -%}
     // Read VCT counter freq
     const TIMESTAMP ctr_freq_hz = get_vct_freq();
-    const double target_ticks = (double)ctr_freq_hz / CPU_FREQ_GHZ;
+    const double target_ticks = 1e9 / (double) CPU_FREQ_HZ * ctr_freq_hz;
+    fprintf(stderr, "target ticks: %f:\n", target_ticks);
 {% elif settings.platform == "avx2" %}
     const double target_ticks = 1e9;
 {%- endif %}
 
+    double ticks_f_estimates[NUM_WARMUP_ROUNDS];
+
     // For all requested sizes
     for (size_t bytes = start; bytes <= stop; bytes += step) {
-        // Dynamically adapt # of reps to target, doubles as warmup
-        size_t reps;
-        for (reps = 1; reps < (1u << 20); reps *= 2) {
+        // Adapt # of reps to target, doubles as warmup
+        double reps = 100, ticksd = 0;
+        for (size_t warmup_r = 0; warmup_r < NUM_WARMUP_ROUNDS; ++warmup_r) {
 {% if settings.platform == "neon" %}
             const TIMESTAMP start = start_vct();
 {% elif settings.platform == "avx2" %}
             const myInt64 start = start_tsc();
 {% endif %}
-            for (size_t r = 0; r < reps; r++) {
+            for (size_t r = 0; r < (size_t) reps; r++) {
                 {{func}}(output, key, message, bytes);
                 sink ^= output[0];
             }
@@ -101,11 +109,14 @@ int main(int argc, char **argv) {
 {% elif settings.platform == "avx2" %}
             const myInt64 ticks = stop_tsc(start);
 {% endif %}
-            if (ticks >= target_ticks) {
-                break;
-            }
+            ticksd = (double) ticks;
+            ticks_f_estimates[warmup_r] = ticksd / reps;
+            reps *= target_ticks / ticksd;
+
         }
-        {# printf("Using batch size of %zu\n", reps); #}
+        qsort(ticks_f_estimates, NUM_WARMUP_ROUNDS, sizeof(ticks_f_estimates[0]), compare_doubles);
+        const double ticks_f_median = ticks_f_estimates[NUM_WARMUP_ROUNDS / 2];
+        reps = target_ticks / ticks_f_median;
 
         double min_cycles = 1ull << 52ull;
         for (size_t i = 0; i < NUM_MEASURE_ROUNDS; ++i) {
@@ -144,6 +155,9 @@ int main(int argc, char **argv) {
             printf("%.0f\n", measurements[NUM_MEASURE_ROUNDS / 2]);
         }
         fflush(stdout);
+
+        // Log
+        {# fprintf(stderr, "%f reps %f ticks\n", reps, measurements[NUM_MEASURE_ROUNDS / 2] * reps / CPU_FREQ_HZ * ctr_freq_hz); #}
 
     }
 
