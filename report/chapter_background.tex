@@ -23,7 +23,7 @@ These definitions are useful because they can be combined with pseudorandom mask
 \section{Polynomial Hash Functions}
 \label{sec:polynomial-hash-functions}
 
-Polynomial hash functions instantiate \(H\) by evaluating a polynomial over a finite field. The classical univariate construction interprets message blocks \(M_1,\ldots,M_n\) as field elements and evaluates
+Polynomial hash functions instantiate \(H\) by evaluating a polynomial over a finite field~\cite{bernstein2007pema}. The classical univariate construction interprets message blocks \(M_1,\ldots,M_n\) as field elements and evaluates
 \[
     H_{\mathrm{poly}}(r,M)
         = \sum_{i=1}^{n} M_i r^{n-i}
@@ -113,7 +113,7 @@ with the exact shifts and masks specialized to \(\lambda\), \(\lambda'\), and \(
 Squaring can be treated as a special case of multiplication. In schoolbook multiplication, the products \(a_i a_j\) and \(a_j a_i\) are computed separately. For squaring these terms are equal, so the cross terms can be computed once and doubled. This reduces the number of limb multiplications and is useful for constructions such as SQH, which are built around squaring.
 
 \paragraph{Karatsuba.}
-Karatsuba multiplication is an alternative to schoolbook multiplication. The compiler uses one Karatsuba level rather than a recursive implementation. Let
+Karatsuba multiplication is an alternative to schoolbook multiplication~\cite{KarOfm62}. The compiler uses one Karatsuba level rather than a recursive implementation. Let
 \[
     m=\left\lceil \ell/2 \right\rceil,\qquad X=2^{m\lambda},
 \]
