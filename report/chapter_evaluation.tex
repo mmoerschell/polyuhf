@@ -4,11 +4,17 @@
 \begin{figure}
     \centering
     \resizebox{\textwidth}{!}{%
-        \input{import_figures/hashing_performance_gf_neon_116-3_schoolbook.pgf}
-        \input{import_figures/hashing_performance_gf_neon_116-3_Karatsuba.pgf}
-        \input{import_figures/hashing_performance_gf_neon_226-5_schoolbook.pgf}
-        \input{import_figures/hashing_performance_gf_neon_226-5_Karatsuba.pgf}
+        \input{import_figures/hashing_performance_gf_neon_116-3.pgf}
     }
-    \caption{A Matplotlib figure exported as PGF.}
+    \caption{Hashing performance on an ARM NEON processor in GF(\(2^{116}-3\)).}
     \label{fig:sin}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \resizebox{\textwidth}{!}{%
+        \input{import_figures/hashing_performance_gf_neon_226-5.pgf}
+    }
+    \caption{Hashing performance on an ARM NEON processor in GF(\(2^{226}-5\)).}
+    \label{fig:cos}
 \end{figure}

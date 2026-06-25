@@ -10,7 +10,7 @@ MODULES = [
     "mmh",
     "nmh",
     "sqh",
-    "hkm_iter",
+    # "hkm_iter",
 ]
 
 FIELDS = [
@@ -32,18 +32,17 @@ def main(argv: list[str]) -> int:
             {
                 "font.size": 11,
                 "axes.labelsize": 11,
-                "legend.fontsize": 10,
-                "xtick.labelsize": 10,
-                "ytick.labelsize": 10,
+                "legend.fontsize": 11,
+                "xtick.labelsize": 11,
+                "ytick.labelsize": 11,
             }
         )
-
 
     df = pd.read_csv(f"data/hashing_performance/{platform}_data.csv")
 
     for pi, theta in FIELDS:
+        plt.figure(figsize=(8, 6))
         for karatsuba, mul_algo_label in enumerate(["schoolbook", "Karatsuba"]):
-            plt.figure(figsize=(8, 6))
             for module in MODULES:
                 filtered_lines = df[
                     (df["pi"] == pi)
@@ -54,34 +53,28 @@ def main(argv: list[str]) -> int:
                 kilobytes = bytes_ / 1000.0
                 cycles = np.array(filtered_lines["cycles"])
                 cycles_per_byte = cycles / bytes_
-                filtered_label = module.replace("_", " ")
-                plt.scatter(kilobytes, cycles_per_byte, label=f"{filtered_label}")
+                label = f"{module} ({mul_algo_label})".replace("_", " ")
+                plt.plot(kilobytes, cycles_per_byte, label=f"{label}")
 
-            plt.xlabel("Message length [KB]")
-            plt.ylabel("Cycles per Byte")
-            plt.legend()
-            title = (
-                f"Hashing performance on {platform.upper()} "
-                f"in GF(2^{pi}-{theta}), using "
-                f"{mul_algo_label} multiplication"
-            )
-            plt.title(title)
-            plt.grid(True, which="both", alpha=0.3)
-            plt.tight_layout()
-            filename = (
-                f"hashing_performance_gf_{platform}_{pi}-{theta}_{mul_algo_label}"
-            )
-            if output == "show":
-                plt.show()
-            elif output == "png":
-                path = f"figures/{filename}.png"
-                plt.savefig(path, dpi=300)
-                print(f"Wrote figure to '{path}")
-            elif output == "latex":
-                path = f"report/import_figures/{filename}.pgf"
-                plt.savefig(path)
-                print(f"Wrote figure to '{path}")
-            plt.close()
+        plt.legend()
+        plt.xlabel("Message length [KB]")
+        plt.title(
+            "Cycles per byte", loc="left"
+        )  # Prof. Püschel style. This is actually the y label
+        plt.grid(True, which="both", alpha=0.3)
+        plt.tight_layout()
+        filename = f"hashing_performance_gf_{platform}_{pi}-{theta}"
+        if output == "show":
+            plt.show()
+        elif output == "png":
+            path = f"figures/{filename}.png"
+            plt.savefig(path, dpi=300)
+            print(f"Wrote figure to '{path}")
+        elif output == "latex":
+            path = f"report/import_figures/{filename}.pgf"
+            plt.savefig(path)
+            print(f"Wrote figure to '{path}")
+        plt.close()
     return 0
 
 
