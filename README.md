@@ -1,4 +1,4 @@
-# PolyUHF
+# Domain-Specific Language for Polynomial Universal Hash Functions
 
 This repository contains an experimental DSL compiler for polynomial universal hash
 functions over Crandall prime fields of the form `GF(2^pi - theta)`. A DSL module
