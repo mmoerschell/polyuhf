@@ -4,6 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
+
 {% if settings.platform == "neon" -%}
 #include "../measurements/vct_arm.h"
 #define CPU_FREQ_GHZ 4.05
@@ -18,8 +21,8 @@ INVALID PLATFORM
 #include "{{module_name}}.h"
 
 #define SEED 42
-#define NUM_WARMUP_ROUNDS 15
-#define NUM_MEASURE_ROUNDS 15
+#define NUM_WARMUP_BATCHES 7
+#define NUM_MEASURE_BATCHES 40
 // Adaptive # of samples (reps) taken per measuring round
 
 static int compare_doubles(const void *a, const void *b)
@@ -39,8 +42,8 @@ typedef enum {
 
 int main(int argc, char **argv) {
     // Input
-    if (argc != 5) {
-        fprintf(stderr, "Usage: %s <start> <stop> <step> <I/O-mode:min|median>\nboth ends inclusive, and where each parameter is a byte length\n", argv[0]);
+    if (argc != 6) {
+        fprintf(stderr, "Usage: %s <start> <stop> <step> <cpb guess> <I/O-mode:min|median>\nboth ends inclusive, and where each parameter is a byte length\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -48,12 +51,13 @@ int main(int argc, char **argv) {
     const size_t start = atoll(argv[1]);
     const size_t stop = atoll(argv[2]);
     const size_t step = atoll(argv[3]);
+    const double cpb_guess = atof(argv[4]);
     IOMode mode;
-    if (!strcmp(argv[4], "min")) {
+    if (!strcmp(argv[5], "min")) {
         mode = MODE_MIN;
         fprintf(stderr, "MIN mode\n");
     }
-    else if (!strcmp(argv[4], "median")){
+    else if (!strcmp(argv[5], "median")){
         mode = MODE_MEDIAN;
         fprintf(stderr, "MEDIAN mode\n");
     }
@@ -66,7 +70,7 @@ int main(int argc, char **argv) {
     const size_t buffer_len = stop + 500;
     uint8_t *message = (uint8_t *)calloc(buffer_len, 1);
     uint8_t *key = (uint8_t *)calloc(buffer_len, 1);
-    double *measurements = (double*) malloc(NUM_MEASURE_ROUNDS * sizeof(double));
+    double *measurements = (double*) malloc(NUM_MEASURE_BATCHES * sizeof(double));
     if (!message || !key || !measurements) {
         fprintf(stderr, "Could not allocate message or key buffer. Arguments too large?\n");
         return EXIT_FAILURE;
@@ -82,19 +86,19 @@ int main(int argc, char **argv) {
 {% if settings.platform == "neon" -%}
     // Read VCT counter freq
     const TIMESTAMP ctr_freq_hz = get_vct_freq();
-    const double target_ticks = 1e9 / (double) CPU_FREQ_HZ * ctr_freq_hz;
+    const double target_ticks = 9e8;
     fprintf(stderr, "target ticks: %f:\n", target_ticks);
 {% elif settings.platform == "avx2" %}
     const double target_ticks = 1e9;
 {%- endif %}
 
-    double ticks_f_estimates[NUM_WARMUP_ROUNDS];
-
     // For all requested sizes
+    size_t f_attempts_reps[NUM_WARMUP_BATCHES];
     for (size_t bytes = start; bytes <= stop; bytes += step) {
-        // Adapt # of reps to target, doubles as warmup
-        double reps = 100, ticksd = 0;
-        for (size_t warmup_r = 0; warmup_r < NUM_WARMUP_ROUNDS; ++warmup_r) {
+        // Adapt # of reps to target ticks, doubles as warmup
+        const double f_ticks_guess = bytes; // bytes * [<1> cycles / byte] = cycles
+        size_t reps = (size_t) (target_ticks / f_ticks_guess);
+        for (size_t warmup_r = 0; warmup_r < NUM_WARMUP_BATCHES; ++warmup_r) {
 {% if settings.platform == "neon" %}
             const TIMESTAMP start = start_vct();
 {% elif settings.platform == "avx2" %}
@@ -109,17 +113,25 @@ int main(int argc, char **argv) {
 {% elif settings.platform == "avx2" %}
             const myInt64 ticks = stop_tsc(start);
 {% endif %}
-            ticksd = (double) ticks;
-            ticks_f_estimates[warmup_r] = ticksd / reps;
-            reps *= target_ticks / ticksd;
-
+            const double ticksd = (double) ticks;
+            f_attempts_reps[warmup_r] = reps;
+            reps = (size_t) (reps * target_ticks / ticksd);
         }
-        qsort(ticks_f_estimates, NUM_WARMUP_ROUNDS, sizeof(ticks_f_estimates[0]), compare_doubles);
-        const double ticks_f_median = ticks_f_estimates[NUM_WARMUP_ROUNDS / 2];
-        reps = target_ticks / ticks_f_median;
+
+        // Median time of last 3 reps attempts
+        const size_t median_last3 = max(min(
+            f_attempts_reps[NUM_WARMUP_BATCHES - 3],
+            f_attempts_reps[NUM_WARMUP_BATCHES - 2]),
+            min(max(
+                f_attempts_reps[NUM_WARMUP_BATCHES - 3],
+                f_attempts_reps[NUM_WARMUP_BATCHES - 2]),
+                f_attempts_reps[NUM_WARMUP_BATCHES - 1]
+            ));
+        fprintf(stderr, "median last three: %zu\n", median_last3);
+        reps = median_last3;
 
         double min_cycles = 1ull << 52ull;
-        for (size_t i = 0; i < NUM_MEASURE_ROUNDS; ++i) {
+        for (size_t i = 0; i < NUM_MEASURE_BATCHES; ++i) {
             // Start timer
 {% if settings.platform == "neon" %}
             const TIMESTAMP start = start_vct();
@@ -131,7 +143,6 @@ int main(int argc, char **argv) {
                 {{func}}(output, key, message, bytes);
                 // Consume output
                 sink ^= output[0];
-                // Stop timer
             }
             // Stop timer, estimate cycles
 {% if settings.platform == "neon" %}
@@ -144,20 +155,20 @@ int main(int argc, char **argv) {
 
             // Save result, update minimum
             measurements[i] = cycles;
-            min_cycles = cycles < min_cycles ? cycles : min_cycles;
+            min_cycles = min(min_cycles, cycles);
         }
 
         // Output
         if (mode == MODE_MIN) {
             printf("%.0f\n", min_cycles);
         } else if (mode == MODE_MEDIAN) {
-            qsort(measurements, NUM_MEASURE_ROUNDS, sizeof(measurements[0]), compare_doubles);
-            printf("%.0f\n", measurements[NUM_MEASURE_ROUNDS / 2]);
+            qsort(measurements, NUM_MEASURE_BATCHES, sizeof(measurements[0]), compare_doubles);
+            printf("%.0f\n", measurements[NUM_MEASURE_BATCHES / 2]);
         }
         fflush(stdout);
 
         // Log
-        {# fprintf(stderr, "%f reps %f ticks\n", reps, measurements[NUM_MEASURE_ROUNDS / 2] * reps / CPU_FREQ_HZ * ctr_freq_hz); #}
+        fprintf(stderr, "%zu reps %f ticks\n", reps, measurements[NUM_MEASURE_BATCHES / 2] * reps / CPU_FREQ_HZ * ctr_freq_hz);
 
     }
 
