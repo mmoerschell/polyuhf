@@ -42,8 +42,8 @@ typedef enum {
 
 int main(int argc, char **argv) {
     // Input
-    if (argc != 6) {
-        fprintf(stderr, "Usage: %s <start> <stop> <step> <cpb guess> <I/O-mode:min|median>\nboth ends inclusive, and where each parameter is a byte length\n", argv[0]);
+    if (argc != 5) {
+        fprintf(stderr, "Usage: %s <start> <stop> <step> <I/O-mode:min|median>\nboth ends inclusive, and where each parameter is a byte length\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -51,13 +51,12 @@ int main(int argc, char **argv) {
     const size_t start = atoll(argv[1]);
     const size_t stop = atoll(argv[2]);
     const size_t step = atoll(argv[3]);
-    const double cpb_guess = atof(argv[4]);
     IOMode mode;
-    if (!strcmp(argv[5], "min")) {
+    if (!strcmp(argv[4], "min")) {
         mode = MODE_MIN;
         fprintf(stderr, "MIN mode\n");
     }
-    else if (!strcmp(argv[5], "median")){
+    else if (!strcmp(argv[4], "median")){
         mode = MODE_MEDIAN;
         fprintf(stderr, "MEDIAN mode\n");
     }
@@ -127,7 +126,7 @@ int main(int argc, char **argv) {
                 f_attempts_reps[NUM_WARMUP_BATCHES - 2]),
                 f_attempts_reps[NUM_WARMUP_BATCHES - 1]
             ));
-        fprintf(stderr, "median last three: %zu\n", median_last3);
+        {# fprintf(stderr, "median last three: %zu\n", median_last3); #}
         reps = median_last3;
 
         double min_cycles = 1ull << 52ull;
@@ -168,7 +167,7 @@ int main(int argc, char **argv) {
         fflush(stdout);
 
         // Log
-        fprintf(stderr, "%zu reps %f ticks\n", reps, measurements[NUM_MEASURE_BATCHES / 2] * reps / CPU_FREQ_HZ * ctr_freq_hz);
+        {# fprintf(stderr, "%zu reps %f ticks\n", reps, measurements[NUM_MEASURE_BATCHES / 2] * reps / CPU_FREQ_HZ * ctr_freq_hz); #}
 
     }
 
