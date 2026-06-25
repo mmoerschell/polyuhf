@@ -20,8 +20,8 @@ FIELDS=(
 )
 
 
-STEP=112
-START=140
+STEP=224
+START=252
 STOP=16000
 OUTPUT_FILE=data/hashing_performance/"$PLATFORM"_data.csv
 mkdir -p data/hashing_performance
