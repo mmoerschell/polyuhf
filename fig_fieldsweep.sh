@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-MODULE="mmh"
-DELAY="full"
-PLATFORM="neon"
-UNROLLING_FACTOR="1"
 MESSAGE_LENGTH=16000
 
+if [ "$#" -ne 1 ]; then
+    echo "Usage: $0 <platform>" >&2
+    exit 1
+fi
+
+PLATFORM="$1"
+
+OUTPUT_FILE=data/fieldsweep/"$PLATFORM"_data.csv
 mkdir -p data/fieldsweep
-OUTPUT_FILE=data/fieldsweep/"$MODULE"_"$PLATFORM"_data.csv
 
 
-fields=(
+FIELDS=(
   "100 15"
   "104 17"
   "105 13"
@@ -55,29 +58,36 @@ fields=(
   "379 19"
 )
 
-modes_vec_kara=(
-  "scalar_schoolbook 0 0"
-  "scalar_karatsuba 0 1"
-  "vector_schoolbook 1 0"
-  "vector_karatsuba 1 1"
+MODULES=(
+  "mmh"
+  "nmh"
+  "sqh"
 )
 
-printf "pi,theta,mode,cycles\n" > $OUTPUT_FILE
+printf "module,pi,theta,vectorize,karatsuba,cycles\n" > $OUTPUT_FILE
 
-for field in "${fields[@]}"; do
+for field in "${FIELDS[@]}"; do
   read -r pi theta <<< "$field"
   echo "FIELD $pi $theta"
-  for m_f in "${modes_vec_kara[@]}"; do
-    read -r mode vectorize karatsuba <<< "$m_f"
-   
-    # Build
-    ./runner.sh $vectorize $karatsuba $DELAY 0 1 1 1 $MODULE $pi $theta $PLATFORM $UNROLLING_FACTOR
+  for module in "${MODULES[@]}"; do
+    for vectorize in $(seq 0 1); do
+      for karatsuba in $(seq 0 1); do
+        if [[ "$module" == "sqh" && "$karatsuba" == "1" ]]; then
+          # SQH uses squaring, Karatsuba-multiplication has no effect there.
+          echo "Skipping Karatsuba for sqh"
+          continue
+        fi
 
-    # Run/perf
-    cycles="$(src/cpp/build/performance_$MODULE $MESSAGE_LENGTH $MESSAGE_LENGTH 1 median)"
-    cycles=$((cycles)) # trim whitespace
+        # Build
+        ./runner.sh $vectorize $karatsuba "full" 0 1 1 1 $module $pi $theta $PLATFORM 1
 
-    printf "%d,%d,%s,%d\n" $pi $theta $mode $cycles >> $OUTPUT_FILE
+        # Run/perf
+        cycles="$(src/cpp/build/performance_$module $MESSAGE_LENGTH $MESSAGE_LENGTH 1 median)"
+        cycles=$((cycles)) # trim whitespace
+
+        printf "%s,%d,%d,%d,%d,%d\n" $module $pi $theta $vectorize $karatsuba $cycles >> $OUTPUT_FILE
+      done
+    done
   done
 done
 
