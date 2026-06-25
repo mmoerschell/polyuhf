@@ -12,7 +12,6 @@ MODULES_SETTINGS=(
     "mmh 1 full"
     "nmh 1 full"
     "sqh 1 full"
-    "hkm_iter 0 partial"
 )
 
 FIELDS=(
@@ -59,7 +58,7 @@ for mod_settings in "${MODULES_SETTINGS[@]}"; do
             # Cool down
             echo "Cooling down"
 
-            sleep 120
+            sleep 600 # 10 minutes
 
         done
     done
