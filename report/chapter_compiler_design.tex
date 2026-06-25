@@ -44,54 +44,29 @@ An IR module contains functions. A function contains statements such as instruct
 \paragraph{Instruction vocabulary.}
 The instruction set is small. It includes scalar index operations, field operations, memory operations, representation-management operations, and vector helpers. Examples are \texttt{add}, \texttt{mul}, \texttt{square}, \texttt{load}, \texttt{vload}, \texttt{carry}, \texttt{vcarry}, \texttt{splat}, and \texttt{select}. Vectorized instructions are not separate source-language operations. They are introduced by IR generation when the compiler decides to lower an expression over several lanes. A complete instruction summary is given in \Cref{app:ir-instructions}.
 
-\Cref{lst:nmh-ir} shows the pretty-printed IR obtained by compiling the NMH module for the field \(2^{226}-5\), using vectorization, schoolbook multiplication, fully delayed limb realignment, and unrolling factor one on the two-lane NEON backend. The example illustrates how the compiler makes the vectorized sum explicit: the main loop uses \texttt{vload}, \texttt{vadd}, and \texttt{vmul} over matrix values, the scalar tail handles the remaining pairwise products, the public odd-length case is represented as an \texttt{nctif}, and the only reduction step after the accumulation is the final \texttt{full\_reduction}.
+\Cref{lst:squaresum-ir} shows the pretty-printed IR for the square-sum program from \Cref{lst:squaresum-dsl}, compiled for \(GF(2^{116}-3)\) on the two-lane NEON backend with vectorization, schoolbook arithmetic, fully delayed limb realignment, and unrolling factor one. The source-level sum becomes a vectorized main loop over matrix values, followed by a scalar tail for the remaining element. Since realignment is fully delayed, the loop contains no intermediate carry instruction; the result is normalized by \texttt{full\_reduction} immediately before the store.
 
-\begin{lstlisting}[style=thesisIR,caption={Pretty-printed IR for vectorized NMH in \(GF(2^{226}-5)\) with schoolbook multiplication, fully delayed limb realignment, and unrolling factor one.},label={lst:nmh-ir}]
-module nmh
+\begin{lstlisting}[style=thesisIR,caption={Pretty-printed IR for the vectorized square-sum running example in \(GF(2^{116}-3)\).},label={lst:squaresum-ir}]
+module squaresum
 
-hash nmh(%key: buffer/pod, %message: buffer/pod, %len: index/scalar) -> prime<226, 5>/vector {
-    %0: index/scalar = sub %len, 1
-    %1: index/scalar = sub %len, 1
-    %2: index/scalar = sub %len, 1
-    %3: index/scalar = sub %2, 0
-    %4: index/scalar = mod %3, 4
-    %5: index/scalar = sub %1, %4
-    %6: prime<226, 5>/matrix = const 0
-    loop var %i from 0 to %5 step 4 {
-        %7: prime<226, 5>/matrix = vload %message, %i, 0, 2
-        %8: prime<226, 5>/matrix = vload %key, %i, 0, 2
-        %9: prime<226, 5>/matrix = vadd %7, %8
-        %10: index/scalar = add %i, 1
-        %11: prime<226, 5>/matrix = vload %message, %10, 0, 2
-        %12: index/scalar = add %i, 1
-        %13: prime<226, 5>/matrix = vload %key, %12, 0, 2
-        %14: prime<226, 5>/matrix = vadd %11, %13
-        %15: prime<226, 5>/matrix = vmul %9, %14
-        %6 = vadd %6, %15
+hash squaresum(%key: buffer/pod, %message: buffer/pod, %len: index/scalar) -> prime<116, 3>/vector {
+    %0: index/scalar = sub %len, 0
+    %1: index/scalar = mod %0, 2
+    %2: index/scalar = sub %len, %1
+    %3: prime<116, 3>/matrix = const 0
+    loop var %i from 0 to %2 step 2 {
+        %4: prime<116, 3>/matrix = vload %message, %i, 0, 1
+        %5: prime<116, 3>/matrix = vsquare %4
+        %3 = vadd %3, %5
     }
-    %16: prime<226, 5>/vector = horiz_add %6
-    loop var %i from %5 to %0 step 2 {
-        %17: prime<226, 5>/vector = load %message, %i, 0
-        %18: prime<226, 5>/vector = load %key, %i, 0
-        %19: prime<226, 5>/vector = add %17, %18
-        %20: index/scalar = add %i, 1
-        %21: prime<226, 5>/vector = load %message, %20, 0
-        %22: index/scalar = add %i, 1
-        %23: prime<226, 5>/vector = load %key, %22, 0
-        %24: prime<226, 5>/vector = add %21, %23
-        %25: prime<226, 5>/vector = mul %19, %24
-        %16 = add %16, %25
+    %6: prime<116, 3>/vector = horiz_add %3
+    loop var %i from %2 to %len step 1 {
+        %7: prime<116, 3>/vector = load %message, %i, 0
+        %8: prime<116, 3>/vector = square %7
+        %6 = add %6, %8
     }
-    %26: prime<226, 5>/vector = const 0
-    %27: index/scalar = mod %len, 2
-    nctif %27 {
-        %28: index/scalar = sub %len, 1
-        %29: prime<226, 5>/vector = load %message, %28, 0
-        %26 = copy %29
-    }
-    %30: prime<226, 5>/vector = add %16, %26
-    %30 = full_reduction %30
-    store %30
+    %6 = full_reduction %6
+    store %6
 }
 \end{lstlisting}
 
@@ -127,6 +102,20 @@ Left folds are lowered as scalar loops. The accumulator is explicitly bound in t
 The unrolling factor has two roles. It reduces loop overhead, and it controls how often carry propagation is inserted in partially delayed mode. In the main unrolled body, several logical reduction steps are emitted before a carry instruction is inserted. The tail loop then handles the remaining iterations and carries at the scalar boundary.
 
 In fully delayed mode, intermediate carry instructions are omitted and the generated function relies on the final full reduction. This can be profitable for reductions whose terms are independent, but it is not a universal transformation. Arithmetic safety depends on the selected field, limb representation, reduction structure, and unrolling factor.
+
+\Cref{lst:carry-delay-schedule} shows the difference schematically. In partially delayed mode, the compiler emits a carry after each unrolled batch of logical iterations. In fully delayed mode, the loop contains no intermediate carry instructions and all normalization is postponed to the final reduction.
+
+\begin{lstlisting}[style=thesisIR,caption={Schematic carry-placement strategies for a reduction loop.},label={lst:carry-delay-schedule}]
+partial:
+    iter_0; iter_1; ...; iter_{u-1}; carry
+    iter_u; iter_{u+1}; ...; iter_{2u-1}; carry
+    ...
+    full_reduction
+
+full:
+    iter_0; iter_1; iter_2; ...; iter_n
+    full_reduction
+\end{lstlisting}
 
 \section{Vectorization}
 \label{sec:compiler-vectorization}

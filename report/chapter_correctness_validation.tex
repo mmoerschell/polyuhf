@@ -29,7 +29,7 @@ Some examples deserve additional tests beyond the generic Boost oracle.
 \subsection{Poly1305}
 \label{subsec:poly1305-tests}
 
-The Poly1305 DSL module implements the polynomial part of Poly1305. The complete Poly1305 authenticator adds a second key component \(s\) after polynomial evaluation. In this project, the DSL test fixes or omits this final addition and compares the generated polynomial output against OpenSSL in the corresponding setting.
+The Poly1305 DSL module implements the polynomial part of Poly1305. The complete Poly1305 authenticator adds a second key component \(s\) after polynomial evaluation. In this project, the DSL test fixes or omits this final addition and compares the generated polynomial output against OpenSSL in the corresponding setting~\cite{openssl}.
 
 This test is useful because OpenSSL is a well-regarded independent implementation. It validates not only field arithmetic, but also the byte-level interpretation of Poly1305 blocks. The omission of the final \(s\) addition is deliberate: that addition is outside the prime-field computation modeled by the DSL.
 

@@ -24,7 +24,7 @@ The output buffer is assumed to be large enough to hold the exported field eleme
 
 For a module named \(m\), the compiler emits a header \(m\texttt{.h}\), a source file \(m\texttt{.c}\), and shared data-structure files for the selected field representation. When automatic tests are enabled, it also emits a C++ test file. When performance generation is enabled, it emits a standalone C benchmarking source for the module.
 
-The surrounding CMake project builds correctness and performance targets from the generated files. This build integration is deliberately thin. The compiler is responsible for producing ordinary C and C++ sources; CMake is responsible for compiling and linking them with handwritten tests and dependencies such as OpenSSL or Boost.
+The surrounding CMake project builds correctness and performance targets from the generated files. This build integration is deliberately thin. The compiler is responsible for producing ordinary C and C++ sources; CMake is responsible for compiling and linking them with handwritten tests and dependencies such as OpenSSL~\cite{openssl} or Boost~\cite{boost}.
 
 \section{Big Integer Representation}
 \label{sec:bigint-representation}
@@ -88,6 +88,72 @@ Multiplication is emitted either as schoolbook multiplication or as Karatsuba mu
 Squaring has a dedicated implementation. It exploits symmetry of the product to avoid computing both \(a_i a_j\) and \(a_j a_i\) separately. The vectorized backends contain corresponding squaring code for NEON and AVX2.
 
 For multiplication, the generated code follows the folded schoolbook formula from \Cref{sec:prime-field-arithmetic}. Each output limb accumulates ordinary products whose indices sum to that limb, plus wrapped products whose indices exceed the field size and are multiplied by the Crandall factor. The generated code is specialized enough that the loops are usually unrolled in the emitted C.
+
+\Cref{lst:squaresum-neon} continues the square-sum example from \Cref{lst:squaresum-dsl,lst:squaresum-ir}. The excerpt is taken from the generated NEON C code for \(GF(2^{116}-3)\). It shows the byte length being converted to a field-element count, the two-lane vector loop, a representative part of the generated \texttt{vsquare}, the horizontal reduction into one scalar field element, the scalar tail, and the final reduction before storing bytes.
+
+\begin{lstlisting}[style=thesisC,basicstyle=\scriptsize\ttfamily,caption={Excerpt of generated NEON C for the square-sum running example.},label={lst:squaresum-neon}]
+void squaresum(uint8_t* output, uint8_t* key, uint8_t* message, size_t buffer_length) {
+const uint64x2_t vlambda_mask = vdupq_n_u64(262143);
+const uint64x2_t vlambda_prime_mask = vdupq_n_u64(255);
+const uint64_t len = (buffer_length + FIELD_CHUNK_SIZE - 1) / FIELD_CHUNK_SIZE;
+uint64_t var0 = len-0;
+uint64_t var1 = var0%2;
+uint64_t var2 = len-var1;
+vbigint_t var3 = { 0 };
+for (uint64_t i=0;i<var2;i+=2) {
+/* var4 = vload message @ i offsets 0, 1 */
+vbigint_t var4;
+uint8x16x2_t var4_limb0_data = {
+vld1q_u8(&message[14 * (i + 0) + 0]),
+vld1q_u8(&message[14 * (i + 1) + 0]),
+};
+var4.limb0 =
+vandq_u64(vreinterpretq_u64_u8(vqtbl2q_u8(var4_limb0_data, (uint8x16_t){
+    0, 1, 2, 255, 255, 255, 255, 255,
+    16, 17, 18, 255, 255, 255, 255, 255,
+})),vlambda_mask);
+/* remaining vload limbs omitted */
+
+vbigint_t var5 = {0};
+/* var5 = vsquare var4 */
+var5.limb0 = vmlal_u32(
+    var5.limb0,
+    vmovn_u64(var4.limb0),
+    vmovn_u64(var4.limb0)
+);
+var5.limb0 = vmlal_u32(
+    var5.limb0,
+    vmul_u32(vmovn_u64(var4.limb1), vdup_n_u32(3072)),
+    vmovn_u64(var4.limb6)
+);
+/* remaining vsquare terms omitted */
+
+var3.limb0 = vaddq_u64(var3.limb0, var5.limb0);
+/* remaining accumulator limbs omitted */
+}
+/* var6 = horiz_add var3 */
+bigint_t var6;
+var6.limb0 = vaddvq_u64(var3.limb0);
+/* remaining horizontal-add limbs omitted */
+
+for (uint64_t i=var2;i<len;i+=1) {
+/* var7 = load message @ i offsets 0 */
+bigint_t var7;
+var7.limb0 = (message[14 * i + 0] << 0|message[14 * i + 1] << 8|message[14 * i + 2] << 16) & 262143ull;
+/* remaining scalar load limbs omitted */
+bigint_t var8 = {0};
+/* var8 = square var7 */
+var8.limb0 += var7.limb0 * var7.limb0;
+var8.limb0 += 6144 * var7.limb1 * var7.limb6;
+/* remaining scalar square and add terms omitted */
+}
+/* var6 = full_reduction var6 */
+/* full_reduction: extended carry */
+var6.limb1 += var6.limb0 >> 18;
+var6.limb0 &= 262143ull;var6.limb2 += var6.limb1 >> 18;
+/* remaining reduction and store bytes omitted */
+}
+\end{lstlisting}
 
 \section{Carry and Full Reduction}
 \label{sec:carry-full-reduction}

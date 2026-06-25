@@ -97,10 +97,36 @@ Exponentiation is intentionally restricted. The compiler recognizes exponent \(0
 \section{Reductions}
 \label{sec:dsl-reductions}
 
-The DSL contains three reduction forms.
+The DSL contains three reduction forms. \Cref{tab:reduction-forms} summarizes their intended semantics and the way the compiler treats them.
+
+\begin{table}[t]
+    \centering
+    \small
+    \setlength{\tabcolsep}{3pt}
+    \caption{Reduction forms supported by the DSL.}
+    \label{tab:reduction-forms}
+    \begin{tabular}{p{0.15\textwidth}p{0.25\textwidth}p{0.26\textwidth}p{0.18\textwidth}}
+        \toprule
+        Construct & Accumulator update & Vectorization & Examples \\
+        \midrule
+        \texttt{sum} &
+        \(acc + e_i\) &
+        yes &
+        MMH, SQH, NMH \\
+        \texttt{horner} &
+        \(r \cdot (acc + e_i)\) &
+        yes, via branches &
+        Poly1305 \\
+        \texttt{foldl} &
+        \(f(i, acc)\) &
+        scalar only &
+        iterative HKM \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
 \paragraph{Sums.}
-A sum has an index variable, a range, a step, and a body expression. It denotes the finite sum of the body over the index domain. This construct naturally expresses MMH, SQH, and NMH-style lower-level designs. It also gives the compiler a clear vectorization opportunity: several summands can often be evaluated independently and accumulated in parallel.
+A sum has an index variable, a range, a step, and a body expression. It denotes the finite sum of the body over the index domain. This construct gives the compiler a clear vectorization opportunity: several summands can often be evaluated independently and accumulated in parallel.
 
 \paragraph{Horner reductions.}
 A Horner reduction evaluates a polynomial recurrence. It takes a range, a body expression, and an expression for the multiplier \(r\). The multiplier is evaluated once before the loop and then reused. The recurrence has the form
@@ -112,18 +138,26 @@ where \(e_i\) is the body expression at index \(i\). This construct captures Pol
 \paragraph{Left folds.}
 A left fold introduces an accumulator name and an initial value. For each index in the range, the body expression computes the next accumulator value from the current index and accumulator. Semantically, it is the usual recurrence
 \[
-    acc_0 = init,\qquad acc_{j+1} = f(i_j, acc_j).
+    acc_0 \leftarrow init,\qquad acc_{j+1} \leftarrow f(i_j, acc_j).
 \]
 In this compiler, left folds are scalar. They are used for loop-carried designs such as the iterative HKM rewrite, where each output depends on the previous accumulator value.
 
 \section{Conditionals}
 \label{sec:dsl-conditionals}
 
-The language distinguishes constant-time and non-constant-time conditionals. A regular conditional is intended for cryptographic code paths whose timing should not depend on secret data. It lowers to code that computes both branches and selects the required result. A non-constant-time conditional, written separately in the DSL, lowers to an ordinary branch and may omit an else branch.
+The language distinguishes constant-time and non-constant-time conditionals explicitly. The regular \texttt{if} construct is intended for cryptographic code paths whose timing should not depend on secret data. It lowers to code that computes both branches and selects the required result. The \texttt{nctif} construct marks a non-constant-time conditional. It lowers to an ordinary branch and may omit an else branch.
 
 This distinction is important because not every branch in a hash function has the same security meaning. Branching on public information, such as the parity or length of a message, is usually acceptable. Branching on secret data is not. The DSL makes this distinction explicit instead of hiding it in code generation.
 
-\section{Supported Examples}
-\label{sec:dsl-supported-examples}
+\section{Running example}
+As a small example used again in subsequent chapters, consider the mathematical function
+\[
+    S(r, M,n)=\sum_{i=0}^{n-1} M_i^2,
+\]
+where each \(M_i\) is obtained by decoding one field element from a message buffer. \Cref{lst:squaresum-dsl} shows the corresponding DSL module. It is deliberately simple. It contains one hash function, which itself has one expression: a sum over \(len\) terms, indexed by the variable \(i\). We will later show how the compiler abstracts this and generates code for it.
 
-The implemented language supports the examples used in this thesis: MMH, SQH, NMH, Poly1305-style Horner evaluation, and HKM through an iterative left fold. It also supports helper functions, arithmetic expressions, buffer accesses, and explicit conditionals. These examples exercise the main source constructs, but they are not special cases in the compiler. The language should be read as an expression-oriented core for polynomial hash design, not as a catalogue of four hard-coded hash functions.
+\begin{lstlisting}[style=thesisBNF,caption={DSL expression for the running square-sum example.},label={lst:squaresum-dsl}]
+hash squaresum(key buffer, message buffer, len index) {
+    sum[i,0:len:1]{message[i] ** 2}
+}
+\end{lstlisting}
