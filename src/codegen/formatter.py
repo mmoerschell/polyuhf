@@ -1,7 +1,8 @@
 import subprocess
 
-CLANG_TIDY = "/opt/homebrew/opt/llvm/bin/clang-tidy"
-CLANG_FORMAT = "/opt/homebrew/opt/llvm/bin/clang-format"
+CLANG_TOOLS_PATH = "/opt/homebrew/opt/llvm/bin"
+CLANG_TIDY = f"{CLANG_TOOLS_PATH}/clang-tidy"
+CLANG_FORMAT = f"{CLANG_TOOLS_PATH}/clang-format"
 
 
 def tidy_and_format_c(path: str) -> None:

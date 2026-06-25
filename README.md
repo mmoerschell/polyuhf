@@ -24,7 +24,7 @@ developer tools. Below is an example of how to install those on Ubuntu.
 sudo apt install -y gcc g++ libboost-all-dev libssl-dev cmake ninja-build
 ```
 
-For optional formatting of generated code, you may  also want to install `clang-tidy` and `clang-format`.
+For optional formatting of generated code, you may also want to install `clang-tidy` and `clang-format`, and adjust `CLANG_TOOLS_PATH` in `src/codegen/formatter.py`.
 
 ```sh
 sudo apt install -y clang-tidy clang-format
