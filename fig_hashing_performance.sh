@@ -39,6 +39,12 @@ for mod_settings in "${MODULES_SETTINGS[@]}"; do
         read -r pi theta <<< "$field"
 
         for karatsuba in $(seq 0 1); do
+            if [[ "$module" == "sqh" && "$karatsuba" == "1" ]]; then
+                # SQH uses squaring, Karatsuba-multiplication has no effect there.
+                echo "Skipping Karatsuba for sqh"
+                continue
+            fi
+
             # Build
             ./runner.sh $vectorize $karatsuba $delay 0 1 1 1 $module $pi $theta $PLATFORM 1
 

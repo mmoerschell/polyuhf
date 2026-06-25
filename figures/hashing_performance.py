@@ -44,6 +44,13 @@ def main(argv: list[str]) -> int:
         plt.figure(figsize=(8, 6))
         for karatsuba, mul_algo_label in enumerate(["schoolbook", "Karatsuba"]):
             for module in MODULES:
+                if module == "sqh":
+                    if karatsuba == 0:
+                        mul_algo_label = "schoolbook-squaring"
+                    else:
+                        # SQH uses squaring, Karatsuba-multiplication has no effect there.
+                        continue
+
                 filtered_lines = df[
                     (df["pi"] == pi)
                     & (df["karatsuba"] == karatsuba)
