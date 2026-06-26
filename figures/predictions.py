@@ -29,6 +29,9 @@ def main(argv: list[str]) -> int:
                 "legend.fontsize": 11,
                 "xtick.labelsize": 11,
                 "ytick.labelsize": 11,
+                "font.family": "sans-serif",
+                "pgf.rcfonts": False,
+                "pgf.texsystem": "pdflatex",
             }
         )
 
@@ -58,19 +61,27 @@ def main(argv: list[str]) -> int:
         actual_values.append(actual_cpb)
         predicted_values.append(predicted_cpb)
 
-        ratio = (predicted_cpb / actual_cpb - 1) * 100
-        print(f"{module} {actual_cpb} {predicted_cpb} {ratio:02}%")
-
     x = np.arange(len(labels))
     width = 0.35
 
-    fig, ax = plt.subplots(figsize=(8, 4))
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+
+    # Style setup
+    for spine in ["top", "right", "left"]:
+        ax.spines[spine].set_visible(False)  # hide lines
+    ax.yaxis.set_ticks_position("left")  # keep ticks on the left
+    ax.tick_params(axis="y", length=0)
+    ax.set_facecolor("#eeeeee")  # plot/graph area background
+    ax.grid(axis="y", color="white")  # white horizontal grid
+    ax.set_axisbelow(True)  # grid behind bars
 
     bars_actual = ax.bar(
         x - width / 2,
         actual_values,
         width,
         label="Actual",
+        color="C0"
     )
 
     bars_predicted = ax.bar(
@@ -78,13 +89,14 @@ def main(argv: list[str]) -> int:
         predicted_values,
         width,
         label="Predicted",
+        color="C2"
     )
 
     ax.set_title("Cycles per byte", loc="left")
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
-    ax.legend()
-    ax.set_ylim(0, 3)
+    ax.legend(loc="upper left")
+    ax.set_ylim(0, 2.75)
 
     ax.bar_label(bars_actual, fmt="%.2f", padding=3)
     ax.bar_label(bars_predicted, fmt="%.2f", padding=3)

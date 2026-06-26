@@ -60,8 +60,8 @@ FIELDS=(
 
 MODULES=(
   "mmh"
-  "nmh"
-  "sqh"
+  # "nmh"
+  # "sqh"
 )
 
 printf "module,pi,theta,vectorize,karatsuba,cycles\n" > $OUTPUT_FILE

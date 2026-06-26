@@ -61,7 +61,7 @@ Useful flags:
 --karatsuba, -k                 use one-level Karatsuba multiplication
 --delay-limb-realignment MODE   MODE is partial or full
 --automatic_tests, -t           generate Boost correctness tests
---analysis, -a                  generate performance harness when possible
+--model, -m                     performance model: estimate cycles per byte
 --show-ir, -i                   print the compiler IR
 --format, -f                    run optional C formatting
 --quiet, -q                     only report errors
@@ -76,7 +76,7 @@ The compiler writes generated code to `src/cpp/generated/`. A typical generated 
 datastructures.h
 datastructures.c
 <module>_autotests.cpp      if --automatic_tests is enabled
-<module>_perf.c             if --analysis can emit a perf harness
+<module>_perf.c
 ```
 
 Hash functions are emitted with the stable C API:
@@ -169,9 +169,29 @@ For example:
 
 The script calls `runner.sh` repeatedly. Poly1305 is only tested in `GF(2^130 - 5)`, where its usual byte/block interpretation makes sense.
 
-## Figures and Measurements
+## Reproducing Results and Figures
 
-The measurement scripts generate CSV files under `data/`. The plotting scripts read those CSV files and write figures under `figures/` or PGF files under `report/import_figures/`.
+Data and figures from the Master Thesis are reproducible using a set of shell scripts. Everything must be executed from this project root directory.
+
+The measurement scripts `fig_hashing_performance.sh`, `fig_fieldsweep.sh` and `fig_model.sh` generate CSV files under `data/`.
+
+```sh
+./fig_hashing_performance.sh neon
+./fig_fieldsweep.sh neon
+./fig_model
+```
+
+The corresponding plotting scripts `figures/hashing_performance.py`, `figures/fieldsweep.py` and `figures/predictions.py` read those CSV files and produce figures, which they can either show write under `figures/` as PNG files or under `report/import_figures/` as PGF files.
+
+```sh
+python3 figures/hashing_performance.py neon show
+python3 figures/fieldsweep neon show
+python3 figures/predictions.py show
+```
+
+All these scripts may demand a "platform" command-line argument, one of `neon` or `avx2`. Plotting scripts additionally take `show`, `png` or `latex` to direct their output.
+
+Note that measurement scripts take several hours to run. The performance model depends on prior sampling of hashing performance data for ARM NEON.
 
 ## Notes
 

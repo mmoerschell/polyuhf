@@ -7,10 +7,9 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 MODULES = [
-    "mmh",
     "nmh",
     "sqh",
-    # "hkm_iter",
+    "mmh",
 ]
 
 FIELDS = [
@@ -35,13 +34,27 @@ def main(argv: list[str]) -> int:
                 "legend.fontsize": 11,
                 "xtick.labelsize": 11,
                 "ytick.labelsize": 11,
+                "font.family": "sans-serif",
+                "pgf.rcfonts": False,
+                "pgf.texsystem": "pdflatex",
             }
         )
 
     df = pd.read_csv(f"data/hashing_performance/{platform}_data.csv")
 
     for pi, theta in FIELDS:
-        plt.figure(figsize=(8, 6))
+        plt.figure(figsize=(8, 5))
+
+        # Style setup
+        ax = plt.gca()
+        for spine in ["top", "right", "left"]:
+            ax.spines[spine].set_visible(False)  # hide lines
+        ax.yaxis.set_ticks_position("left")  # keep ticks on the left
+        ax.tick_params(axis="y", length=0)
+        ax.set_facecolor("#eeeeee")  # plot/graph area background
+        ax.grid(axis="y", color="white")  # white horizontal grid
+        ax.set_axisbelow(True)  # grid behind bars
+
         for karatsuba, mul_algo_label in enumerate(["schoolbook", "Karatsuba"]):
             for module in MODULES:
                 if module == "sqh":
@@ -61,14 +74,21 @@ def main(argv: list[str]) -> int:
                 cycles = np.array(filtered_lines["cycles"])
                 cycles_per_byte = cycles / bytes_
                 label = f"{module} ({mul_algo_label})".replace("_", " ")
-                plt.plot(kilobytes, cycles_per_byte, label=f"{label}")
+                is_highlight = (module, karatsuba) == ("nmh", 0)
+                plt.plot(
+                    kilobytes,
+                    cycles_per_byte,
+                    label=f"{label}",
+                    lw=3.0 if is_highlight else 1.5,
+                    alpha=1.0 if is_highlight else 0.7,
+                    zorder=10 if is_highlight else 1,
+                )
 
         plt.legend()
         plt.xlabel("Message length [KB]")
         plt.title(
             "Cycles per byte", loc="left"
         )  # Prof. Püschel style. This is actually the y label
-        plt.grid(True, which="both", alpha=0.3)
         plt.tight_layout()
         filename = f"hashing_performance_gf_{platform}_{pi}-{theta}"
         if output == "show":
