@@ -1,48 +1,48 @@
 \chapter{Correctness and Validation}
 \label{ch:correctness-validation}
 
-Cryptographic code generation needs a clear correctness target. In this project, correctness means that the generated C implementation agrees with the mathematical meaning of the DSL program for the selected field and configuration. The compiler does not currently provide a formal proof for every generated program. Instead, it combines a reference semantics, automatic randomized tests, and handwritten cross-checks for important examples.
+Correctness means that the generated C implementation agrees with the mathematical meaning of the DSL program for the selected field and configuration. The compiler does not provide a formal proof; it combines reference semantics, randomized tests, and handwritten cross-checks.
 
 \section{Reference Semantics}
 \label{sec:reference-semantics}
 
-The reference semantics interprets a DSL program after API-level decoding has turned byte buffers into sequences of field elements. Index expressions denote integer values. Buffer expressions such as \(message[i]\) denote the \(i\)-th decoded field element from the corresponding input buffer. Field operations denote addition, multiplication, and squaring in \(\mathbb{F}_{2^\pi-\theta}\). Unary and binary expression nodes are interpreted compositionally, so the meaning of a complex expression is determined by the meanings of its subexpressions and operators.
+The reference semantics interprets a DSL program after API-level decoding turns byte buffers into field-element sequences. Index expressions denote integers. Buffer expressions such as \(message[i]\) denote the \(i\)-th decoded field element. Field operations denote addition, multiplication, and squaring in \(\mathbb{F}_{2^\pi-\theta}\).
 
-Reductions have their usual mathematical meanings. A sum denotes a finite summation over its index domain. A Horner reduction denotes repeated application of its polynomial recurrence. A left fold denotes a recurrence over an explicitly named accumulator. A hash function denotes the final field element exported to the output buffer.
+Reductions have their usual mathematical meanings: finite summation, Horner recurrence, or left fold over an explicitly named accumulator. A hash function denotes the final field element exported to the output buffer.
 
-This semantics is intentionally independent of limb representations, carry schedules, and vectorization. Those are implementation choices. The generated code is correct if, after decoding inputs according to the generated C API, it produces the same field element as this mathematical interpretation.
+This semantics is independent of limb representations, carry schedules, and vectorization. Generated code is correct if it produces the same field element.
 
 \section{Automatic Boost Tests}
 \label{sec:automatic-boost-tests}
 
-For automatic validation, the compiler emits a C++ test file using Boost Multiprecision~\cite{boost}. The generated reference code is scalar and intentionally not optimized. Its purpose is not speed, but clarity: it evaluates the same DSL expressions using arbitrary-precision integers and reduces modulo the selected prime.
+For automatic validation, the compiler emits a C++ test file using Boost Multiprecision~\cite{boost}. The scalar reference evaluates the same DSL expressions using arbitrary-precision integers and reduces modulo the selected prime.
 
-Each automatic test generates randomized key and message data, calls the generated C implementation, calls the Boost reference implementation, and compares the exported outputs. Since the tests are generated from the AST, they can be produced for arbitrary DSL modules that fit the supported language fragment.
+Each test generates randomized key and message data, calls the generated C implementation, calls the Boost reference, and compares exported outputs.
 
-This approach is not a proof, but it is effective for development. It catches errors in lowering, load/store code, carry placement, multiplication routines, full reduction, and API-level byte handling. It is also useful when experimenting with aggressive unrolling or delayed carry settings, because invalid configurations tend to fail quickly on randomized inputs.
+This is not a proof, but it catches errors in lowering, load/store code, carry placement, multiplication routines, full reduction, and byte handling.
 
 \section{Manual Tests}
 \label{sec:manual-tests}
 
-Some examples deserve additional tests beyond the generic Boost oracle.
+Some examples use additional tests.
 
 \subsection{Poly1305}
 \label{subsec:poly1305-tests}
 
-The Poly1305 DSL module implements the polynomial part of Poly1305. The complete Poly1305 authenticator adds a second key component \(s\) after polynomial evaluation. In this project, the DSL test fixes or omits this final addition and compares the generated polynomial output against OpenSSL in the corresponding setting~\cite{openssl}.
+The Poly1305 DSL module implements the polynomial part of Poly1305. The complete authenticator adds a second key component \(s\); here the test fixes or omits it and compares the generated polynomial output against OpenSSL~\cite{openssl}.
 
-This test is useful because OpenSSL is a well-regarded independent implementation. It validates not only field arithmetic, but also the byte-level interpretation of Poly1305 blocks. The omission of the final \(s\) addition is deliberate: that addition is outside the prime-field computation modeled by the DSL.
+This validates both field arithmetic and byte-level interpretation of Poly1305 blocks.
 
 \subsection{HKM}
 \label{subsec:hkm-tests}
 
-HKM is tested in two forms. One module follows the corrected recursive recurrence from the new-designs paper. A second module implements the same recurrence iteratively using a left fold. The manual test compares both generated implementations on randomized inputs.
+HKM is tested in two forms: a corrected recursive recurrence from the new-designs paper, and an iterative left-fold implementation. The manual test compares both on randomized inputs.
 
-This test serves two purposes. It records the correction of the apparent typo in the paper's recursive definition, and it validates the iterative rewrite used for performance. The iterative version is the one intended for benchmarking, since it avoids recursive generated C.
+The iterative version is intended for benchmarking because it avoids recursive generated C.
 
 \section{Cross-Checks}
 \label{sec:correctness-cross-checks}
 
-We validate generated code in three ways: generated Boost references, manual OpenSSL checks, and targeted tests for load/store and arithmetic routines. Together, these tests provide confidence that the compiler implements the intended semantics for the examples considered in this thesis.
+Generated code is validated by Boost references, OpenSSL checks, and targeted load/store and arithmetic tests.
 
-The generated tests are also part of the configuration workflow. They are run for the selected field, representation, unrolling factor, and delayed-realignment mode.
+The tests run for the selected field, representation, unrolling factor, and delayed-realignment mode.

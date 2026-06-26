@@ -1,15 +1,15 @@
 \chapter{Compiler Design}
 \label{ch:compiler-design}
 
-The compiler translates a DSL module into C source files, headers, tests, and optionally a benchmarking harness. Its main stages are parsing, AST construction, type checking, IR generation, and code generation. The central design choice is to make the IR explicit enough to control vectorization and carry placement, while keeping the source language compact.
+The compiler translates a DSL module into C sources, headers, tests, and optionally a benchmarking harness. Its stages are parsing, AST construction, type checking, IR generation, and code generation. The IR is explicit enough to control vectorization and carry placement while the source language stays compact.
 
 \section{Pipeline Overview}
 \label{sec:pipeline-overview}
 
-The compiler takes three conceptual inputs: a DSL source file, a field description, and a target description. The field description consists of \(\pi\) and \(\theta\), defining the prime \(2^\pi-\theta\). The target description includes the platform, vectorization mode, lane count, multiplication algorithm, unrolling factor, and delayed-realignment mode.
+The compiler takes a DSL source file, a field description, and a target description. The field description is \(\pi,\theta\), defining \(2^\pi-\theta\). The target description includes platform, vectorization mode, lane count, multiplication algorithm, unrolling factor, and delayed-realignment mode.
 
 \paragraph{Generated artifacts.}
-From these inputs the compiler produces generated C sources and headers. If requested, it also emits automatic Boost-based correctness tests and a standalone performance harness. The same DSL source can therefore be compiled repeatedly under different fields and targets. \Cref{fig:compiler-overview} summarizes this architecture.
+From these inputs it produces generated C sources and headers, which it then hands over to a C/C++ compiler (GCC or Clang) and build system (CMake, Ninja). If requested, it also emits Boost-based correctness tests and a standalone performance harness. \Cref{fig:compiler-overview} summarizes the pipeline.
 
 \begin{figure}[t]
     \centering
@@ -21,30 +21,30 @@ From these inputs the compiler produces generated C sources and headers. If requ
 \section{Parsing and AST Construction}
 \label{sec:parsing-ast}
 
-The concrete syntax is described by an ANTLR grammar~\cite{parr2013antlr}. ANTLR generates a Python parser, which produces a parse tree for a module. The compiler then visits this parse tree and constructs a smaller abstract syntax tree (AST).
+The concrete syntax is described by an ANTLR grammar~\cite{parr2013antlr}. ANTLR generates a Python parser; the compiler visits the parse tree and constructs an abstract syntax tree (AST).
 
 \paragraph{AST shape.}
-The AST mirrors the language rather than the grammar. It contains nodes for modules, functions, expressions, reductions, conditionals, buffer loads, literals, unary operations, and binary operations. This separation is useful because the grammar contains syntactic details that are irrelevant after parsing, while later compiler phases need a compact representation of the program structure. For example, the grammar has separate precedence levels for addition and multiplication, but the AST only needs a binary-operation node annotated with the operator.
+The AST mirrors the language rather than the grammar. It contains nodes for modules, functions, expressions, reductions, conditionals, buffer loads, literals, unary operations, and binary operations. Grammar-only details such as precedence levels disappear after parsing.
 
 \section{Type Checking}
 \label{sec:type-checking}
 
-The type checker assigns DSL types to expressions and verifies that operations are used consistently. Index operations must operate on index values; field operations must operate on field elements; buffer loads produce field elements; and reductions must have bodies of the expected type. Binary arithmetic operators require equal operand types. Comparisons also require equal operand types, but produce an index value so that they can be used as conditions. The exponent operator is checked separately: the exponent must be an index expression, and only the small exponents supported by lowering are accepted.
+The type checker assigns DSL types and verifies consistent use. Index operations operate on index values; field operations on field elements; buffer loads produce field elements; reductions require bodies of the expected type. Binary arithmetic operators require equal operand types. Comparisons also require equal operand types, but produce an index value. Exponents must be index expressions and only the supported small exponents are accepted.
 
-The checker also distinguishes hash functions from helper functions. Hash functions must have the fixed DSL-level shape corresponding to key buffer, message buffer, and length. Helper functions may be more general, but they cannot use buffers as return values. This keeps the generated C API simple while still allowing source-level factoring.
+Hash functions must have the fixed DSL-level shape corresponding to key buffer, message buffer, and length. Helper functions may be more general, but cannot return buffers.
 
 \section{Intermediate Representation}
 \label{sec:ir}
 
-The IR is the core internal representation of the compiler. It is not an assembly language, and it is not intended to be lowered directly to machine code. Instead, it is a structured representation of the C code that will be emitted.
+The IR is a structured representation of the C code that will be emitted, not an assembly language.
 
 \paragraph{Functions and mutation.}
-An IR module contains functions. A function contains statements such as instructions, loops, conditionals, returns, and stores. Instructions produce or update operands. Most temporaries follow an SSA-like discipline, but accumulator updates and in-place carry operations are represented explicitly as updates to an existing destination. This is deliberate: accumulators and carries are precisely the places where the compiler must control mutation and scheduling.
+An IR module contains functions; functions contain instructions, loops, conditionals, returns, and stores. Instructions produce or update operands. Most temporaries are SSA-like, but accumulator updates and in-place carry operations explicitly update an existing destination.
 
 \paragraph{Instruction vocabulary.}
-The instruction set is small. It includes scalar index operations, field operations, memory operations, representation-management operations, and vector helpers. Examples are \texttt{add}, \texttt{mul}, \texttt{square}, \texttt{load}, \texttt{vload}, \texttt{carry}, \texttt{vcarry}, \texttt{splat}, and \texttt{select}. Vectorized instructions are not separate source-language operations. They are introduced by IR generation when the compiler decides to lower an expression over several lanes. A complete instruction summary is given in \Cref{app:ir-instructions}.
+The instruction set includes scalar index operations, field operations, memory operations, representation-management operations, and vector helpers. Examples are \texttt{add}, \texttt{mul}, \texttt{square}, \texttt{load}, \texttt{vload}, \texttt{carry}, \texttt{vcarry}, \texttt{splat}, and \texttt{select}. Vectorized instructions are introduced by IR generation when an expression is lowered over several lanes. \Cref{app:ir-instructions} lists all instructions.
 
-\Cref{lst:squaresum-ir} shows the pretty-printed IR for the square-sum program from \Cref{lst:squaresum-dsl}, compiled for \(GF(2^{116}-3)\) on the two-lane NEON backend with vectorization, schoolbook arithmetic, fully delayed limb realignment, and unrolling factor one. The source-level sum becomes a vectorized main loop over matrix values, followed by a scalar tail for the remaining element. Since realignment is fully delayed, the loop contains no intermediate carry instruction; the result is normalized by \texttt{full\_reduction} immediately before the store.
+\Cref{lst:squaresum-ir} shows the pretty-printed IR for \Cref{lst:squaresum-dsl}, compiled for \(GF(2^{116}-3)\) on two-lane NEON with vectorization, schoolbook arithmetic, fully delayed limb realignment, and unrolling factor one. The sum becomes a vectorized main loop, followed by a scalar tail. Since realignment is fully delayed, the loop contains no intermediate carry instruction; \texttt{full\_reduction} appears before the store.
 
 \begin{lstlisting}[style=thesisIR,caption={Pretty-printed IR for the vectorized square-sum running example in \(GF(2^{116}-3)\).},label={lst:squaresum-ir}]
 module squaresum
@@ -73,37 +73,37 @@ hash squaresum(%key: buffer/pod, %message: buffer/pod, %len: index/scalar) -> pr
 \subsection{IR Types}
 \label{subsec:ir-types}
 
-The IR uses three representation types: scalar, vector, and matrix. The terminology is implementation-oriented. An index value is scalar. A single field element represented by several limbs is called a vector because it consists of a vector of limb components. Several field elements distributed across SIMD lanes form a matrix, because each limb component is itself a SIMD vector. This naming is internal to the compiler, but it is useful when selecting the generated C representation.
+The IR uses three representation types: scalar, vector, and matrix. An index value is scalar. A single field element represented by several limbs is a vector. Several field elements distributed across SIMD lanes form a matrix, because each limb component is itself a SIMD vector.
 
 \section{Lowering Ordinary Expressions}
 \label{sec:lowering-expressions}
 
-Before reductions are considered, most expression lowering is local. Literals lower to \texttt{const}. Identifiers lower to bound parameters, loop variables, or temporaries from the current compile context. Buffer reads lower to \texttt{load} or \texttt{vload}, depending on the number of lanes requested by the surrounding reduction.
+Most expression lowering is local. Literals lower to \texttt{const}. Identifiers lower to bound parameters, loop variables, or temporaries. Buffer reads lower to \texttt{load} or \texttt{vload}, depending on requested lanes.
 
-Unary minus is represented as subtraction from zero. Binary operations lower according to their operand type. For index operands, operations such as \texttt{sub}, \texttt{div}, \texttt{mod}, and comparisons compile to scalar C operators. For field operands, addition and multiplication lower to field arithmetic instructions; when more than one lane is being compiled, the corresponding vectorized instruction is used. Exponentiation is simplified during lowering: \(x^0\) becomes one, \(x^1\) becomes \(x\), and \(x^2\) becomes the dedicated square instruction.
+Unary minus becomes subtraction from zero. Binary operations lower by operand type: index operands become scalar C operators, while field operands become field instructions, vectorized when more than one lane is requested. Exponentiation is simplified: \(x^0\) becomes one, \(x^1\) becomes \(x\), and \(x^2\) becomes square.
 
 \section{Lowering Reductions}
 \label{sec:lowering-reductions}
 
-Reductions are lowered in the IR because they carry most of the optimization structure. They are also the main place where source-level algebraic structure influences the generated loops.
+Reductions carry most of the optimization structure and are lowered explicitly in the IR.
 
 \paragraph{Sums.}
-For sums, the compiler creates an accumulator and emits a loop over the index domain. If vectorization is enabled, the loop step is multiplied by the number of SIMD lanes. Each vectorized iteration evaluates several body instances in parallel and accumulates them in a vectorized field value. A scalar tail handles the remaining elements when the iteration count is not a multiple of the vector width. The body itself may be any expression accepted by the type checker; the compiler does not need to know whether the programmer intended MMH, NMH, or another sum-shaped construction.
+For sums, the compiler creates an accumulator and emits a loop over the index domain. With vectorization, the loop step is multiplied by the SIMD lane count. Each vectorized iteration evaluates several body instances in parallel; a scalar tail handles leftovers.
 
 \paragraph{Horner reductions.}
-Horner reductions are sequential in their simplest form, but they can be vectorized by evaluating several branches in parallel using precomputed powers of the key. The compiler evaluates the multiplier expression once, constructs the required lane powers, and emits a vectorized main loop plus a scalar tail. This follows the same structural idea as parallel Horner evaluation.
+Horner reductions are sequential in their simplest form, but can be vectorized by evaluating several branches in parallel using precomputed powers of the key. The compiler evaluates the multiplier once, constructs lane powers, and emits a vectorized loop plus scalar tail.
 
 \paragraph{Left folds.}
-Left folds are lowered as scalar loops. The accumulator is explicitly bound in the compile context for the body expression, allowing the body to refer to the previous accumulator value. The compiler supports unrolling for left folds, but it does not vectorize them, because the intended use case has a loop-carried dependency.
+Left folds are scalar loops. The accumulator is bound in the compile context for the body expression. The compiler supports unrolling, but not vectorization, because the intended use case has a loop-carried dependency.
 
 \section{Unrolling and Carry Placement}
 \label{sec:unrolling-carry}
 
-The unrolling factor has two roles. It reduces loop overhead, and it controls how often carry propagation is inserted in partially delayed mode. In the main unrolled body, several logical reduction steps are emitted before a carry instruction is inserted. The tail loop then handles the remaining iterations and carries at the scalar boundary.
+The unrolling factor reduces loop overhead and controls carry insertion in partially delayed mode. Several logical reduction steps are emitted before a carry; the tail loop handles leftovers.
 
-In fully delayed mode, intermediate carry instructions are omitted and the generated function relies on the final full reduction. This can be profitable for reductions whose terms are independent, but it is not a universal transformation. Arithmetic safety depends on the selected field, limb representation, reduction structure, and unrolling factor.
+In fully delayed mode, intermediate carries are omitted and the function relies on final full reduction. Arithmetic safety depends on the field, limb representation, reduction structure, and unrolling factor.
 
-\Cref{lst:carry-delay-schedule} shows the difference schematically. In partially delayed mode, the compiler emits a carry after each unrolled batch of logical iterations. In fully delayed mode, the loop contains no intermediate carry instructions and all normalization is postponed to the final reduction.
+\Cref{lst:carry-delay-schedule} shows the difference schematically.
 
 \begin{lstlisting}[style=thesisIR,caption={Schematic carry-placement strategies for a reduction loop.},label={lst:carry-delay-schedule}]
 partial:
@@ -120,22 +120,22 @@ full:
 \section{Vectorization}
 \label{sec:compiler-vectorization}
 
-Vectorization is expressed by compiling selected expressions with more than one lane. The compile context records offsets for loop indices, so that the same source expression can be instantiated for lane \(0\), lane \(1\), and so on. For example, a body expression containing \(message[i]\) becomes several loads from \(message[i]\), \(message[i+1]\), etc., packed into a vectorized field value.
+Vectorization compiles selected expressions with more than one lane. The compile context records loop-index offsets, so \(message[i]\) becomes loads from \(message[i]\), \(message[i+1]\), etc., packed into a vectorized field value.
 
-The generated code keeps temporaries at full machine width, typically 64 bits per limb. This is conservative, but it keeps addition and multiplication results in a uniform representation. Multiplication code may narrow or mask operands internally where required.
+Generated temporaries use full machine width, typically 64 bits per limb. Multiplication code may narrow or mask operands internally.
 
 \section{Conditionals}
 \label{sec:compiler-conditionals}
 
-The IR distinguishes constant-time and non-constant-time conditionals. A constant-time conditional lowers to both branches followed by a select. A non-constant-time conditional lowers to an ordinary branch. The latter is useful for public control flow such as handling even and odd message lengths. The distinction is visible in the IR so that code generation does not have to infer the security intention of a branch from context.
+The IR distinguishes constant-time and non-constant-time conditionals. A constant-time conditional lowers to both branches followed by a select; a non-constant-time conditional lowers to an ordinary branch.
 
 \section{Configuration and Target Parameters}
 \label{sec:configuration-targets}
 
-The compiler configuration fixes the field and machine parameters. Given \(\pi\), \(\theta\), the target platform, and the vectorization mode, the settings code selects a limb arrangement. In particular, it chooses a large limb size that satisfies bounds on intermediate values, following the same motivation as the SPHGen parameter selection~\cite{pegolotti2026sphgen}: reduce the limb count without overflowing during the configured arithmetic. The configuration also selects schoolbook or Karatsuba multiplication, the unrolling factor, and the delayed-realignment mode.
+The compiler configuration fixes field and machine parameters. Given \(\pi\), \(\theta\), target platform, and vectorization mode, it selects a limb arrangement. Following SPHGen~\cite{pegolotti2026sphgen}, it chooses a large limb size that reduces limb count without overflowing during configured arithmetic. It also selects multiplication algorithm, unrolling factor, and delayed-realignment mode.
 
 \paragraph{Supported targets.}
-The current implementation focuses on scalar code, two-lane 64-bit ARM NEON, and four-lane 64-bit AVX2. These targets are sufficient to exercise the main compiler abstractions: scalar arithmetic, vectorized limb-major layout, platform-specific load/store routines, and different vector widths.
+The implementation focuses on scalar code, two-lane 64-bit ARM NEON, and four-lane 64-bit AVX2.
 
 \paragraph{Configuration responsibility.}
-The compiler exposes these choices but does not prove that every combination is safe. Selecting an excessively aggressive unrolling factor or fully delayed carry strategy can exceed the available limb slack. In this sense, arithmetic safety is partly a configuration responsibility. The generated tests are intended to catch such mistakes during development.
+The compiler exposes these choices but does not prove that every combination is safe. Aggressive unrolling or fully delayed carries can exceed available limb slack; generated tests are intended to catch such mistakes.

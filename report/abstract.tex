@@ -3,5 +3,5 @@ Polynomial universal hash functions combine compact algebraic security arguments
 
 The compiler supports several implementation techniques used in modern prime-field hashing, including delayed limb realignment, and one-level Karatsuba multiplication. We use the it to instantiate representative polynomial designs such as MMH, SQH, NMH, HKM-style recurrences, and Poly1305-style Horner evaluation.
 
-The central analytical contribution is a performance model for Apple Silicon ARM NEON targets. Rather than treating generated code as a black box, the model inspects the intermediate representation, analyzes the generated vector operations that dominate the main loop, and estimates cycles per byte from instruction-throughput pressure. Experiments show that this model provides a useful bridge between algebraic descriptions and hardware-level cost.
+The central analytical contribution is a performance model for Apple silicon ARM NEON targets. Rather than treating generated code as a black box, the model inspects the intermediate representation, analyzes the generated vector operations that dominate the main loop, and estimates cycles per byte from instruction-throughput pressure. Experiments show that this model provides a useful bridge between algebraic descriptions and hardware-level cost.
 \end{abstract}

@@ -1,7 +1,7 @@
 \chapter{Code Generation and Runtime Support}
 \label{ch:codegen-runtime}
 
-After IR generation, the compiler emits ordinary C code for the selected field and target. This chapter describes the generated API, the byte-to-field mapping, the generated files, and the arithmetic implemented by the backend: data structures for field elements, load/store routines, arithmetic procedures, carry propagation, and loops corresponding to lowered reductions.
+After IR generation, the compiler emits C code for the selected field and target. This chapter describes the generated API, byte-to-field mapping, data structures, load/store routines, arithmetic, carry propagation, and reduction loops.
 
 \section{Generated C API}
 \label{sec:generated-c-api}
@@ -11,29 +11,29 @@ Every DSL hash function is emitted as a C function with the signature
 void h(uint8_t *output, uint8_t *key,
        uint8_t *message, size_t len);
 \end{lstlisting}
-The parameter \(len\) is a byte length at the C boundary. The generated function converts it to a number of field elements using the field chunk size \(c=\lfloor \pi/8\rfloor\). The DSL body then sees this derived field-element count.
+The parameter \(len\) is a byte length at the C boundary. The generated function converts it to a field-element count using \(c=\lfloor \pi/8\rfloor\).
 
 \paragraph{Buffer convention.}
-The caller is responsible for providing input buffers with enough padding for the generated loads. This convention keeps the inner loops simple: the compiler can compute the number of blocks as a ceiling division and may read slightly past the logical end of the message, as long as the caller has provided safe padding.
+The caller must provide input buffers with enough padding for generated loads. The compiler computes the block count by ceiling division and may read slightly past the logical end.
 
 \paragraph{Output format.}
-The output buffer is assumed to be large enough to hold the exported field element. The generated store routine writes the final reduced value in little-endian byte order. The number of exported bytes is \(\lceil \pi/8\rceil\), while the number of bytes consumed per input field element is \(\lfloor \pi/8\rfloor\). This asymmetry is intentional: input chunks avoid fractional bytes, while output must be able to represent a field element.
+The output buffer is assumed large enough for the exported field element. Stores write the final reduced value in little-endian byte order. The number of exported bytes is \(\lceil \pi/8\rceil\), while input chunks consume \(\lfloor \pi/8\rfloor\) bytes.
 
 \section{Generated Files and Build Integration}
 \label{sec:generated-files}
 
-For a module named \(m\), the compiler emits a header \(m\texttt{.h}\), a source file \(m\texttt{.c}\), and shared data-structure files for the selected field representation. When automatic tests are enabled, it also emits a C++ test file. When performance generation is enabled, it emits a standalone C benchmarking source for the module.
+For a module \(m\), the compiler emits \(m\texttt{.h}\), \(m\texttt{.c}\), and shared data-structure files. It can also emit a C++ test file and a C benchmarking source.
 
-The surrounding CMake project builds correctness and performance targets from the generated files. This build integration is deliberately thin. The compiler is responsible for producing ordinary C and C++ sources; CMake is responsible for compiling and linking them with handwritten tests and dependencies such as OpenSSL~\cite{openssl} or Boost~\cite{boost}.
+The surrounding CMake project builds correctness and performance targets and links handwritten tests with dependencies such as OpenSSL~\cite{openssl} or Boost~\cite{boost}.
 
 \section{Big Integer Representation}
 \label{sec:bigint-representation}
 
-Generated C code represents a field element as a struct containing one array entry per limb. Scalar field elements use machine-word limbs. Vectorized field elements use SIMD vector types as limb entries. Thus, the same high-level operation can be implemented by iterating over limbs, regardless of whether the limb type is scalar or vectorized.
+Generated C represents a field element as a struct with one entry per limb. Scalar field elements use machine-word limbs; vectorized field elements use SIMD vector types.
 
-The generated data structures also define constants derived from the field: the number of limbs, the limb mask, the size of the most significant limb, the input chunk size, and the number of bytes exported by a store. These constants are generated per field, so handwritten C tests and generated code use the same representation.
+The data structures also define field-derived constants: limb count, limb mask, most-significant-limb size, input chunk size, and exported byte count.
 
-\Cref{lst:generated-structs} shows a generated data-structure fragment for the field \(2^{116}-3\) on a two-lane NEON target. In this configuration, \(\lambda=18\), \(\lambda'=8\), and \(\ell=7\). The scalar type stores one field element, while the vectorized type stores two field elements in limb-major form.
+\Cref{lst:generated-structs} shows a generated data-structure fragment for \(2^{116}-3\) on two-lane NEON, with \(\lambda=18\), \(\lambda'=8\), and \(\ell=7\).
 
 \begin{lstlisting}[style=thesisC,basicstyle=\scriptsize\ttfamily,caption={Generated scalar and vectorized field-element data structures.},label={lst:generated-structs}]
 #include <arm_neon.h>
@@ -71,25 +71,25 @@ typedef struct {
 \section{Load and Store}
 \label{sec:load-store}
 
-Loading is field-specific because it maps byte chunks into limbs. For scalar code, the load routine reads consecutive bytes, assembles them into an integer, and splits the result into limbs. For vectorized code, the generated load routine assembles several field elements at once, one per SIMD lane.
+Loading is field-specific because it maps byte chunks into limbs. Scalar load reads consecutive bytes and splits them into limbs. Vectorized load assembles several field elements at once, one per SIMD lane.
 
-The important subtlety is that a loaded input field element contains only \(\lfloor \pi/8\rfloor\) bytes of data. If \(\pi\) is not divisible by eight, the remaining high bits of the field are not filled by consuming another byte. This convention matches the source-language view that buffer indices count field elements of a fixed byte chunk size.
+Loaded input field elements contain only \(\lfloor \pi/8\rfloor\) bytes. If \(\pi\) is not divisible by eight, the remaining high bits are not filled by consuming another byte.
 
-Stores perform the reverse operation after a full reduction. The final field element is exported to bytes. The store operation is part of the IR for hash functions, so returning a field element from a hash does not require an extra wrapper call around generated code.
+Stores perform the reverse operation after full reduction. The store is part of the IR, so hash functions do not need a wrapper to export bytes.
 
 \section{Generated Arithmetic}
 \label{sec:generated-arithmetic}
 
-Addition is emitted as component-wise limb addition. In unsaturated representations, this is safe as long as the subsequent carry schedule keeps limb values within bounds.
+Addition is emitted as component-wise limb addition.
 
 \paragraph{Multiplication and squaring.}
-Multiplication is emitted either as schoolbook multiplication or as Karatsuba multiplication. The schoolbook variant computes limb products and folds high terms back using the Crandall reduction identity. The Karatsuba variant reduces the number of limb multiplications at the cost of additional additions and higher register pressure. Which variant is faster depends on the field size and target.
+Multiplication is emitted as schoolbook or Karatsuba. Schoolbook computes limb products and folds high terms using the Crandall identity. Karatsuba reduces limb multiplications at the cost of additions and register pressure.
 
-Squaring has a dedicated implementation. It exploits symmetry of the product to avoid computing both \(a_i a_j\) and \(a_j a_i\) separately. The vectorized backends contain corresponding squaring code for NEON and AVX2.
+Squaring has a dedicated implementation that computes cross terms once and doubles them.
 
-For multiplication, the generated code follows the folded schoolbook formula from \Cref{sec:prime-field-arithmetic}. Each output limb accumulates ordinary products whose indices sum to that limb, plus wrapped products whose indices exceed the field size and are multiplied by the Crandall factor. The generated code is specialized enough that the loops are usually unrolled in the emitted C.
+For multiplication, the generated code follows the folded schoolbook formula from \Cref{sec:prime-field-arithmetic}. Each output limb accumulates ordinary products plus wrapped products multiplied by the Crandall factor.
 
-\Cref{lst:squaresum-neon} continues the square-sum example from \Cref{lst:squaresum-dsl,lst:squaresum-ir}. The excerpt is taken from the generated NEON C code for \(GF(2^{116}-3)\). It shows the byte length being converted to a field-element count, the two-lane vector loop, a representative part of the generated \texttt{vsquare}, the horizontal reduction into one scalar field element, the scalar tail, and the final reduction before storing bytes.
+\Cref{lst:squaresum-neon} continues the square-sum example from \Cref{lst:squaresum-dsl,lst:squaresum-ir}. The excerpt is generated NEON C for \(GF(2^{116}-3)\), showing the field-element count, vector loop, part of \texttt{vsquare}, horizontal reduction, scalar tail, and final reduction.
 
 \begin{lstlisting}[style=thesisC,basicstyle=\scriptsize\ttfamily,caption={Excerpt of generated NEON C for the square-sum running example.},label={lst:squaresum-neon}]
 void squaresum(uint8_t* output, uint8_t* key, uint8_t* message, size_t buffer_length) {
@@ -158,26 +158,19 @@ var6.limb0 &= 262143ull;var6.limb2 += var6.limb1 >> 18;
 \section{Carry and Full Reduction}
 \label{sec:carry-full-reduction}
 
-Generated carry code propagates overflow bits from one limb to the next. The carry out of the most significant limb is multiplied by \(\theta\) and folded into the least significant limb. For vectorized code, the same operation is performed lane-wise using SIMD shifts, masks, and additions.
+Generated carry code propagates overflow bits from one limb to the next. The carry out of the most significant limb is multiplied by \(\theta\) and folded into the least significant limb. Vectorized code performs the same operation lane-wise.
 
-A full reduction is emitted at the end of hash functions. It handles edge cases where carry propagation alone leaves a value in the range above the prime. This final step is more expensive than an ordinary carry, but it is outside the main loop and therefore has less impact on throughput for long messages.
+A full reduction is emitted at the end of hash functions. It handles cases where carry propagation alone leaves a value above the prime.
 
 \section{Backends}
 \label{sec:backends}
 
-The scalar backend is the simplest backend and serves two roles. It is useful in its own right, and it provides a baseline for measuring vectorization speedups.
+The scalar backend is useful in its own right and provides a baseline for vectorization speedups.
 
 \paragraph{Vector backends.}
-The NEON backend targets two 64-bit lanes. It is useful for ARM systems where two field elements can be processed in parallel. The AVX2 backend targets four 64-bit lanes. It follows the same limb-major layout, but the wider lane count changes the generated loads, lane-power generation, and vectorized loop structure.
+The NEON backend targets two 64-bit lanes. The AVX2 backend targets four lanes with the same limb-major layout, but different loads, lane-power generation, and loop structure.
 
 \section{Performance Harness}
 \label{sec:performance-harness}
 
-The compiler can emit a small benchmark program for a generated hash function. The harness allocates key, message, and output buffers, calls the generated hash function for a range of byte lengths, and reports elapsed cycles per call. It treats the generated hash function as a black box: it depends only on the C API, not on the internal IR or on any static analysis.
-
-The purpose of the harness is practical. It lets the same DSL module be measured under different fields, targets, multiplication algorithms, and carry strategies. The evaluation chapter will use this machinery to compare the generated implementations.
-
-\section{Optional Formatting}
-\label{sec:optional-formatting}
-
-The compiler includes an optional formatting pass for generated C and C++ sources. Formatting is not part of the semantic pipeline, but it makes generated files easier to inspect, debug, and compare against handwritten tests. Since the generated code is intended to be fast but not necessarily readable, this convenience is useful despite being orthogonal to performance.
+The compiler can emit a benchmark program that allocates key, message, and output buffers, calls the generated hash over a range of byte lengths, and reports cycles per call. The harness treats the hash function as a black box depending only on the C API.
