@@ -95,8 +95,8 @@
         <mxCell id="RNrYUZKVM7orRaqIFUZb-27" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=default;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Helvetica;fontSize=17;" value="Benchmarking harness (C)" vertex="1">
           <mxGeometry height="50" width="160" x="735" y="500" as="geometry" />
         </mxCell>
-        <mxCell id="RNrYUZKVM7orRaqIFUZb-28" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=default;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Helvetica;fontSize=17;" value="Op-count analysis" vertex="1">
-          <mxGeometry height="40" width="160" x="-100" y="500" as="geometry" />
+        <mxCell id="RNrYUZKVM7orRaqIFUZb-28" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=default;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Helvetica;fontSize=17;" value="Cycles estimate" vertex="1">
+          <mxGeometry height="40" width="150" x="-90" y="500" as="geometry" />
         </mxCell>
         <mxCell id="RNrYUZKVM7orRaqIFUZb-34" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=default;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontFamily=Helvetica;fontSize=17;" value="Performance executable" vertex="1">
           <mxGeometry height="50" width="110" x="420" y="660" as="geometry" />

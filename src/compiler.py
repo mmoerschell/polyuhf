@@ -11,6 +11,7 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from colorama import Fore, Style
 
+from analysis.model import performance_model
 from analysis.opcount import opcount_and_traffic
 from automatic_tests.boost_cpp_emitter import BoostCppTestEmitter
 from codegen.code_generator import ModuleCodeGenerator
@@ -78,6 +79,19 @@ def compile_string(  # noqa: C901
             print(f"[{Fore.GREEN}+{Style.RESET_ALL}] Intermediate Representation")
         if flags.show_ir:
             print(pprint_module(ir))
+
+        # Performance model
+        if flags.model:
+            match performance_model(ir, settings):
+                case float(x):
+                    print(
+                        f"[{Fore.BLUE}i{Style.RESET_ALL}] Estimated cyles per byte: {x}"
+                    )
+                case None:
+                    print(
+                        f"[{Fore.YELLOW}x{Style.RESET_ALL}] "
+                        "Performance model did not find an estimate."
+                    )
 
         # Opcount & memory traffic
         if flags.analysis:
@@ -197,6 +211,12 @@ if __name__ == "__main__":
         "-a",
         action="store_true",
         help="Generate opcount metadata and perf harness when possible",
+    )
+    cli.add_argument(
+        "--model",
+        "-m",
+        action="store_true",
+        help="Performance model: estimate cycles per byte",
     )
     cli.add_argument(
         "--test-size",
