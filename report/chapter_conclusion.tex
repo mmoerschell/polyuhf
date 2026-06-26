@@ -1,0 +1,19 @@
+\chapter{Conclusion}
+\label{ch:conclusion}
+
+This thesis set out to explore whether polynomial universal hash functions can be described at a higher level without giving up the low-level structure that makes them fast. The compiler developed here suggests that this is a viable direction. A DSL program can describe a hash function in terms of field arithmetic, buffers, conditionals, and reductions, while the compiler selects the concrete field representation, emits scalar or vectorized C code, places carry propagation, and produces tests and benchmarking utilities.
+
+The main outcome is not a single hand-optimized hash implementation, but a pipeline for experimenting with a family of such implementations. The same source-level description can be compiled over different Crandall prime fields and target platforms, using schoolbook multiplication, Karatsuba multiplication, dedicated squaring, and different limb-realignment strategies. This makes the compiler useful as a design tool: it shortens the path from an algebraic idea to a measured implementation, and it exposes implementation choices that are otherwise easy to hide inside handwritten code.
+
+The performance model is the most important step in that direction. It connects the compiler IR to an estimated cycles-per-byte cost by modeling the vectorized loop body in terms of throughput pressure. Although deliberately lightweight, it explains the dominant behavior of the generated ARM NEON implementations and complements empirical benchmarking with an interpretable cost estimate. This is especially useful for a compiler project, because it lets us reason about generated code before relying only on machine measurements.
+
+\section{Future Work}
+\label{sec:future-work}
+
+Several directions remain open. First, the AVX2 backend should be improved. The current implementation is functional, but the measurements indicate that the code it generates does not yet match the speed of code coming from the ARM NEON backend. A more careful x86 vector layout, better byte-loading strategy, and closer attention to AVX2 multiplication idioms would likely improve its competitiveness.
+
+Second, the performance model could be extended to account for carry propagation, full reductions, and Karatsuba multiplication more explicitly. The current model focuses on the dominant vectorized arithmetic in the main loop and assumes schoolbook multiplication for its multiplication cost. This is sufficient for the experiments in this thesis, but carry placement and the choice of multiplication algorithm are central optimization decisions in prime-field hashing, and modeling them directly would make the cost estimate more informative.
+
+Third, the DSL could expose additional language constructs for polynomial designs. The current language already supports sums, Horner-style reductions, and left folds, which cover the examples studied here. Further constructs could make it easier to describe higher-level compositions, multi-output designs, or additional recurrence patterns without falling back to low-level helper functions.
+
+Overall, this work shows that compiler techniques can be fruitfully applied to polynomial hashing. They do not replace careful implementation work, but they organize it: algebraic structure appears in the source language, arithmetic structure appears in the IR, and machine structure appears in the generated backend and performance model.

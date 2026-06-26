@@ -12,14 +12,15 @@ from typesystem import PrimeField
 MESSAGE_LENGTH = 16000
 
 """
-Reciprocal throughput estimates, in cycles per instruction, for Apple M-series NEON/SIMD
+Reciprocal throughput estimates, in cycles per instruction, for Apple M3 Pro NEON/SIMD
 
 Sources:
 - https://dougallj.github.io/applecpu/firestorm-simd.html (primary)
 - https://acl.inf.ethz.ch/teaching/fastcode/2025/benchmarking_m_series_apple_cpus.pdf
 
 NOTE: we don't differentiate between cheaper operations (those that are not loads, not
-multiplications), and just call them "simple". That includes:
+multiplications), and just call them "simple" (also referred to as "ALU" in the report).
+That includes:
 vaddq_u64
 vandq_u64
 vshrq_n_u64

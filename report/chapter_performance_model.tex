@@ -1,0 +1,79 @@
+\chapter{Performance Model}
+\label{ch:performance-model}
+
+We amend our compiler with a lightweight performance model. Given a compiled IR module and a concrete field and target configuration, the model estimates the number of cycles per byte needed by a generated hash function, for Apple ARM NEON M-Series CPUs specifically.
+
+The model focuses on the vectorized main loop, which dominates execution times for the hash functions considered in this thesis. This matches our empirical observation that the generated implementations are compute-bound, a property also reported for SPHGen by Pegolotti et al.~\cite{pegolotti2026sphgen}. We model throughput rather than latency: for long hash loops, many limb operations from consecutive iterations and independent field-element lanes are in flight at once, so steady-state issue rate is more relevant than the latency of any individual instruction.
+
+\section{Modeled IR Instructions}
+\label{sec:modeled-ir-instructions}
+
+The model operates on the constructed IR. It searches for the main loop of the hash function and assigns costs to a small set of vectorized IR instructions:
+\[
+    \texttt{vload},\qquad
+    \texttt{vadd},\qquad
+    \texttt{vmul},\qquad
+    \texttt{vsquare}.
+\]
+
+Manual profiling with the Apple Instruments tool ~\cite{appleInstrumentsProfiling} --- which tracks cycle distribution down to the assembly instruction level --- identified these as the main culprits behind our CPU bottleneck.
+
+All other instructions are ignored. This is a deliberate approximation. The omitted code includes scalar tails, final stores, loop-control arithmetic, and other instructions whose cost is expected to be small compared to the main vectorized big-integer arithmetic, or optimized away by the C compiler anyway. The model is therefore best read as a main-loop throughput estimate.
+
+For each modeled IR instruction, we count and classify the operations that the C backend emits. The model therefore does not treat \texttt{vload}, \texttt{vadd}, \texttt{vmul}, and \texttt{vsquare} as opaque unit-cost operations. Instead, it accounts for the generated NEON loads, table lookups, vector ALU operations, and widening multiply-accumulate operations that implement them. At present, the multiplication model assumes the schoolbook backend for \texttt{vmul}. For squaring, cross terms are assumed to simplify from
+\[
+    a_i a_j + a_j a_i
+\]
+to one product and one simple doubling operation
+\[
+    a_i a_i \cdot 2
+\]
+since $i = j$. The latter probably results in a cheap left shift by one.
+
+\section{Throughput Pressures}
+\label{sec:throughput-pressures}
+
+The target of the model is ARM NEON on Apple M-series cores. Apple does not publish official instruction-throughput tables for these processors. We therefore use empirical reciprocal-throughput estimates, based primarily on Dougall Johnson's instruction measurements for Firestorm cores and Fabian Sidler's work on benchmarking Apple M-series processors~\cite{johnsonFirestormSimd,sidler2025mseries}. These sources provide exactly the kind of instruction-level data needed for this model. We use only their throughput data, not latency data, because we estimate the steady state of a loop body rather than the completion time of a dependency chain. The model groups generated instructions into four pressure classes:
+\[
+    P_{\mathrm{load}},\qquad
+    P_{\mathrm{table}},\qquad
+    P_{\mathrm{alu}},\qquad
+    P_{\mathrm{mul}}.
+\]
+The load pressure accounts for 128-bit vector loads. The table pressure accounts for table-lookup instructions used to rearrange bytes into limbs (similar to shuffles on AVX2). The ALU pressure accounts for cheap vector integer operations such as additions, shifts, masks, constant duplication, and the simple doubling operation used in the squaring model. The multiplication pressure accounts for widening multiply and multiply-accumulate instructions.
+
+For a loop body, the model first accumulates these four pressures over all modeled IR instructions. If one assumes no overlap between instruction classes, the loop cost is the additive estimate
+\[
+    C_{\mathrm{add}}
+        =
+        P_{\mathrm{load}}
+        + P_{\mathrm{table}}
+        + P_{\mathrm{alu}}
+        + P_{\mathrm{mul}}.
+\]
+This is conservative, because modern out-of-order cores can issue independent work to different execution resources in parallel.
+
+At the opposite extreme, if the pipeline is filled perfectly and the instruction classes overlap as much as possible, the loop cost is determined only by the bottleneck pressure:
+\[
+    C_{\mathrm{pipe}}
+        =
+        \max\{P_{\mathrm{load}},P_{\mathrm{table}},P_{\mathrm{alu}},P_{\mathrm{mul}}\}.
+\]
+This is optimistic, because the generated loop still has dependencies, finite scheduling freedom, frontend pressure, and shared hardware resources.
+
+In the absence of a more detailed machine model, we take the average of these two estimates:
+\[
+    C_{\mathrm{loop}}
+        =
+        \frac{1}{2}C_{\mathrm{add}}
+        +
+        \frac{1}{2}C_{\mathrm{pipe}}.
+\]
+The intended interpretation is simple: the true steady-state cost should lie between fully serialized execution and perfect pipeline overlap. Averaging the two is not exact but gives a compact heuristic, and we discuss its accuracy in the next chapter.
+
+\section{From Loop Cost to Cycles per Byte}
+\label{sec:model-cycles-per-byte}
+
+After estimating the cost of one main-loop iteration, the model multiplies it by the symbolic loop bound stored in the IR. The compiler already adjusts this bound for the vectorization factor and unrolling factor used during lowering. Finally, the result is normalized by the number of input bytes, producing an estimate in cycles per byte.
+
+This makes the model depend on both the generated arithmetic and the field configuration. Larger fields have more limbs and therefore more arithmetic pressure per field element, but they also consume more bytes per field element. The cycles-per-byte estimate captures this trade-off.

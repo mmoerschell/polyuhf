@@ -1,3 +1,7 @@
 \begin{abstract}
-  Abstract.
+Polynomial universal hash functions combine compact algebraic security arguments with very high implementation performance. Obtaining this performance, however, requires many low-level choices: the prime field, limb representation, multiplication algorithm, placement of carry propagation, vector layout, and target instruction set all interact. This Master thesis presents a domain-specific language and compiler for polynomial hash functions over Crandall prime fields. The source language describes hash functions as arithmetic expressions and reduction constructs, while the compiler lowers this description to scalar C, ARM NEON, or AVX2 code with generated tests and benchmarking harnesses.
+
+The compiler supports several implementation techniques used in modern prime-field hashing, including delayed limb realignment, and one-level Karatsuba multiplication. We use the it to instantiate representative polynomial designs such as MMH, SQH, NMH, HKM-style recurrences, and Poly1305-style Horner evaluation.
+
+The central analytical contribution is a performance model for Apple Silicon ARM NEON targets. Rather than treating generated code as a black box, the model inspects the intermediate representation, analyzes the generated vector operations that dominate the main loop, and estimates cycles per byte from instruction-throughput pressure. Experiments show that this model provides a useful bridge between algebraic descriptions and hardware-level cost.
 \end{abstract}

@@ -1,11 +1,5 @@
 TODO
 ----
 
-- Finish opcount & pmodel
-- Dependencies: clang-format/tidy, check path
-- TODOs FIXMEs WARNs NotImplemented etc
-- Grep comments
-- Requirements.txt
-- README
-    + "Reproducing results from <thesis name>"
-- Check other deliverables
+- Explain Picasso drawing and CMake & stuff
+- rm this file

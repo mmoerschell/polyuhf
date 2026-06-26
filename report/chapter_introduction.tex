@@ -38,7 +38,8 @@ This thesis makes the following contributions.
     \item We implement a C backend for scalar code, ARM NEON, and AVX2. The backend emits field arithmetic for Crandall prime fields, including schoolbook multiplication, Karatsuba multiplication, dedicated squaring, load/store routines, carry propagation, and full reduction.
     \item We implement compiler lowering for the lower-level polynomial patterns that appear in the new-designs literature, including sums for MMH/SQH/NMH-style constructions, Horner-style evaluation for Poly1305-like functions, and left folds for iterative HKM-style recurrences.
     \item We generate correctness tests automatically using Boost Multiprecision~\cite{boost} as a reference, and we add manual validation tests for important special cases such as Poly1305 and HKM.
-    \item We generate a small benchmarking harness for compiled hash functions, allowing the produced implementations to be measured over byte-oriented input sizes.
+    \item We generate a small benchmarking harness for compiled hash functions, and conduct experiments to identify promising designs.
+    \item Last but not least, we present a performance model for Apple Silicon ARM NEON chips, which automatically derives a runtime estimate from the IR of any DSL module.
 \end{itemize}
 
 The code for this project is available at \url{https://github.com/mmoerschell/polyuhf/}.

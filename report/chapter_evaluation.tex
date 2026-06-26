@@ -1,13 +1,51 @@
 \chapter{Evaluation}
 \label{ch:evaluation}
 
+This chapter evaluates the generated implementations on concrete hardware. We focus on the ARM NEON backend, since it is the primary vector target used throughout this thesis and produced the strongest measurements in our experiments.
+
+\section{Experimental Setup}
+\label{sec:evaluation-setup}
+
+All main measurements were taken on an Apple M3 Pro with 18 GB of RAM, running macOS Tahoe 26.5.1. The generated C/C++ code was compiled with Apple clang version 21.0.0 (clang-2100.1.1.101). The NEON performance builds used CMake's release configuration with the following optimization flags:
+\begin{center}
+    \texttt{-O3 -DNDEBUG -mcpu=apple-m3 -fomit-frame-pointer}
+\end{center}
+
+We also ran corresponding experiments on an Intel Core i7-8565U at 1.80 GHz with 16 GB of RAM, running Ubuntu 26.04 LTS and GCC 15.2.0. This second machine served as an AVX2 testbed, using the corresponding x86 flags:
+\begin{center}
+    \texttt{-O3 -DNDEBUG -march=native -fomit-frame-pointer}
+\end{center}
+Its results were less competitive and are not the focus of this chapter; the corresponding plots are collected in \Cref{app:avx2-measurements}.
+
+Unless stated otherwise, the generated implementations use vectorization, fully delayed limb realignment, and an additional unrolling factor of one. SQH uses the dedicated squaring operator, so there is no separate Karatsuba variant for SQH in the plots below.
+
+\section{Benchmarking Methodology}
+\label{sec:evaluation-methodology}
+
+We report cycles per input byte. On x86, cycle counts are obtained directly from the timestamp counter. On ARM, we read the virtual counter, divide by the counter frequency, and multiply by the configured CPU frequency to obtain an estimated cycle count. In both instances, we use the helper files provided for the 2026 Advanced Computing Lab class \cite{acl2026advancedSystemsLabHw1}.
+
+Each data point is measured in batches. A batch consists of many executions of the same hash function on the same input length; the measured batch time is divided by the number of executions. This amortizes timer overhead. For each message length, the harness first calibrates the batch size to obtain a total duration of roughly \(9\cdot 10^8\) ticks. These calibration runs also act as warmup. It then records 40 measured batches and reports the median.
+
+\section{Hashing Performance}
+\label{sec:evaluation-hashing-performance}
+
+Degabriele et al. identify \(\mathbb{F}_{2^{116}-3}\) and \(\mathbb{F}_{2^{226}-5}\) as promising prime fields for polynomial hashing~\cite{degabriele2024sok}. We instantiate MMH, NMH, and SQH over both fields and measure their cost for messages up to 16 kB, roughly matching the maximal TLS record size.
+
+The curves in \Cref{fig:hashing_gf1163,fig:hashing_gf2265} follow the same qualitative pattern as in prior work on generated polynomial hash implementations~\cite{pegolotti2026sphgen,degabriele2024sok}. A hash call has a fixed part, such as call overhead, setup, and finalization, and a repeated part proportional to the number \(B\) of processed field elements. A simple model is
+\[
+    C_{\mathrm{total}} = C_{\mathrm{fixed}} + B\cdot C_{\mathrm{element}}.
+\]
+After dividing by the message length, the fixed term contributes roughly like \(C_{\mathrm{fixed}}/B\). This explains the characteristic \(1/x\)-like decline for short messages and the stable plateau for longer messages.
+
+In both fields, NMH gives the lowest measured cost among the considered functions. In \(\mathbb{F}_{2^{116}-3}\), the fastest curves stabilize around one cycle per byte or below. In \(\mathbb{F}_{2^{226}-5}\), costs are higher, as expected, because each field operation uses more limbs. The measured values nevertheless remain in the same general performance range as the prime-field hashing literature discussed earlier.
+
 \begin{figure}
     \centering
     \resizebox{\textwidth}{!}{%
         \input{import_figures/hashing_performance_gf_neon_116-3.pgf}
     }
-    \caption{Hashing performance on an ARM NEON processor in GF(\(2^{116}-3\)).}
-    \label{fig:sin}
+    \caption{Hashing performance on ARM NEON in \(\mathbb{F}_{2^{116}-3}\). The curves show the fixed-cost amortization for short messages and the steady-state cost reached for longer inputs; NMH is fastest in this field.}
+    \label{fig:hashing_gf1163}
 \end{figure}
 
 \begin{figure}
@@ -15,6 +53,52 @@
     \resizebox{\textwidth}{!}{%
         \input{import_figures/hashing_performance_gf_neon_226-5.pgf}
     }
-    \caption{Hashing performance on an ARM NEON processor in GF(\(2^{226}-5\)).}
-    \label{fig:cos}
+    \caption{Hashing performance on ARM NEON in \(\mathbb{F}_{2^{226}-5}\). The larger field increases the absolute cost, but the same stabilization pattern is visible once setup overhead is amortized.}
+    \label{fig:hashing_gf2265}
 \end{figure}
+
+\section{Field Sweep}
+\label{sec:evaluation-field-sweep}
+
+The second experiment fixes the message length at 16 kB and varies the field. We instantiate MMH over all tested Crandall prime fields with \(100\leq \pi \leq 400\) and \(\theta < 20\), giving 41 field configurations. This experiment illustrates the cost of increasing the field size while keeping the byte-oriented input size fixed.
+
+\Cref{fig:sweep_perf_mmh} shows that larger fields generally lead to higher cycles per byte. This is the expected trade-off: larger primes can provide larger security margins and consume more bytes per field element, but each field operation also involves more limbs. The trend is not perfectly smooth because the compiler changes limb counts, top-limb sizes, and generated reduction code at discrete field sizes.
+
+\begin{figure}
+    \centering
+    \resizebox{\textwidth}{!}{%
+        \input{import_figures/fieldsweep_performance_neon_mmh.pgf}
+    }
+    \caption{MMH cost at 16 kB for different Crandall prime fields. Costs generally increase with \(\pi\), with visible jumps when the generated limb representation changes.}
+    \label{fig:sweep_perf_mmh}
+\end{figure}
+
+\Cref{fig:sweep_speedup_mmh} compares vectorized MMH against the corresponding scalar implementation using the same multiplication algorithm. Speedups are often larger than the two NEON lanes might suggest. This is not a contradiction: vectorization also reduces loop overhead, groups byte loading and limb assembly work more efficiently, and gives the compiler a different instruction stream to schedule. Another likely contributor is that the two backends use different multiplication instructions. The scalar code multiplies full 64-bit limbs and stores the result in 64-bit temporaries, whereas the NEON backend uses widening 32-to-64-bit multiply-accumulate instructions on smaller lane values. These widening operations can be cheaper and better matched to the chosen limb bounds. For MMH, Karatsuba usually improves absolute performance, but its vectorization speedup is smaller than schoolbook's. In other words, Karatsuba removes some of the scalar work that vectorization would otherwise accelerate.
+
+\begin{figure}
+    \centering
+    \resizebox{\textwidth}{!}{%
+        \input{import_figures/fieldsweep_speedup_neon_mmh.pgf}
+    }
+    \caption{Speedup of vectorized MMH over the corresponding scalar implementation. Schoolbook multiplication gains more from vectorization, while Karatsuba is often faster in absolute terms but leaves less scalar work to accelerate.}
+    \label{fig:sweep_speedup_mmh}
+\end{figure}
+
+\section{Performance Model}
+\label{sec:evaluation-performance-model}
+
+Finally, we compare the performance model from \Cref{ch:performance-model} against empirical measurements from the first experiment. \Cref{fig:performance_model} shows predicted and measured cycles per byte for selected functions and fields. Despite its simplicity, the model tracks the measured values closely: all shown predictions are within about 15\% of the corresponding measurement, and most are substantially closer. This suggests that the dominant cost is indeed meaningfully captured by our heuristics.
+
+\begin{figure}
+    \centering
+    \resizebox{\textwidth}{!}{%
+        \input{import_figures/predicted_v_actual_cycles.pgf}
+    }
+    \caption{Estimated and actual per-byte costs for selected hashing designs. The simple throughput model follows the measured costs closely enough to explain the main loop behavior.}
+    \label{fig:performance_model}
+\end{figure}
+
+\section{Unrolling}
+\label{sec:evaluation-unrolling}
+
+All experiments in this chapter use an additional unrolling factor of one. Larger unrolling factors increase the generated C source substantially, sometimes to several thousand lines for the examples considered here. This expands the compiler's internal expression DAG, increases the number of live temporaries, and creates additional register pressure. In practice, the C compiler then tends to introduce spills or fall back to less favorable register-allocation decisions. For these generated programs, extra source-level unrolling therefore hurt performance more often than it helped.

@@ -87,3 +87,26 @@ This appendix summarizes the IR instructions used by the compiler. Instructions 
     \item[\texttt{lane\_powers}] Builds a vectorized field element whose lanes contain specified powers or multiples of a scalar field element. This is used by vectorized Horner lowering.
     \item[\texttt{horiz\_add}] Horizontally adds the lanes of a vectorized field element, producing one scalar field element.
 \end{description}
+
+\chapter{AVX2 Measurements}
+\label{app:avx2-measurements}
+
+This appendix collects the corresponding AVX2 measurements mentioned in \Cref{sec:evaluation-setup}. The experiments use the same generated hash functions and fields as the NEON measurements in the main evaluation chapter, but run on the x86 test machine described there.
+
+\begin{figure}
+    \centering
+    \resizebox{\textwidth}{!}{%
+        \input{import_figures/hashing_performance_gf_avx2_116-3.pgf}
+    }
+    \caption{Hashing performance on the AVX2 testbed in \(\mathbb{F}_{2^{116}-3}\). The same message-length experiment is shown for comparison with the NEON results in the main evaluation.}
+    \label{fig:avx2-hashing-gf1163}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \resizebox{\textwidth}{!}{%
+        \input{import_figures/hashing_performance_gf_avx2_226-5.pgf}
+    }
+    \caption{Hashing performance on the AVX2 testbed in \(\mathbb{F}_{2^{226}-5}\). The larger-field AVX2 run follows the same qualitative trend, but was less competitive on the tested machine.}
+    \label{fig:avx2-hashing-gf2265}
+\end{figure}

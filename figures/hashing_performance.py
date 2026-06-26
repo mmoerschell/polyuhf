@@ -74,15 +74,22 @@ def main(argv: list[str]) -> int:
                 cycles = np.array(filtered_lines["cycles"])
                 cycles_per_byte = cycles / bytes_
                 label = f"{module} ({mul_algo_label})".replace("_", " ")
-                is_highlight = (module, karatsuba) == ("nmh", 0)
-                plt.plot(
-                    kilobytes,
-                    cycles_per_byte,
-                    label=f"{label}",
-                    lw=3.0 if is_highlight else 1.5,
-                    alpha=1.0 if is_highlight else 0.7,
-                    zorder=10 if is_highlight else 1,
-                )
+                if platform == "neon":
+                    is_highlight = (module, karatsuba) == ("nmh", 0)
+                    plt.plot(
+                        kilobytes,
+                        cycles_per_byte,
+                        label=f"{label}",
+                        lw=3.0 if is_highlight else 1.5,
+                        alpha=1.0 if is_highlight else 0.7,
+                        zorder=10 if is_highlight else 1,
+                    )
+                else:
+                    plt.plot(
+                        kilobytes,
+                        cycles_per_byte,
+                        label=f"{label}",
+                    )
 
         plt.legend()
         plt.xlabel("Message length [KB]")
