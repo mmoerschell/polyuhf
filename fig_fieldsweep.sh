@@ -66,10 +66,12 @@ MODULES=(
 
 printf "module,pi,theta,vectorize,karatsuba,cycles\n" > $OUTPUT_FILE
 
-for field in "${FIELDS[@]}"; do
-  read -r pi theta <<< "$field"
-  echo "FIELD $pi $theta"
-  for module in "${MODULES[@]}"; do
+for module in "${MODULES[@]}"; do
+  echo "MODULE $module"
+  date
+  for field in "${FIELDS[@]}"; do
+    read -r pi theta <<< "$field"
+    echo "FIELD $pi $theta"
     for vectorize in $(seq 0 1); do
       for karatsuba in $(seq 0 1); do
         if [[ "$module" == "sqh" && "$karatsuba" == "1" ]]; then

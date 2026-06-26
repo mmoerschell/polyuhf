@@ -103,9 +103,10 @@ def main(argv: list[str]) -> int:
             plt.scatter(pi, speedup, label=f"{label}")
 
         plt.legend()
+        plt.axhline(y=1, color='gray', linestyle='--', zorder=1)
         plt.xlabel("$\\pi$")
         plt.title(
-            "Speedup over scalar code", loc="left"
+            "Speedup over respective scalar code", loc="left"
         )  # Prof. Püschel style. This is actually the y label
         plt.grid(True, which="both", alpha=0.3)
         plt.tight_layout()
