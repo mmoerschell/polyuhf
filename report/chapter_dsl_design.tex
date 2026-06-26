@@ -133,7 +133,7 @@ A Horner reduction evaluates a polynomial recurrence. It takes a range, a body e
 \[
     acc \leftarrow r \cdot (acc + e_i),
 \]
-where \(e_i\) is the body expression at index \(i\). This construct captures Poly1305-style polynomial evaluation and admits the branch-parallel vectorization strategy described in the literature.
+where \(e_i\) is the body expression at index \(i\). This construct captures Poly1305-style polynomial evaluation and admits the branch-parallel vectorization strategy described in the polynomial-hashing literature~\cite{bernstein2007pema,degabriele2024sok}.
 
 \paragraph{Left folds.}
 A left fold introduces an accumulator name and an initial value. For each index in the range, the body expression computes the next accumulator value from the current index and accumulator. Semantically, it is the usual recurrence

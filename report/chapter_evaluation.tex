@@ -22,14 +22,14 @@ Unless stated otherwise, the generated implementations use vectorization, fully 
 \section{Benchmarking Methodology}
 \label{sec:evaluation-methodology}
 
-We report cycles per input byte. On x86, cycle counts are obtained directly from the timestamp counter. On ARM, we read the virtual counter, divide by the counter frequency, and multiply by the configured CPU frequency to obtain an estimated cycle count. In both instances, we use the helper files provided for the 2026 Advanced Computing Lab class \cite{acl2026advancedSystemsLabHw1}.
+We report cycles per input byte. On x86, cycle counts are obtained directly from the timestamp counter. On ARM, we read the virtual counter, divide by the counter frequency, and multiply by the configured CPU frequency to obtain an estimated cycle count. In both instances, we use the header files provided for the 2026 Advanced Computing Lab class \cite{acl2026advancedSystemsLabHw1}.
 
 Each data point is measured in batches. A batch consists of many executions of the same hash function on the same input length; the measured batch time is divided by the number of executions. This amortizes timer overhead. For each message length, the harness first calibrates the batch size to obtain a total duration of roughly \(9\cdot 10^8\) ticks. These calibration runs also act as warmup. It then records 40 measured batches and reports the median.
 
 \section{Hashing Performance}
 \label{sec:evaluation-hashing-performance}
 
-Degabriele et al. identify \(\mathbb{F}_{2^{116}-3}\) and \(\mathbb{F}_{2^{226}-5}\) as promising prime fields for polynomial hashing~\cite{degabriele2024sok}. We instantiate MMH, NMH, and SQH over both fields and measure their cost for messages up to 16 kB, roughly matching the maximal TLS record size.
+Degabriele et al. identify \(\mathbb{F}_{2^{116}-3}\) and \(\mathbb{F}_{2^{226}-5}\) as promising prime fields for polynomial hashing~\cite{degabriele2024sok}. We instantiate MMH, NMH, and SQH over both fields and measure their cost for messages up to 16 kB, roughly matching the maximal TLS record size~\cite{rfc8446}.
 
 The curves in \Cref{fig:hashing_gf1163,fig:hashing_gf2265} follow the same qualitative pattern as in prior work on generated polynomial hash implementations~\cite{pegolotti2026sphgen,degabriele2024sok}. A hash call has a fixed part, such as call overhead, setup, and finalization, and a repeated part proportional to the number \(B\) of processed field elements. A simple model is
 \[

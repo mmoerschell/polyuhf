@@ -21,7 +21,7 @@ From these inputs the compiler produces generated C sources and headers. If requ
 \section{Parsing and AST Construction}
 \label{sec:parsing-ast}
 
-The concrete syntax is described by an ANTLR grammar. ANTLR generates a Python parser, which produces a parse tree for a module. The compiler then visits this parse tree and constructs a smaller abstract syntax tree (AST).
+The concrete syntax is described by an ANTLR grammar~\cite{parr2013antlr}. ANTLR generates a Python parser, which produces a parse tree for a module. The compiler then visits this parse tree and constructs a smaller abstract syntax tree (AST).
 
 \paragraph{AST shape.}
 The AST mirrors the language rather than the grammar. It contains nodes for modules, functions, expressions, reductions, conditionals, buffer loads, literals, unary operations, and binary operations. This separation is useful because the grammar contains syntactic details that are irrelevant after parsing, while later compiler phases need a compact representation of the program structure. For example, the grammar has separate precedence levels for addition and multiplication, but the AST only needs a binary-operation node annotated with the operator.
@@ -132,7 +132,7 @@ The IR distinguishes constant-time and non-constant-time conditionals. A constan
 \section{Configuration and Target Parameters}
 \label{sec:configuration-targets}
 
-The compiler configuration fixes the field and machine parameters. Given \(\pi\), \(\theta\), the target platform, and the vectorization mode, the settings code selects a limb arrangement. In particular, it chooses a large limb size that satisfies bounds on intermediate values, following the same motivation as the SPHGen parameter selection: reduce the limb count without overflowing during the configured arithmetic. The configuration also selects schoolbook or Karatsuba multiplication, the unrolling factor, and the delayed-realignment mode.
+The compiler configuration fixes the field and machine parameters. Given \(\pi\), \(\theta\), the target platform, and the vectorization mode, the settings code selects a limb arrangement. In particular, it chooses a large limb size that satisfies bounds on intermediate values, following the same motivation as the SPHGen parameter selection~\cite{pegolotti2026sphgen}: reduce the limb count without overflowing during the configured arithmetic. The configuration also selects schoolbook or Karatsuba multiplication, the unrolling factor, and the delayed-realignment mode.
 
 \paragraph{Supported targets.}
 The current implementation focuses on scalar code, two-lane 64-bit ARM NEON, and four-lane 64-bit AVX2. These targets are sufficient to exercise the main compiler abstractions: scalar arithmetic, vectorized limb-major layout, platform-specific load/store routines, and different vector widths.
