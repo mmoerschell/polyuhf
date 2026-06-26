@@ -29,6 +29,16 @@ Each data point is measured in batches. A batch consists of many executions of t
 \section{Hashing Performance}
 \label{sec:evaluation-hashing-performance}
 
+\begin{figure}[!htbp]
+    \centering
+    \resizebox{\textwidth}{!}{%
+        \input{import_figures/hashing_performance_gf_neon_116-3.pgf}
+    }
+    \caption{Hashing performance on ARM NEON in \(\mathbb{F}_{2^{116}-3}\). The curves show the fixed-cost amortization for short messages and the steady-state cost reached for longer inputs; NMH is fastest in this field.}
+    \label{fig:hashing_gf1163}
+\end{figure}
+\clearpage
+
 Degabriele et al. identify \(\mathbb{F}_{2^{116}-3}\) and \(\mathbb{F}_{2^{226}-5}\) as promising prime fields for polynomial hashing~\cite{degabriele2024sok}. We instantiate MMH, NMH, and SQH over both fields and measure their cost for messages up to 16 kB, roughly matching the maximal TLS record size~\cite{rfc8446}.
 
 The curves in \Cref{fig:hashing_gf1163,fig:hashing_gf2265} follow the same qualitative pattern as in prior work on generated polynomial hash implementations~\cite{pegolotti2026sphgen,degabriele2024sok}. A hash call has a fixed part, such as call overhead, setup, and finalization, and a repeated part proportional to the number \(B\) of processed field elements. A simple model is
@@ -39,16 +49,7 @@ After dividing by the message length, the fixed term contributes roughly like \(
 
 In both fields, NMH gives the lowest measured cost among the considered functions. In \(\mathbb{F}_{2^{116}-3}\), the fastest curves stabilize around one cycle per byte or below. In \(\mathbb{F}_{2^{226}-5}\), costs are higher, as expected, because each field operation uses more limbs. The measured values nevertheless remain in the same general performance range as the prime-field hashing literature discussed earlier.
 
-\begin{figure}
-    \centering
-    \resizebox{\textwidth}{!}{%
-        \input{import_figures/hashing_performance_gf_neon_116-3.pgf}
-    }
-    \caption{Hashing performance on ARM NEON in \(\mathbb{F}_{2^{116}-3}\). The curves show the fixed-cost amortization for short messages and the steady-state cost reached for longer inputs; NMH is fastest in this field.}
-    \label{fig:hashing_gf1163}
-\end{figure}
-
-\begin{figure}
+\begin{figure}[!htbp]
     \centering
     \resizebox{\textwidth}{!}{%
         \input{import_figures/hashing_performance_gf_neon_226-5.pgf}
@@ -56,6 +57,7 @@ In both fields, NMH gives the lowest measured cost among the considered function
     \caption{Hashing performance on ARM NEON in \(\mathbb{F}_{2^{226}-5}\). The larger field increases the absolute cost, but the same stabilization pattern is visible once setup overhead is amortized.}
     \label{fig:hashing_gf2265}
 \end{figure}
+\clearpage
 
 \section{Field Sweep}
 \label{sec:evaluation-field-sweep}
@@ -64,7 +66,7 @@ The second experiment fixes the message length at 16 kB and varies the field. We
 
 \Cref{fig:sweep_perf_mmh} shows that larger fields generally lead to higher cycles per byte. This is the expected trade-off: larger primes can provide larger security margins and consume more bytes per field element, but each field operation also involves more limbs. The trend is not perfectly smooth because the compiler changes limb counts, top-limb sizes, and generated reduction code at discrete field sizes.
 
-\begin{figure}
+\begin{figure}[!htbp]
     \centering
     \resizebox{\textwidth}{!}{%
         \input{import_figures/fieldsweep_performance_neon_mmh.pgf}
@@ -72,10 +74,11 @@ The second experiment fixes the message length at 16 kB and varies the field. We
     \caption{MMH cost at 16 kB for different Crandall prime fields. Costs generally increase with \(\pi\), with visible jumps when the generated limb representation changes.}
     \label{fig:sweep_perf_mmh}
 \end{figure}
+\clearpage
 
 \Cref{fig:sweep_speedup_mmh} compares vectorized MMH against the corresponding scalar implementation using the same multiplication algorithm. Speedups are often larger than the two NEON lanes might suggest. This is not a contradiction: vectorization also reduces loop overhead, groups byte loading and limb assembly work more efficiently, and gives the compiler a different instruction stream to schedule. Another likely contributor is that the two backends use different multiplication instructions. The scalar code multiplies full 64-bit limbs and stores the result in 64-bit temporaries, whereas the NEON backend uses widening 32-to-64-bit multiply-accumulate instructions on smaller lane values. These widening operations can be cheaper and better matched to the chosen limb bounds. For MMH, Karatsuba usually improves absolute performance, but its vectorization speedup is smaller than schoolbook's. In other words, Karatsuba removes some of the scalar work that vectorization would otherwise accelerate.
 
-\begin{figure}
+\begin{figure}[!htbp]
     \centering
     \resizebox{\textwidth}{!}{%
         \input{import_figures/fieldsweep_speedup_neon_mmh.pgf}
@@ -83,13 +86,14 @@ The second experiment fixes the message length at 16 kB and varies the field. We
     \caption{Speedup of vectorized MMH over the corresponding scalar implementation. Schoolbook multiplication gains more from vectorization, while Karatsuba is often faster in absolute terms but leaves less scalar work to accelerate.}
     \label{fig:sweep_speedup_mmh}
 \end{figure}
+\clearpage
 
 \section{Performance Model}
 \label{sec:evaluation-performance-model}
 
 Finally, we compare the performance model from \Cref{ch:performance-model} against empirical measurements from the first experiment. \Cref{fig:performance_model} shows predicted and measured cycles per byte for selected functions and fields. Despite its simplicity, the model tracks the measured values closely: all shown predictions are within about 15\% of the corresponding measurement, and most are substantially closer. This suggests that the dominant cost is indeed meaningfully captured by our heuristics.
 
-\begin{figure}
+\begin{figure}[!htbp]
     \centering
     \resizebox{\textwidth}{!}{%
         \input{import_figures/predicted_v_actual_cycles.pgf}
@@ -97,6 +101,7 @@ Finally, we compare the performance model from \Cref{ch:performance-model} again
     \caption{Estimated and actual per-byte costs for selected hashing designs. The simple throughput model follows the measured costs closely enough to explain the main loop behavior.}
     \label{fig:performance_model}
 \end{figure}
+\clearpage
 
 \section{Unrolling}
 \label{sec:evaluation-unrolling}
