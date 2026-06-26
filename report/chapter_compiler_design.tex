@@ -9,7 +9,7 @@ The compiler translates a DSL module into C sources, headers, tests, and optiona
 The compiler takes a DSL source file, a field description, and a target description. The field description is \(\pi,\theta\), defining \(2^\pi-\theta\). The target description includes platform, vectorization mode, lane count, multiplication algorithm, unrolling factor, and delayed-realignment mode.
 
 \paragraph{Generated artifacts.}
-From these inputs it produces generated C sources and headers, which it then hands over to a C/C++ compiler (GCC or Clang) and build system (CMake, Ninja). If requested, it also emits Boost-based correctness tests and a standalone performance harness. \Cref{fig:compiler-overview} summarizes the pipeline.
+From these inputs it produces generated C sources and headers, which it then hands over to a C/C++ compiler (GCC or Clang) and build system (CMake, Ninja)~\cite{gcc,clang,cmake,ninja}. If requested, it also emits Boost-based correctness tests and a standalone performance harness. \Cref{fig:compiler-overview} summarizes the pipeline.
 
 \begin{figure}[t]
     \centering
